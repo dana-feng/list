@@ -34,7 +34,7 @@ export default function ListScreen() {
 
   if (!list || !canViewList(id)) {
     return (
-      <Screen tabBar="home" header={<Header />}>
+      <Screen header={<Header />}>
         <Serif size={24}>can't open this list</Serif>
         <Sans color={colors.inkSoft}>It's private, or it's gone.</Sans>
       </Screen>
@@ -84,7 +84,6 @@ export default function ListScreen() {
 
   return (
     <Screen
-      tabBar={member ? 'lists' : 'home'}
       header={
         editing ? (
           <Header left={<TextAction label="Cancel" quiet onPress={stopEdit} />} right={<TextAction label="Done" onPress={save} />} />

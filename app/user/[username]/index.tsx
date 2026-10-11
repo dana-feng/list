@@ -18,7 +18,7 @@ export default function User() {
   const person = getProfileByUsername(username);
   if (!person) {
     return (
-      <Screen tabBar="home" header={<Header />}>
+      <Screen header={<Header />}>
         <Serif size={24}>nobody here</Serif>
         <Sans color={colors.inkSoft}>@{username} doesn't exist.</Sans>
       </Screen>
@@ -26,7 +26,7 @@ export default function User() {
   }
   const rows = listsForProfile(person.id);
   return (
-    <Screen tabBar="home" refreshable header={<Header center={<Mono size={14} center>@{person.username}</Mono>} right={<View style={{ width: 26 }} />} />}>
+    <Screen refreshable header={<Header center={<Mono size={14} center>@{person.username}</Mono>} right={<View style={{ width: 26 }} />} />}>
       <ProfileHeader person={person} action={<FollowButton userId={person.id} />} />
       {rows.length ? <FolderGrid rows={rows} /> : (
         <View style={{ paddingVertical: space.xxl * 2, alignItems: 'center', gap: space.sm }}>

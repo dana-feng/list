@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, space, TAB_BAR_HEIGHT } from '@/theme';
+import { colors, space } from '@/theme';
 import { Sans, SansBold } from './Text';
 
 type Props = { title: string; onAddPics: () => void; onUndo: () => void; onLater: () => void };
@@ -14,7 +14,7 @@ export function DoneToast({ title, onAddPics, onUndo, onLater }: Props) {
     return () => clearTimeout(t);
   }, [title]);
   return (
-    <View style={[styles.toast, { bottom: TAB_BAR_HEIGHT + insets.bottom + space.md }]} accessibilityLiveRegion="polite">
+    <View style={[styles.toast, { bottom: insets.bottom + space.lg }]} accessibilityLiveRegion="polite">
       <Sans color={colors.onDark} numberOfLines={1}>
         <SansBold color={colors.onDark}>Done: </SansBold>
         {title}

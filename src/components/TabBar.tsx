@@ -12,7 +12,7 @@ export type TabName = 'home' | 'lists';
 const STRIP = 14;
 
 /** Home, + and lists as folder tabs. Home and lists are tabs; + opens the "new" sheet. */
-export function TabBar({ active, onTab }: { active: TabName; onTab?: (tab: TabName) => void }) {
+export function TabBar({ active, onTab }: { active: TabName; onTab: (tab: TabName) => void }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -26,14 +26,11 @@ export function TabBar({ active, onTab }: { active: TabName; onTab?: (tab: TabNa
   );
 }
 
-function Tabs({ active, plusOpen, onPlus, onTab }: { active: TabName | null; plusOpen: boolean; onPlus: () => void; onTab?: (tab: TabName) => void }) {
+function Tabs({ active, plusOpen, onPlus, onTab }: { active: TabName | null; plusOpen: boolean; onPlus: () => void; onTab: (tab: TabName) => void }) {
   const insets = useSafeAreaInsets();
   const go = (tab: TabName) => {
     if (plusOpen) onPlus();
-    if (onTab) return onTab(tab);
-    // from a screen stacked above the tabs: drop back to them, then switch
-    if (router.canDismiss()) router.dismissAll();
-    router.navigate(tab === 'home' ? '/' : '/me');
+    onTab(tab);
   };
   return (
     <View style={styles.bar} pointerEvents="box-none">

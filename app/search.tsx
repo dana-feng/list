@@ -16,7 +16,6 @@ export default function Search() {
   const people = searchPeople(q);
   return (
     <Screen
-      tabBar="home"
       header={
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg, paddingHorizontal: space.xl, marginBottom: space.lg }}>
           <BackButton />
