@@ -31,6 +31,11 @@ export function dayParts(date: string) {
   return { weekday: DAYS[d.getDay()].toUpperCase(), day: String(d.getDate()) };
 }
 
+/** "oct 2026" */
+export function monthYear(d: Date) {
+  return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 /** "oct 3", from a timestamp */
 export function monthDay(iso: string) {
   const d = new Date(iso);
