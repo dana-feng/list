@@ -19,7 +19,13 @@
       "expo-router",
       "expo-image",
       "expo-font",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "list checks your contacts for friends who are already here. Numbers never leave your phone except to find matches."
+        }
+      ]
     ],
     "scheme": "list",
     "experiments": {

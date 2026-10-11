@@ -1,11 +1,11 @@
 import { db, FeedEvent, Item, List } from './db';
-import { canViewList, getList, isMember } from './lists';
+import { getList, isMember } from './lists';
 import { isFollowing } from './profiles';
 
-/** All: posts from you and people you follow, on lists you can see, newest first. */
+/** All: posts from you and people you follow, newest first. The database already left out lists you can't see. */
 export function feedAll(limit = 20): FeedEvent[] {
   return db.events
-    .filter((e) => (e.actor_id === db.me || isFollowing(e.actor_id)) && canViewList(e.list_id))
+    .filter((e) => (e.actor_id === db.me || isFollowing(e.actor_id)) && getList(e.list_id))
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
     .slice(0, limit);
 }
@@ -13,7 +13,7 @@ export function feedAll(limit = 20): FeedEvent[] {
 /** Open Invite: things people are asking about, on lists you can see but aren't on, soonest first. */
 export function openInvites(): { item: Item; list: List }[] {
   return db.items
-    .filter((i) => i.asking && !i.done_at && canViewList(i.list_id) && !isMember(i.list_id))
+    .filter((i) => i.open_invite && !i.done_at && getList(i.list_id) && !isMember(i.list_id))
     .sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999'))
     .map((item) => ({ item, list: getList(item.list_id)! }));
 }

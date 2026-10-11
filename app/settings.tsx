@@ -1,8 +1,9 @@
 import { ReactNode, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useDb } from '@/api/db';
-import { me, signOut, updateProfile } from '@/api/profiles';
+import { me, saveProfile, setProfilePhoto } from '@/api/profiles';
+import { deleteAccount, signOut } from '@/api/sync';
 import { Avatar } from '@/components/Avatar';
 import { BackButton, Header } from '@/components/Header';
 import { Screen } from '@/components/Screen';
@@ -21,13 +22,13 @@ export default function Settings() {
   const [name, setName] = useState(person.name);
   const [username, setUsername] = useState(person.username);
   const [confirming, setConfirming] = useState(false);
-  const maskedPhone = `(•••) •••-${db.phone.slice(-4)}`;
+  const maskedPhone = db.phone ? `(•••) •••-${db.phone.slice(-4)}` : '';
   const status = usernameStatus(username, person.username);
   const canSave = !!name.trim() && (username === person.username || !!status?.ok);
 
   const changePhoto = async () => {
     const [uri] = await pickPhotos(false);
-    if (uri) updateProfile({ avatar_path: uri });
+    if (uri) setProfilePhoto(uri);
   };
   const startEdit = () => {
     setName(person.name);
@@ -35,11 +36,17 @@ export default function Settings() {
     setEditing(true);
   };
   const save = () => {
-    updateProfile({ name: name.trim(), username });
+    saveProfile({ name, username });
     setEditing(false);
   };
-  const leave = () => {
-    signOut();
+  const leave = async () => {
+    await signOut();
+    router.dismissAll();
+    router.replace('/welcome');
+  };
+  const destroy = async () => {
+    const problem = await deleteAccount();
+    if (problem) return Alert.alert("Couldn't delete your account", problem);
     router.dismissAll();
     router.replace('/welcome');
   };
@@ -119,7 +126,7 @@ export default function Settings() {
         <View style={{ alignItems: 'center', gap: space.sm }}>
           <Sans center color={colors.inkSoft} style={{ maxWidth: 280 }}>This deletes your lists, photos and stars for good.</Sans>
           <View style={{ flexDirection: 'row', gap: space.xl }}>
-            <Pressable onPress={leave} hitSlop={8} accessibilityRole="button"><SansBold color={colors.danger}>Delete everything</SansBold></Pressable>
+            <Pressable onPress={destroy} hitSlop={8} accessibilityRole="button"><SansBold color={colors.danger}>Delete everything</SansBold></Pressable>
             <Pressable onPress={() => setConfirming(false)} hitSlop={8} accessibilityRole="button"><SansBold>Keep account</SansBold></Pressable>
           </View>
         </View>

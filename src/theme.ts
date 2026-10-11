@@ -53,6 +53,20 @@ export function swatchFor(id: string) {
   return swatches[h % swatches.length];
 }
 
+// Placeholder avatar colors (background, figure) until someone adds a photo.
+const tints = [
+  { bg: '#E8C390', fg: '#A06A32' }, { bg: '#B7C7A0', fg: '#5D7345' }, { bg: '#EBAE94', fg: '#A0503A' },
+  { bg: '#AFBFD6', fg: '#4E6485' }, { bg: '#EAD58E', fg: '#A07C28' }, { bg: '#D9C49C', fg: '#7D6540' },
+  { bg: '#C7B0D8', fg: '#6D5488' }, { bg: '#B5D0C8', fg: '#4F7868' }, { bg: '#E3B5A6', fg: '#8A4F40' },
+  { bg: '#CFA8B8', fg: '#7D4A60' },
+];
+
+export function tintFor(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return tints[h % tints.length];
+}
+
 /** True when a fill is dark enough that text on it should be cream rather than ink. */
 export function isDark(hex: string) {
   const n = parseInt(hex.slice(1), 16);

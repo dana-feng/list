@@ -4,7 +4,8 @@ import { TabBar } from '@/components/TabBar';
 
 export default function TabsLayout() {
   const db = useDb();
-  if (!db.signedIn) return <Redirect href="/welcome" />;
+  if (db.status === 'signedOut') return <Redirect href="/welcome" />;
+  if (db.status === 'needsProfile') return <Redirect href="/profile" />;
   return (
     <Tabs
       screenOptions={{ headerShown: false }}

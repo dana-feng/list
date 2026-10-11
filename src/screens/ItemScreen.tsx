@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { PhotoSource, useDb } from '@/api/db';
+import { useDb } from '@/api/db';
 import { addItem, addPhoto, getItem, interestedPeople, markDone, photosFor, removePhoto, undoDone, updateItem } from '@/api/items';
 import { canViewList, getList, isMember, listPeople, listProgress } from '@/api/lists';
 import { AskButton } from '@/components/AskButton';
@@ -24,7 +24,7 @@ import { monthDay } from '@/lib';
 import { pickPhotos } from '@/pickPhotos';
 import { colors, space } from '@/theme';
 
-type Draft = { listId: string | null; title: string; date: string | null; notes: string; asking: boolean; photos: PhotoSource[] };
+type Draft = { listId: string | null; title: string; date: string | null; notes: string; open_invite: boolean; photos: string[] };
 
 /**
  * One screen for a thing in three modes: viewing, editing, and new.
@@ -37,7 +37,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const [editing, setEditing] = useState(isNew);
   const [picking, setPicking] = useState(isNew && !listId);
   const [draft, setDraft] = useState<Draft>({
-    listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, notes: item?.notes ?? '', asking: false, photos: [],
+    listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, notes: item?.notes ?? '', open_invite: false, photos: [],
   });
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const list = draft.listId ? getList(draft.listId) : undefined;
@@ -63,7 +63,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const save = () => {
     if (isNew) {
       if (!draft.listId) return;
-      const newId = addItem({ list_id: draft.listId, title: draft.title, date: draft.date, notes: draft.notes, asking: draft.asking, photos: draft.photos });
+      const newId = addItem({ list_id: draft.listId, title: draft.title, date: draft.date, notes: draft.notes, open_invite: draft.open_invite, photos: draft.photos });
       router.replace(`/item/${newId}`);
     } else {
       updateItem(item!.id, { title: draft.title.trim() || item!.title, date: draft.date, notes: draft.notes });
@@ -129,19 +129,19 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
         <Dots />
 
         {isNew ? (
-          <Pressable onPress={() => set({ asking: !draft.asking })} style={{ flexDirection: 'row', alignItems: 'center' }} accessibilityRole="switch" accessibilityState={{ checked: draft.asking }}>
+          <Pressable onPress={() => set({ open_invite: !draft.open_invite })} style={{ flexDirection: 'row', alignItems: 'center' }} accessibilityRole="switch" accessibilityState={{ checked: draft.open_invite }}>
             <View style={{ flex: 1 }}>
               <SansBold size={16}>Ask who's in</SansBold>
               <Sans size={13.5} color={colors.inkSoft}>followers can ★ it from their feed</Sans>
             </View>
-            <Icon name="plane" size={22} fill={draft.asking ? colors.ink : 'none'} />
+            <Icon name="plane" size={22} fill={draft.open_invite ? colors.ink : 'none'} />
           </Pressable>
         ) : (
           <>
             <Mono size={13} style={{ marginBottom: space.md }}>people</Mono>
             <PeopleRow
               doing={listPeople(list!.id)}
-              interested={item!.asking ? interestedPeople(item!.id) : []}
+              interested={item!.open_invite ? interestedPeople(item!.id) : []}
               action={member ? <AskButton itemId={item!.id} /> : <InterestButton itemId={item!.id} />}
             />
           </>

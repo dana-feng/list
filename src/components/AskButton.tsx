@@ -1,6 +1,6 @@
 import { Pressable } from 'react-native';
 import { useDb } from '@/api/db';
-import { getItem, toggleAsk } from '@/api/items';
+import { getItem, toggleOpenInvite } from '@/api/items';
 import { colors } from '@/theme';
 import { Icon } from './Icon';
 
@@ -11,13 +11,13 @@ export function AskButton({ itemId }: { itemId: string }) {
   if (!item || item.done_at) return null;
   return (
     <Pressable
-      onPress={() => toggleAsk(itemId)}
+      onPress={() => toggleOpenInvite(itemId)}
       hitSlop={12}
       accessibilityRole="switch"
-      accessibilityState={{ checked: item.asking }}
+      accessibilityState={{ checked: item.open_invite }}
       accessibilityLabel="Ask who's in"
     >
-      <Icon name="plane" size={22} color={colors.ink} fill={item.asking ? colors.ink : 'none'} />
+      <Icon name="plane" size={22} color={colors.ink} fill={item.open_invite ? colors.ink : 'none'} />
     </Pressable>
   );
 }

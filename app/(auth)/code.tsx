@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { commit, db } from '@/api/db';
-import { Mono, SansBold } from '@/components/Text';
+import { supabase } from '@/api/supabase';
+import { signInWithCode } from '@/api/sync';
+import { Mono, Sans, SansBold } from '@/components/Text';
 import { AuthStep } from '@/screens/AuthStep';
 import { colors } from '@/theme';
 
@@ -12,7 +14,10 @@ export default function Code() {
   const { phone, change } = useLocalSearchParams<{ phone: string; change?: string }>();
   const [code, setCode] = useState('');
   const [wait, setWait] = useState(RESEND_AFTER);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
   const input = useRef<TextInput>(null);
+  const digits = (phone ?? '').replace(/\D/g, '');
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -20,18 +25,40 @@ export default function Code() {
     return () => clearTimeout(t);
   }, [wait]);
 
-  const onChange = (text: string) => {
-    const next = text.replace(/\D/g, '').slice(0, 6);
-    setCode(next);
-    if (next.length < 6) return;
-    // mock: any six digits pass. The real check is supabase.auth.verifyOtp.
+  const submit = async (value: string) => {
+    setBusy(true);
+    setProblem(null);
     if (change) {
-      db.phone = phone;
+      // v0: no texts, so the new number is saved straight away.
+      const { data, error } = value === '000000' ? await supabase.auth.updateUser({ phone: `+1${digits}` }) : { data: null, error: { message: "That code didn't work." } };
+      setBusy(false);
+      if (error) return fail(error.message);
+      db.phone = data?.user?.phone ?? db.phone;
       commit();
       router.dismissTo('/settings');
+      return;
+    }
+    const error = await signInWithCode(digits, value);
+    setBusy(false);
+    if (error) return fail(error);
+    if (db.status === 'ready') {
+      router.dismissAll();
+      router.replace('/');
     } else {
       router.push('/profile');
     }
+  };
+
+  const fail = (message: string) => {
+    setProblem(message);
+    setCode('');
+    input.current?.focus();
+  };
+
+  const onChange = (text: string) => {
+    const next = text.replace(/\D/g, '').slice(0, 6);
+    setCode(next);
+    if (next.length === 6) submit(next);
   };
 
   return (
@@ -47,6 +74,7 @@ export default function Code() {
         ref={input}
         value={code}
         onChangeText={onChange}
+        editable={!busy}
         keyboardType="number-pad"
         textContentType="oneTimeCode"
         autoComplete="sms-otp"
@@ -55,6 +83,10 @@ export default function Code() {
         accessibilityLabel="6-digit code"
         style={styles.hidden}
       />
+      {busy ? <ActivityIndicator color={colors.ink} style={{ marginTop: 20, alignSelf: 'flex-start' }} /> : null}
+      {problem ? (
+        <Sans color={colors.danger} style={{ marginTop: 20 }} accessibilityLiveRegion="polite">{problem}</Sans>
+      ) : null}
       {wait > 0 ? (
         <Mono size={13} color={colors.inkSoft} style={{ marginTop: 20 }}>resend in 0:{String(wait).padStart(2, '0')}</Mono>
       ) : (

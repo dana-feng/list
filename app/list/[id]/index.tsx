@@ -35,7 +35,7 @@ export default function ListScreen() {
 
   const member = isMember(id);
   const invited = membership(id)?.status === 'invited';
-  const owner = list.owner_id === db.me;
+  const owner = member; // everyone on a list is an equal owner
   const { done, total } = listProgress(id);
   const { open, done: finished } = itemsForList(id);
 
