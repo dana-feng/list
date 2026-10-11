@@ -1,6 +1,6 @@
 # list
 
-Expo (React Native) app, iOS first. This is the UI mock-up of the simplified design boards: every screen is built and tappable, running on fake in-memory data instead of Supabase.
+Expo (React Native) app, iOS first, on Supabase. Everything you do in the app (sign-up, lists, things, check-offs, stars, follows, photos) is saved to the database.
 
 ## Run it
 
@@ -9,11 +9,9 @@ npm install
 npx expo start            # scan the QR code with Expo Go, or press i for the iOS simulator
 ```
 
-Sign-up accepts any 10-digit number and any 6-digit code. To skip sign-up and land on the feed as `@dana`:
+The Supabase project URL and publishable key are in `.env`, so a fresh clone runs as is. The publishable key is meant to ship inside the app; the database's rules decide what each person can see. Never put the secret / service_role key in this repo.
 
-```bash
-EXPO_PUBLIC_SKIP_AUTH=1 npx expo start
-```
+**Signing in (v0):** any US phone number, and the code is always `000000`. No text is sent. A new number creates an account; a number that's been used before logs back in. Anyone who knows your number can log in as you, so this is for the first test group only.
 
 Typecheck with `npx tsc --noEmit`.
 
@@ -24,17 +22,18 @@ app/                  screens (Expo Router)
 src/components/       shared pieces: FolderCard, ItemRow, FeedPost, TabBar…
 src/screens/          screens reused by more than one route (ItemScreen, AuthStep)
 src/theme.ts          colors, fonts, spacing from the mocks
-src/api/              one file per table, plus db.ts (in-memory tables) and seed.ts (fake data)
-assets/               icons and the sample feed photo
+src/api/              data: one file per area, plus db.ts, sync.ts and supabase.ts
+supabase/             database migrations and local config
 ```
 
-## What's mocked
+## How data flows
 
-`src/api/db.ts` holds the nine tables from the build plan as plain arrays, and the other `src/api/*` files read and write them with the same rules the database will enforce (`canViewList` mirrors `can_view_list`, feed events are written where triggers would write them). Screens only talk to `src/api`, so moving to Supabase means rewriting those files, not the screens. Data resets on reload.
+- `src/api/db.ts` is a local copy of the tables the signed-in person can see. Screens read it synchronously through the other `src/api/*` files and re-render with `useDb()`.
+- `src/api/sync.ts` fills it: `refresh()` selects every table, and the database's rules (`can_view_list` etc.) only return rows you're allowed to see. It runs at sign-in, when the app comes back to the foreground, every minute while open, and after every write.
+- Writes change the local copy first (so taps feel instant), then go to Supabase one at a time through `write()`. The refresh after each write picks up what the database's triggers did (feed posts, finished lists) and undoes the local change if the database refused it.
+- Photos: item photos upload to the private `photos` bucket (`<list id>/<item id>/<photo id>.jpg`) and are shown through signed links; profile photos go to the public `avatars` bucket.
 
-Not wired yet: Supabase, TanStack Query, real SMS codes, contacts matching (`expo-contacts`), photo upload (picked photos stay on the device).
-
-One thing the mocks need that the plan's schema doesn't have: a caption on "you did it". It's stored as `items.caption` here; the "say something about it" text on a finished list isn't stored anywhere.
+This "load everything you can see" approach is fine for a small test group. Once there are lots of people and lists, switch the reads to per-screen queries (TanStack Query is the plan).
 
 ## Database (Supabase)
 
@@ -43,11 +42,12 @@ The tables live in `supabase/migrations/` as SQL files, applied in order:
 - `…_create_tables.sql`: the 11 tables, indexes, `can_view_list` and the read/write rules
 - `…_feed_and_functions.sql`: feed posts and list completion (written by the database, not the app), plus `create_list`, `username_available`, `match_contacts`, `delete_account`
 - `…_storage.sql`: the private `photos` bucket and public `avatars` bucket
+- `…_create_list_with_id.sql`: lets the app pick a new list's id so it can show it right away
 
-Sign-in for v0 is phone + code with no texts: every tester's number is a test number whose code is always `000000`. Add numbers under `[auth.sms.test_otp]` in `supabase/config.toml` (local) and in the dashboard under Authentication > Sign In / Providers > Phone (hosted).
+Phone sign-in settings on the hosted project (Authentication > Sign In / Providers > Phone): provider on, **Enable phone confirmations off**. The Twilio fields hold placeholders; nothing is sent while confirmations are off. To turn on real texts later: put in real Twilio details, turn confirmations on, and switch `signInWithCode` in `src/api/sync.ts` to `signInWithOtp` / `verifyOtp`.
 
 ```bash
-npx supabase link --project-ref <project ref>   # once
-npx supabase db push                            # apply new migrations to the hosted project
-npx supabase migration new <name>               # start a new change
+npx supabase link --project-ref fljsphilewtthjcqkmmn   # once
+npx supabase db push                                  # apply new migrations to the hosted project
+npx supabase migration new <name>                     # start a new change
 ```

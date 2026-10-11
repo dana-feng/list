@@ -13,7 +13,7 @@ import { ProgressBar } from './ProgressBar';
 import { Mono, Sans, SansBold, Serif } from './Text';
 
 const VERB = {
-  asked: 'open invite',
+  open_invite: 'open invite',
   item_added: 'added a thing',
   item_done: 'did it',
   list_done: 'finished a list',

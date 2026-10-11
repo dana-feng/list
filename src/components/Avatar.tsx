@@ -2,21 +2,22 @@ import { View } from 'react-native';
 import { Image } from 'expo-image';
 import Svg, { Circle, Ellipse } from 'react-native-svg';
 import type { Profile } from '@/api/db';
-import { colors } from '@/theme';
+import { colors, tintFor } from '@/theme';
 
 export function Avatar({ person, size = 32, ring }: { person: Profile; size?: number; ring?: string }) {
   const border = ring ? Math.max(1.5, size * 0.04) : 0;
+  const tint = tintFor(person.id);
   return (
     <View
-      style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: person.tint.bg, borderWidth: border, borderColor: ring }}
+      style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: tint.bg, borderWidth: border, borderColor: ring }}
       accessibilityLabel={person.name}
     >
-      {person.avatar_path ? (
-        <Image source={{ uri: person.avatar_path }} style={{ flex: 1 }} contentFit="cover" />
+      {person.profile_photo ? (
+        <Image source={{ uri: person.profile_photo }} style={{ flex: 1 }} contentFit="cover" />
       ) : (
         <Svg width="100%" height="100%" viewBox="0 0 40 40">
-          <Circle cx={20} cy={15.5} r={7} fill={person.tint.fg} />
-          <Ellipse cx={20} cy={37} rx={12.5} ry={10} fill={person.tint.fg} />
+          <Circle cx={20} cy={15.5} r={7} fill={tint.fg} />
+          <Ellipse cx={20} cy={37} rx={12.5} ry={10} fill={tint.fg} />
         </Svg>
       )}
     </View>

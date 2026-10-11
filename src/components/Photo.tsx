@@ -2,6 +2,7 @@ import { StyleProp, View, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ItemPhoto } from '@/api/db';
+import { photoUri } from '@/api/items';
 import { colors, isDark, swatchFor } from '@/theme';
 import { Icon } from './Icon';
 import { Sans } from './Text';
@@ -9,8 +10,9 @@ import { Sans } from './Text';
 /** A photo, or a flat placeholder block when there's no file yet. */
 export function Photo({ photo, style, label, radius = 16 }: { photo: Pick<ItemPhoto, 'id' | 'path'>; style?: StyleProp<ViewStyle>; label?: boolean; radius?: number }) {
   const base = [{ borderRadius: radius, overflow: 'hidden' as const }, style];
-  if (photo.path != null) {
-    const source = typeof photo.path === 'string' ? { uri: photo.path } : photo.path;
+  const uri = photo.path ? photoUri(photo.path) : undefined;
+  if (uri) {
+    const source = { uri };
     return (
       <View style={base}>
         <Image source={source} style={{ flex: 1 }} contentFit="cover" transition={150} />

@@ -1,24 +1,15 @@
-// In-memory stand-in for the Supabase tables in the build plan. Shapes match the
-// nine tables so the api/ files can swap to supabase-js without touching screens.
+// Local copy of the Supabase tables the signed-in person is allowed to see.
+// sync.ts fills it from the database (the database's own rules decide what comes back),
+// and the other api/ files read it synchronously so screens stay simple.
 import { useSyncExternalStore } from 'react';
-import { seed } from './seed';
 
 export type Visibility = 'anyone' | 'followers' | 'specific';
-export type EventKind = 'list_created' | 'item_added' | 'asked' | 'item_done' | 'list_done';
+export type EventKind = 'list_created' | 'item_added' | 'open_invite' | 'item_done' | 'list_done';
 
-export type Profile = {
-  id: string;
-  username: string;
-  name: string;
-  avatar_path: string | null;
-  // mock only: placeholder avatar colors, and padding so counts match the canvas
-  tint: { bg: string; fg: string };
-  base_followers?: number;
-  base_following?: number;
-};
+export type Profile = { id: string; username: string; name: string; profile_photo: string | null; created_at: string };
 export type Follow = { follower_id: string; followee_id: string; created_at: string };
-export type List = { id: string; owner_id: string; title: string; visibility: Visibility; completed_at: string | null; created_at: string };
-export type ListMember = { list_id: string; user_id: string; role: 'owner' | 'member'; status: 'invited' | 'joined' };
+export type List = { id: string; title: string; visibility: Visibility; completed_at: string | null; created_at: string };
+export type ListMember = { list_id: string; user_id: string; status: 'invited' | 'joined'; invited_by: string | null; created_at: string };
 export type ListViewer = { list_id: string; user_id: string };
 export type Item = {
   id: string;
@@ -26,21 +17,23 @@ export type Item = {
   title: string;
   notes: string;
   date: string | null; // YYYY-MM-DD
-  asking: boolean;
-  asked_at: string | null;
+  open_invite: boolean;
+  caption: string | null;
   done_at: string | null;
   done_by: string | null;
-  position: number;
-  caption?: string; // not in the plan's items table yet, see README
+  created_at: string;
 };
-export type PhotoSource = string | number | null; // uri, bundled asset, or placeholder
-export type ItemPhoto = { id: string; item_id: string; path: PhotoSource; position: number; added_by: string };
+/** path is a storage path in the photos bucket, or a local file uri while it's uploading. */
+export type ItemPhoto = { id: string; item_id: string; path: string; position: number; added_by: string | null; created_at: string };
 export type Interest = { item_id: string; user_id: string; created_at: string };
 export type FeedEvent = { id: string; actor_id: string; kind: EventKind; list_id: string; item_id: string | null; created_at: string };
 
+/** loading: checking for a saved sign-in · signedOut · needsProfile: signed in, no profile row yet · ready */
+export type Status = 'loading' | 'signedOut' | 'needsProfile' | 'ready';
+
 export type Db = {
+  status: Status;
   me: string;
-  signedIn: boolean;
   phone: string;
   profiles: Profile[];
   follows: Follow[];
@@ -51,11 +44,24 @@ export type Db = {
   item_photos: ItemPhoto[];
   interests: Interest[];
   events: FeedEvent[];
-  // mock only: phone numbers "in your contacts" that match_contacts would return
-  contacts: string[];
+  /** storage path -> signed url for photos in the private bucket */
+  photoUrls: Record<string, string>;
 };
 
-export const db: Db = seed();
+export const emptyTables = () => ({
+  profiles: [] as Profile[],
+  follows: [] as Follow[],
+  lists: [] as List[],
+  list_members: [] as ListMember[],
+  list_viewers: [] as ListViewer[],
+  items: [] as Item[],
+  item_photos: [] as ItemPhoto[],
+  interests: [] as Interest[],
+  events: [] as FeedEvent[],
+  photoUrls: {} as Record<string, string>,
+});
+
+export const db: Db = { status: 'loading', me: '', phone: '', ...emptyTables() };
 
 let version = 0;
 const listeners = new Set<() => void>();
@@ -76,12 +82,6 @@ function subscribe(l: () => void) {
 export function useDb() {
   useSyncExternalStore(subscribe, () => version, () => version);
   return db;
-}
-
-let counter = 0;
-export function newId(prefix: string) {
-  counter++;
-  return `${prefix}_${Date.now().toString(36)}${counter}`;
 }
 
 export const now = () => new Date().toISOString();

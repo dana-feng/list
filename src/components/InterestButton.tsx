@@ -10,7 +10,7 @@ import { Mono, SansBold } from './Text';
 export function InterestButton({ itemId, showCount }: { itemId: string; showCount?: boolean }) {
   useDb();
   const item = getItem(itemId);
-  if (!item || !item.asking || isMember(item.list_id)) return null;
+  if (!item || !item.open_invite || isMember(item.list_id)) return null;
   const on = isInterested(itemId);
   const count = interestedPeople(itemId).length;
   return (

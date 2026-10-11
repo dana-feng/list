@@ -25,7 +25,7 @@ export function ItemRow({ item, member, onCheck }: { item: Item; member: boolean
     if (member) {
       const stars = interestedPeople(item.id).length;
       if (stars) meta.push(`★ ${stars}`);
-      if (item.asking) meta.push('on the feed');
+      if (item.open_invite) meta.push('on the feed');
     }
   }
   return (
