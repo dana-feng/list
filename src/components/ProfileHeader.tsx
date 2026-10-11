@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { router } from 'expo-router';
 import type { Profile } from '@/api/db';
 import { listsDoneCount, listsForProfile } from '@/api/lists';
 import { followCounts } from '@/api/profiles';
@@ -18,8 +19,8 @@ export function ProfileHeader({ person, action }: { person: Profile; action?: Re
         <Avatar person={person} size={80} ring={colors.cream} />
         <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-around', paddingLeft: space.lg }}>
           <Count n={lists} label={lists === 1 ? 'list' : 'lists'} />
-          <Count n={followers} label="followers" />
-          <Count n={following} label="following" />
+          <Count n={followers} label="followers" onPress={() => router.push(`/user/${person.username}/follows?mode=followers`)} />
+          <Count n={following} label="following" onPress={() => router.push(`/user/${person.username}/follows?mode=following`)} />
         </View>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: space.lg }}>
@@ -33,11 +34,11 @@ export function ProfileHeader({ person, action }: { person: Profile; action?: Re
   );
 }
 
-function Count({ n, label }: { n: number; label: string }) {
+function Count({ n, label, onPress }: { n: number; label: string; onPress?: () => void }) {
   return (
-    <View style={{ alignItems: 'center' }}>
+    <Pressable onPress={onPress} disabled={!onPress} hitSlop={10} accessibilityRole={onPress ? 'button' : undefined} accessibilityLabel={`${n} ${label}`} style={{ alignItems: 'center' }}>
       <Serif size={23}>{n}</Serif>
       <Sans size={13}>{label}</Sans>
-    </View>
+    </Pressable>
   );
 }
