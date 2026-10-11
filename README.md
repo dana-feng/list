@@ -2,6 +2,8 @@
 
 Expo (React Native) app, iOS first, on Supabase. Everything you do in the app (sign-up, lists, things, check-offs, stars, follows, photos) is saved to the database.
 
+The build plan (data model, visibility rules, screens, what's left before TestFlight) is in [docs/PLAN.md](docs/PLAN.md).
+
 ## Run it
 
 ```bash
