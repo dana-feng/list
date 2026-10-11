@@ -103,6 +103,31 @@ export function updateItem(itemId: string, patch: Partial<Pick<Item, 'title' | '
   write(() => supabase.from('items').update(patch).eq('id', itemId), 'your changes');
 }
 
+/** Takes a thing off its list for good, along with its photos, stars and feed posts. */
+export function deleteItem(itemId: string) {
+  const item = getItem(itemId);
+  if (!item || !isMember(item.list_id)) return;
+  // photos still uploading are queued ahead of this, so they'll be at their storage path by the time it runs
+  const paths = photosFor(itemId).map((p) => (isLocal(p.path) ? `${item.list_id}/${itemId}/${p.id}.jpg` : p.path));
+  db.items = db.items.filter((i) => i.id !== itemId);
+  db.item_photos = db.item_photos.filter((p) => p.item_id !== itemId);
+  db.interests = db.interests.filter((i) => i.item_id !== itemId);
+  db.events = db.events.filter((e) => e.item_id !== itemId);
+  const list = getList(item.list_id);
+  if (list) {
+    // same rule as the database: a list is finished when it has things and none are open
+    const { done, total } = listProgress(list.id);
+    if (total === 0 || done < total) list.completed_at = null;
+    else list.completed_at ??= now();
+  }
+  commit();
+  write(async () => {
+    const res = await supabase.from('items').delete().eq('id', itemId);
+    if (!res.error && paths.length) await supabase.storage.from('photos').remove(paths);
+    return res;
+  }, 'that');
+}
+
 /** Adds a picked photo (local file uri): shows it right away, uploads it, then saves the row. */
 export function addPhoto(itemId: string, uri: string) {
   const item = getItem(itemId);

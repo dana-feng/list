@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { useDb } from '@/api/db';
-import { addItem, addPhoto, getItem, interestedPeople, markDone, photosFor, removePhoto, undoDone, updateItem } from '@/api/items';
+import { addItem, addPhoto, deleteItem, getItem, interestedPeople, markDone, photosFor, removePhoto, undoDone, updateItem } from '@/api/items';
 import { canViewList, getList, isMember, listPeople, listProgress } from '@/api/lists';
 import { AskButton } from '@/components/AskButton';
 import { Checkbox } from '@/components/Checkbox';
@@ -36,12 +36,16 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const isNew = !id;
   const [editing, setEditing] = useState(isNew);
   const [picking, setPicking] = useState(isNew && !listId);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleted, setDeleted] = useState(false);
   const [draft, setDraft] = useState<Draft>({
     listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, notes: item?.notes ?? '', open_invite: false, photos: [],
   });
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const list = draft.listId ? getList(draft.listId) : undefined;
 
+  // deleted here: stay blank while the screen slides away
+  if (deleted) return <Screen header={<Header />}>{null}</Screen>;
   if (!isNew && (!item || !list || !canViewList(list.id))) {
     return (
       <Screen header={<Header />}>
@@ -58,7 +62,13 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
 
   const startEdit = () => {
     if (item) set({ title: item.title, date: item.date, notes: item.notes });
+    setConfirmingDelete(false);
     setEditing(true);
+  };
+  const destroy = () => {
+    setDeleted(true);
+    deleteItem(item!.id);
+    goBack();
   };
   const save = () => {
     if (isNew) {
@@ -160,6 +170,25 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
             <Dots />
             <Mono size={13} style={{ marginBottom: space.md }}>notes</Mono>
             <NotesField value={editing ? draft.notes : item!.notes} onChange={(notes) => set({ notes })} editing={editing} />
+          </>
+        ) : null}
+
+        {editing && item ? (
+          <>
+            <Dots />
+            {confirmingDelete ? (
+              <View style={{ alignItems: 'center', gap: space.sm }}>
+                <Sans center color={colors.inkSoft} style={{ maxWidth: 280 }}>This takes it off the list for good, with its photos and stars.</Sans>
+                <View style={{ flexDirection: 'row', gap: space.xl }}>
+                  <Pressable onPress={destroy} hitSlop={8} accessibilityRole="button"><SansBold color={colors.danger}>Delete it</SansBold></Pressable>
+                  <Pressable onPress={() => setConfirmingDelete(false)} hitSlop={8} accessibilityRole="button"><SansBold>Keep it</SansBold></Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable onPress={() => setConfirmingDelete(true)} style={{ alignItems: 'center' }} accessibilityRole="button">
+                <SansBold size={16} color={colors.danger}>Delete this thing</SansBold>
+              </Pressable>
+            )}
           </>
         ) : null}
       </FolderCard>

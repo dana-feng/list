@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Item, useDb } from '@/api/db';
-import { itemsForList, markDone, undoDone } from '@/api/items';
-import { canViewList, getList, invitedBy, isMember, listPeople, listProgress, membership, progressLabel, respondInvite, setVisibility, viewerIds, visibilityLabel } from '@/api/lists';
+import { deleteItem, itemsForList, markDone, undoDone } from '@/api/items';
+import { canViewList, getList, invitedBy, isMember, listPeople, listProgress, membership, progressLabel, renameList, respondInvite, setVisibility, viewerIds, visibilityLabel } from '@/api/lists';
 import { AvatarStack } from '@/components/Avatar';
 import { DoneToast } from '@/components/DoneToast';
 import { FolderCard } from '@/components/FolderCard';
@@ -13,15 +13,23 @@ import { ItemRow } from '@/components/ItemRow';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Screen } from '@/components/Screen';
 import { Mono, Sans, SansBold, Serif } from '@/components/Text';
+import { TextAction } from '@/components/TextAction';
+import { TitleField } from '@/components/TitleField';
 import { VisibilityPicker } from '@/components/VisibilityPicker';
 import { colors, space } from '@/theme';
 
-/** A list, yours or a friend's. Members get checkboxes and the paper plane; everyone else gets stars. */
+/**
+ * A list, yours or a friend's. Members get checkboxes and the paper plane; everyone else gets stars.
+ * Members can also Edit: rename the list and take things off it. Nothing changes until Done.
+ */
 export default function ListScreen() {
   const db = useDb();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [toast, setToast] = useState<Item | null>(null);
   const [pickingVisibility, setPickingVisibility] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState('');
+  const [removed, setRemoved] = useState<string[]>([]);
   const list = getList(id);
 
   if (!list || !canViewList(id)) {
@@ -37,7 +45,27 @@ export default function ListScreen() {
   const invited = membership(id)?.status === 'invited';
   const owner = member; // everyone on a list is an equal owner
   const { done, total } = listProgress(id);
-  const { open, done: finished } = itemsForList(id);
+  const items = itemsForList(id);
+  const open = items.open.filter((i) => !removed.includes(i.id));
+  const finished = items.done.filter((i) => !removed.includes(i.id));
+
+  const startEdit = () => {
+    setTitle(list.title);
+    setRemoved([]);
+    setToast(null);
+    setPickingVisibility(false);
+    setEditing(true);
+  };
+  const stopEdit = () => {
+    setRemoved([]);
+    setEditing(false);
+  };
+  const save = () => {
+    renameList(id, title);
+    removed.forEach(deleteItem);
+    stopEdit();
+  };
+  const remove = editing ? (item: Item) => setRemoved((r) => [...r, item.id]) : undefined;
 
   const check = (item: Item) => {
     if (item.done_at) {
@@ -57,7 +85,13 @@ export default function ListScreen() {
   return (
     <Screen
       tabBar={member ? 'lists' : 'home'}
-      header={<Header />}
+      header={
+        editing ? (
+          <Header left={<TextAction label="Cancel" quiet onPress={stopEdit} />} right={<TextAction label="Done" onPress={save} />} />
+        ) : (
+          <Header right={member ? <TextAction label="Edit" onPress={startEdit} /> : undefined} />
+        )
+      }
       overlay={
         toast ? (
           <DoneToast
@@ -70,10 +104,14 @@ export default function ListScreen() {
       }
     >
       <FolderCard tab={progressLabel(id)} style={{ marginHorizontal: -4, marginBottom: space.lg }}>
-        <Serif size={28} style={{ lineHeight: 32 }}>{list.title}</Serif>
+        {editing ? (
+          <TitleField editing value={title} onChange={setTitle} placeholder="name your list" />
+        ) : (
+          <Serif size={28} style={{ lineHeight: 32 }}>{list.title}</Serif>
+        )}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.lg, marginBottom: space.lg }}>
           <AvatarStack people={listPeople(id)} size={30} />
-          {owner ? (
+          {owner && !editing ? (
             <Pressable onPress={() => setPickingVisibility(!pickingVisibility)} hitSlop={10} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }} accessibilityRole="button" accessibilityLabel={`Who can see it: ${visibilityLabel(list)}`}>
               <Mono size={13}>{visibilityLabel(list)}</Mono>
               <Icon name="down" size={14} />
@@ -109,13 +147,14 @@ export default function ListScreen() {
       ) : null}
 
       <View style={{ marginHorizontal: -4 }}>
-        {open.map((item) => <ItemRow key={item.id} item={item} member={member} onCheck={check} />)}
-        {member ? (
+        {open.map((item) => <ItemRow key={item.id} item={item} member={member} onCheck={check} onRemove={remove} />)}
+        {member && !editing ? (
           <Pressable onPress={() => router.push(`/item/new?list=${id}`)} style={{ paddingHorizontal: 10, paddingVertical: space.lg }} accessibilityRole="button">
             <SansBold size={16} color={colors.dark}>+ add a thing</SansBold>
           </Pressable>
         ) : <View style={{ height: space.md }} />}
-        {finished.map((item) => <ItemRow key={item.id} item={item} member={member} onCheck={check} />)}
+        {finished.map((item) => <ItemRow key={item.id} item={item} member={member} onCheck={check} onRemove={remove} />)}
+        {removed.length ? <Mono color={colors.inkSoft} style={{ paddingHorizontal: 10, paddingTop: space.sm }}>{removed.length} to delete · tap Done to confirm</Mono> : null}
         {total === 0 && !member ? <Sans color={colors.inkSoft}>Nothing on this list yet.</Sans> : null}
       </View>
     </Screen>
