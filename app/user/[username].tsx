@@ -26,7 +26,7 @@ export default function User() {
   }
   const rows = listsForProfile(person.id);
   return (
-    <Screen tabBar="home" header={<Header center={<Mono size={14} center>@{person.username}</Mono>} right={<View style={{ width: 26 }} />} />}>
+    <Screen tabBar="home" refreshable header={<Header center={<Mono size={14} center>@{person.username}</Mono>} right={<View style={{ width: 26 }} />} />}>
       <ProfileHeader person={person} action={<FollowButton userId={person.id} />} />
       {rows.length ? <FolderGrid rows={rows} /> : (
         <View style={{ paddingVertical: space.xxl * 2, alignItems: 'center', gap: space.sm }}>

@@ -20,6 +20,7 @@ export default function Home() {
   return (
     <Screen
       insideTabs
+      refreshable
       header={
         <View style={{ paddingHorizontal: space.xl }}>
           <View style={styles.top}>

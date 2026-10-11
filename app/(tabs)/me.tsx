@@ -18,6 +18,7 @@ export default function Me() {
   return (
     <Screen
       insideTabs
+      refreshable
       header={
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.xl, minHeight: 44, marginBottom: space.sm }}>
           <Mono size={14}>@{person.username}</Mono>
