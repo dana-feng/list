@@ -32,8 +32,11 @@ type Draft = { listId: string | null; title: string; date: string | null; notes:
  */
 export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   useDb();
-  const item = id ? getItem(id) : undefined;
-  const isNew = !id;
+  // once a new thing is added it turns into the viewing screen in place, no navigation
+  const [createdId, setCreatedId] = useState<string>();
+  const itemId = id ?? createdId;
+  const item = itemId ? getItem(itemId) : undefined;
+  const isNew = !itemId;
   const [editing, setEditing] = useState(isNew);
   const [picking, setPicking] = useState(isNew && !listId);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -74,7 +77,9 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     if (isNew) {
       if (!draft.listId) return;
       const newId = addItem({ list_id: draft.listId, title: draft.title, date: draft.date, notes: draft.notes, open_invite: draft.open_invite, photos: draft.photos });
-      router.replace(`/item/${newId}`);
+      setCreatedId(newId);
+      setPicking(false);
+      setEditing(false);
     } else {
       updateItem(item!.id, { title: draft.title.trim() || item!.title, date: draft.date, notes: draft.notes });
       setEditing(false);
