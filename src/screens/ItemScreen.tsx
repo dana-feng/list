@@ -23,7 +23,7 @@ import { ScribblePad } from '@/components/ScribblePad';
 import { FolderScreen } from '@/components/Screen';
 import { Switch } from '@/components/Switch';
 import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
-import { VisibilityButton, choiceLabel, choiceOf } from '@/components/VisibilityPicker';
+import { VisibilityButton, choiceLabel } from '@/components/VisibilityPicker';
 import { monthDay, toDay } from '@/lib';
 import { pickPhotos } from '@/pickPhotos';
 import { colors } from '@/theme';
@@ -34,7 +34,7 @@ type Draft = { listId: string | null; title: string; date: string | null; notes:
 function whoCanSee(listId: string, member: boolean) {
   const list = getList(listId);
   if (!list) return '—';
-  const choice = choiceOf(list.visibility, viewerIds(listId).length);
+  const choice = list.visibility;
   if (!member && choice === 'followers') {
     const owner = listPeople(listId)[0];
     return owner ? `${owner.name}'s followers` : 'followers';
@@ -66,10 +66,10 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const list = draft.listId ? getList(draft.listId) : undefined;
 
   // deleted here: stay blank while the screen slides away
-  if (deleted) return <FolderScreen tabs="lists" header={<Header />} folderTabs={<FolderTab label=" " />}>{null}</FolderScreen>;
+  if (deleted) return <FolderScreen header={<Header />} folderTabs={<FolderTab label=" " />}>{null}</FolderScreen>;
   if (!isNew && (!item || !list || !canViewList(list.id))) {
     return (
-      <FolderScreen tabs="home" header={<Header />} folderTabs={<FolderTab label="item" />}>
+      <FolderScreen header={<Header />} folderTabs={<FolderTab label="item" />}>
         <Hand size={24}>can’t open this</Hand>
         <Mono size={12} color={colors.inkSoft}>it’s on a private list, or it’s gone.</Mono>
       </FolderScreen>
@@ -183,7 +183,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   );
 
   return (
-    <FolderScreen tabs={member ? 'lists' : 'home'} scrollEnabled={!armed} header={header} folderTabs={tab}>
+    <FolderScreen scrollEnabled={!armed} header={header} folderTabs={tab}>
       {editing && !isNew ? <Mono size={11} color={colors.inkSoft} style={{ marginHorizontal: 4, marginBottom: 10 }}>editing — tap anything dashed</Mono> : null}
 
       {member && !editing && !done ? (

@@ -18,7 +18,6 @@ export default function Search() {
   const people = searchPeople(q);
   return (
     <FolderScreen
-      tabs="home"
       header={
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 8, paddingRight: 18 }}>
           <BackButton />

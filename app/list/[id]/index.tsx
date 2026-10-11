@@ -19,7 +19,7 @@ import { Paper } from '@/components/Paper';
 import { ProgressBar } from '@/components/ProgressBar';
 import { FolderScreen } from '@/components/Screen';
 import { Hand, Label, Mono } from '@/components/Text';
-import { Choice, choiceOf } from '@/components/VisibilityPicker';
+import { Choice } from '@/components/VisibilityPicker';
 import { names } from '@/lib';
 import { colors } from '@/theme';
 
@@ -47,7 +47,7 @@ export default function ListScreen() {
 
   if (!list || !canViewList(id)) {
     return (
-      <FolderScreen tabs="lists" header={<Header />} folderTabs={<FolderTab label="list" />}>
+      <FolderScreen header={<Header />} folderTabs={<FolderTab label="list" />}>
         <Hand size={24}>can’t open this list</Hand>
         <Mono size={12} color={colors.inkSoft}>it’s private, or it’s gone.</Mono>
       </FolderScreen>
@@ -93,7 +93,7 @@ export default function ListScreen() {
   const startEdit = () => {
     setTitle(list.title);
     setInvites([]);
-    setChoice(choiceOf(list.visibility, viewerIds(id).length));
+    setChoice(list.visibility);
     setViewerDraft(viewerIds(id));
     setRemoved([]);
     setArmed(null);
@@ -106,15 +106,11 @@ export default function ListScreen() {
   const save = () => {
     renameList(id, title);
     if (invites.length) inviteMembers(id, invites);
-    const before = choiceOf(list.visibility, viewerIds(id).length);
-    if (choice === 'me' || choice === 'specific') {
-      const next = choice === 'me' ? [] : viewers;
+    if (choice === 'specific') {
       const was = viewerIds(id);
-      if (next.length !== was.length || next.some((v) => !was.includes(v))) setViewers(id, next);
-      if (list.visibility !== 'specific') setVisibility(id, 'specific');
-    } else if (choice !== before) {
-      setVisibility(id, choice);
+      if (viewers.length !== was.length || viewers.some((v) => !was.includes(v))) setViewers(id, viewers);
     }
+    if (choice !== list.visibility) setVisibility(id, choice);
     removed.forEach(deleteItem);
     stopEdit();
   };
@@ -136,7 +132,6 @@ export default function ListScreen() {
 
   return (
     <FolderScreen
-      tabs={member ? 'lists' : 'home'}
       scrollEnabled={!armed}
       header={
         editing ? (

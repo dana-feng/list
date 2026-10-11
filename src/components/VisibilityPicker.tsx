@@ -5,18 +5,12 @@ import { Icon } from './Icon';
 import { Paper } from './Paper';
 import { Mono, MonoMedium } from './Text';
 
-/**
- * The four choices the design offers. There's no separate "just me" setting in the database:
- * it's "specific people" with nobody picked, which only the people on the list can see.
- */
-export type Choice = 'followers' | 'specific' | 'anyone' | 'me';
-
-export const choiceOf = (visibility: Visibility, viewers: number): Choice =>
-  visibility === 'specific' && viewers === 0 ? 'me' : visibility;
+/** Who can see a list: followers, specific people, anyone, or just the people on it. */
+export type Choice = Visibility;
 
 export function choiceLabel(choice: Choice, viewers: number) {
   if (choice === 'specific') return `${viewers} ${viewers === 1 ? 'person' : 'people'}`;
-  if (choice === 'me') return 'just me';
+  if (choice === 'just_me') return 'just me';
   return choice;
 }
 
@@ -24,7 +18,7 @@ const OPTIONS: { value: Choice; title: string; sub: string }[] = [
   { value: 'followers', title: 'followers', sub: 'people who follow you' },
   { value: 'specific', title: 'specific people', sub: 'only people you pick' },
   { value: 'anyone', title: 'anyone', sub: 'anyone who finds your profile' },
-  { value: 'me', title: 'just me', sub: 'private for now' },
+  { value: 'just_me', title: 'just me', sub: 'only the people on it' },
 ];
 
 /** The dashed "who can see" button: people icon, current choice, chevron. */

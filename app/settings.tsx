@@ -57,7 +57,6 @@ export default function Settings() {
   if (editing) {
     return (
       <FolderScreen
-        tabs="lists"
         header={<Header left={<TextAction label="cancel" onPress={() => setEditing(false)} />} title="edit profile" right={<SaveAction onPress={save} disabled={!canSave} />} />}
         folderTabs={<FolderTab label="you" />}
       >
@@ -90,7 +89,7 @@ export default function Settings() {
   }
 
   return (
-    <FolderScreen tabs="lists" header={<Header title="settings" />} folderTabs={<FolderTab label="you + your account" />}>
+    <FolderScreen header={<Header title="settings" />} folderTabs={<FolderTab label="you + your account" />}>
       <Paper onPress={startEdit} fill={colors.sage} edge="ink" shape={4} lean={2} style={styles.me} accessibilityLabel="Edit profile">
         <Avatar person={person} size={52} fill={colors.cream} />
         <View style={{ flex: 1, gap: 2 }}>

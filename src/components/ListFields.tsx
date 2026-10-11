@@ -104,7 +104,7 @@ export function ListFields({ title, onTitle, owners, lockedOwners = [], onOwners
         title="who can see it"
         initial={viewers}
         onClose={() => setPicking(null)}
-        onDone={(ids) => { onVisibility(ids.length ? 'specific' : 'me', ids); setPicking(null); }}
+        onDone={(ids) => { onVisibility(ids.length ? 'specific' : 'just_me', ids); setPicking(null); }}
       /> : null}
     </View>
   );

@@ -2,21 +2,20 @@ import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, space, TAB_BAR_HEIGHT } from '@/theme';
+import { colors, space } from '@/theme';
 import { Icon, IconName } from './Icon';
 import { Paper } from './Paper';
 import { Hand, Mono, MonoMedium } from './Text';
 
 export type TabName = 'home' | 'lists';
 
-/** From a screen opened on top of the tabs: close everything and land on a tab. */
-export function goToTab(tab: TabName) {
-  if (router.canDismiss()) router.dismissAll();
-  router.navigate(tab === 'home' ? '/' : '/me');
-}
+const TAB = 44;
+const TAB_UP = 52;
+/** How far the tabs reach down into the home-indicator area: enough to look attached, not the whole inset. */
+const reach = (inset: number) => Math.max(6, inset - 16);
 
-/** Home, + and your lists as folder tabs along the bottom. + opens the "new" menu over the screen. */
-export function TabBar({ active, onTab = goToTab }: { active: TabName | null; onTab?: (tab: TabName) => void }) {
+/** Home, + and your lists as folder tabs along the bottom of the two root screens. + opens the "new" menu over the screen. */
+export function TabBar({ active, onTab }: { active: TabName | null; onTab: (tab: TabName) => void }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -33,10 +32,10 @@ export function TabBar({ active, onTab = goToTab }: { active: TabName | null; on
 function Tabs({ active, plusOpen, onPlus, onTab }: { active: TabName | null; plusOpen: boolean; onPlus: () => void; onTab: (tab: TabName) => void }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.bar, { height: TAB_BAR_HEIGHT + insets.bottom }]} pointerEvents="box-none">
-      <Tab icon="home" label="Home" color={colors.olive} up={active === 'home'} bottom={insets.bottom} onPress={() => onTab('home')} />
-      <Tab icon={plusOpen ? 'x' : 'plus'} label={plusOpen ? 'Close' : 'Add an item or start a list'} color={colors.paper} ink={colors.ink} up={plusOpen} bottom={insets.bottom} onPress={onPlus} />
-      <Tab icon="list" label="Your lists" color={colors.bark} up={active === 'lists'} bottom={insets.bottom} onPress={() => onTab('lists')} />
+    <View style={[styles.bar, { height: TAB_UP + reach(insets.bottom) }]} pointerEvents="box-none">
+      <Tab icon="home" label="Home" color={colors.olive} up={active === 'home'} bottom={reach(insets.bottom)} onPress={() => onTab('home')} />
+      <Tab icon={plusOpen ? 'x' : 'plus'} label={plusOpen ? 'Close' : 'Add an item or start a list'} color={colors.paper} ink={colors.ink} up={plusOpen} bottom={reach(insets.bottom)} onPress={onPlus} />
+      <Tab icon="list" label="Your lists" color={colors.bark} up={active === 'lists'} bottom={reach(insets.bottom)} onPress={() => onTab('lists')} />
     </View>
   );
 }
@@ -48,7 +47,7 @@ function Tab({ icon, label, color, ink = colors.paper, up, bottom, onPress }: { 
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: up }}
-      style={[styles.tab, { backgroundColor: color, height: (up ? 60 : 50) + bottom, paddingBottom: bottom }]}
+      style={[styles.tab, { backgroundColor: color, height: (up ? TAB_UP : TAB) + bottom, paddingBottom: bottom }]}
     >
       <Icon name={icon} size={icon === 'plus' || icon === 'x' ? 22 : 20} color={ink} strokeWidth={2.1} />
     </Pressable>
@@ -62,7 +61,7 @@ function PlusMenu({ close }: { close: () => void }) {
     router.push(path);
   };
   return (
-    <View style={[styles.menu, { bottom: TAB_BAR_HEIGHT + insets.bottom + space.md }]}>
+    <View style={[styles.menu, { bottom: TAB_UP + reach(insets.bottom) + space.md }]}>
       <Paper fill={colors.paper} edge="ink" shape={1} style={styles.menuTab}>
         <MonoMedium size={11.5}>new</MonoMedium>
       </Paper>

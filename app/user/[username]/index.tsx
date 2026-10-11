@@ -18,7 +18,7 @@ export default function User() {
   const person = getProfileByUsername(username);
   if (!person) {
     return (
-      <Screen tabs="home" header={<Header />}>
+      <Screen header={<Header />}>
         <Hand size={24} color={colors.paper}>nobody here</Hand>
         <Mono size={12} color={colors.onDarkSoft}>@{username} doesn’t exist.</Mono>
       </Screen>
@@ -37,7 +37,7 @@ export default function User() {
       />
     );
   return (
-    <Screen tabs="home" refreshable header={<Header center={<MonoMedium size={14} color={colors.paper}>@{person.username}</MonoMedium>} />}>
+    <Screen refreshable header={<Header center={<MonoMedium size={14} color={colors.paper}>@{person.username}</MonoMedium>} />}>
       <ProfileHeader person={person} action={follow} />
       {rows.length ? <FolderGrid rows={rows} /> : (
         <View style={{ paddingVertical: 48, alignItems: 'center', gap: 8 }}>

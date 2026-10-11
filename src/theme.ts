@@ -73,4 +73,4 @@ export const tintFor = (id: string) => [colors.sage, colors.straw, colors.cream,
 export const swatchFor = (id: string) => [colors.moss, colors.straw, colors.sage, colors.cream][hash(id) % 4];
 
 /** Height of the tab row above the safe area; screens pad their scroll content by this. */
-export const TAB_BAR_HEIGHT = 64;
+export const TAB_BAR_HEIGHT = 52;

@@ -3,7 +3,6 @@ import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleProp, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { refresh } from '@/api/sync';
 import { colors, space, TAB_BAR_HEIGHT } from '@/theme';
-import { TabBar, TabName } from './TabBar';
 
 type Common = {
   children: ReactNode;
@@ -15,15 +14,13 @@ type Common = {
   scroll?: boolean;
   scrollEnabled?: boolean;
   overlay?: ReactNode;
-  /** The (tabs) layout draws the tab bar; just leave room for it. */
+  /** The (tabs) layout draws the tab bar; just leave room for it. Screens opened on top of the tabs don't show it. */
   insideTabs?: boolean;
-  /** Draw the tab bar on a screen opened over the tabs, with this tab raised (null: none raised). */
-  tabs?: TabName | null;
 };
 
-function useBottomPad(insideTabs?: boolean, tabs?: TabName | null, footer?: ReactNode) {
+function useBottomPad(insideTabs?: boolean, footer?: ReactNode) {
   const insets = useSafeAreaInsets();
-  if (insideTabs || tabs !== undefined) return TAB_BAR_HEIGHT + insets.bottom + space.xl;
+  if (insideTabs) return TAB_BAR_HEIGHT + insets.bottom + space.xl;
   return footer ? space.lg : insets.bottom + space.xxl;
 }
 
@@ -37,7 +34,7 @@ function useRefresher(on?: boolean) {
   return <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.paper} colors={[colors.ink]} />;
 }
 
-function Shell({ header, footer, overlay, tabs, children }: Pick<Common, 'header' | 'footer' | 'overlay' | 'tabs' | 'children'>) {
+function Shell({ header, footer, overlay, children }: Pick<Common, 'header' | 'footer' | 'overlay' | 'children'>) {
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.night}>
@@ -46,19 +43,18 @@ function Shell({ header, footer, overlay, tabs, children }: Pick<Common, 'header
         {children}
         {footer ? <View style={{ paddingHorizontal: space.xl, paddingTop: space.sm, paddingBottom: insets.bottom + space.lg }}>{footer}</View> : null}
       </KeyboardAvoidingView>
-      {tabs !== undefined ? <TabBar active={tabs} /> : null}
       {overlay}
     </View>
   );
 }
 
 /** A screen straight on the dark background: profiles, sign-up, "done". */
-export function Screen({ children, header, footer, refreshable, scroll = true, scrollEnabled, overlay, insideTabs, tabs, contentStyle }: Common & { contentStyle?: StyleProp<ViewStyle> }) {
-  const bottom = useBottomPad(insideTabs, tabs, footer);
+export function Screen({ children, header, footer, refreshable, scroll = true, scrollEnabled, overlay, insideTabs, contentStyle }: Common & { contentStyle?: StyleProp<ViewStyle> }) {
+  const bottom = useBottomPad(insideTabs, footer);
   const refresher = useRefresher(refreshable);
   const pad = [{ paddingHorizontal: 18, paddingBottom: bottom }, contentStyle];
   return (
-    <Shell header={header} footer={footer} overlay={overlay} tabs={tabs}>
+    <Shell header={header} footer={footer} overlay={overlay}>
       {scroll ? (
         <ScrollView
           style={styles.fill}
@@ -81,16 +77,16 @@ export function Screen({ children, header, footer, refreshable, scroll = true, s
  * The folder screen most of the app uses: a header on the dark background, folder tabs,
  * and one big paper folder holding the content.
  */
-export function FolderScreen({ children, header, footer, refreshable, scroll = true, scrollEnabled, overlay, insideTabs, tabs, folderTabs, roundCorner }: Common & {
+export function FolderScreen({ children, header, footer, refreshable, scroll = true, scrollEnabled, overlay, insideTabs, folderTabs, roundCorner }: Common & {
   /** The tab(s) sticking up from the folder. */
   folderTabs: ReactNode;
   /** Round the folder's top-left corner (when the active tab isn't the first one). */
   roundCorner?: boolean;
 }) {
-  const bottom = useBottomPad(insideTabs, tabs, footer);
+  const bottom = useBottomPad(insideTabs, footer);
   const refresher = useRefresher(refreshable);
   return (
-    <Shell header={header} footer={footer} overlay={overlay} tabs={tabs}>
+    <Shell header={header} footer={footer} overlay={overlay}>
       <View style={styles.folderTabs}>{folderTabs}</View>
       <View style={[styles.folder, roundCorner && { borderTopLeftRadius: 15 }]}>
         {scroll ? (

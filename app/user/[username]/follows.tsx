@@ -35,7 +35,6 @@ export default function Follows() {
 
   return (
     <FolderScreen
-      tabs={own ? 'lists' : 'home'}
       refreshable
       roundCorner={tab === 'following'}
       header={<Header title={person ? `${own ? 'your' : `${person.name}'s`} people` : `@${username}`} />}
