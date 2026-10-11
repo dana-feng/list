@@ -20,7 +20,7 @@ const VERB = {
   list_created: 'started a list',
 } as const;
 
-/** One post on Home: open invite, added a thing, did it (photo), finished a list, started a list. */
+/** One post on Home: open invite, added a thing, did it, finished a list, started a list. */
 export function FeedPost({ event }: { event: FeedEvent }) {
   const list = getList(event.list_id);
   const item = event.item_id ? getItem(event.item_id) : undefined;
@@ -31,7 +31,8 @@ export function FeedPost({ event }: { event: FeedEvent }) {
   const shared = event.kind === 'item_done' || event.kind === 'list_done';
   const people = shared ? listPeople(list.id) : [actor];
   const { done, total } = listProgress(list.id);
-  const photo = event.kind === 'item_done' && item ? photosFor(item.id).find((p) => p.path != null) : undefined;
+  // list posts have no photo of their own; anything about an item shows its first one
+  const photo = item ? photosFor(item.id).find((p) => p.path != null) : undefined;
   const open = () => router.push(item ? `/item/${item.id}` : `/list/${list.id}`);
 
   const meta: string[] = [];
@@ -52,9 +53,13 @@ export function FeedPost({ event }: { event: FeedEvent }) {
           {VERB[event.kind]} · {timeAgo(event.created_at)}
         </Sans>
       </Pressable>
+      {photo ? (
+        <Pressable onPress={open} accessibilityRole="button" accessibilityLabel={item!.title}>
+          <Photo photo={photo} style={styles.photo} />
+        </Pressable>
+      ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <Pressable onPress={open} style={{ flex: 1 }} accessibilityRole="button">
-          {photo ? <Photo photo={photo} style={styles.photo} /> : null}
           <Serif size={23} style={{ lineHeight: 27 }}>{item ? item.title : list.title}</Serif>
           <Mono color={colors.inkSoft} style={{ marginTop: 5 }}>{meta.join(' · ')}</Mono>
           {event.kind === 'list_done' ? (
