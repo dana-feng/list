@@ -122,7 +122,9 @@ export function write(run: () => PromiseLike<Result> | Promise<Result>, what = '
 /** Uploads a picked photo (a local file uri) and returns once it's stored. */
 export async function uploadImage(bucket: 'photos' | 'avatars', path: string, uri: string): Promise<Result> {
   const body = await (await fetch(uri)).arrayBuffer();
-  const { error } = await supabase.storage.from(bucket).upload(path, body, { contentType: 'image/jpeg', upsert: true });
+  // Every photo gets a new path, so this is always a plain upload. (upsert would also need
+  // read + update permission on the file, which the storage rules don't give.)
+  const { error } = await supabase.storage.from(bucket).upload(path, body, { contentType: 'image/jpeg' });
   return { error };
 }
 
