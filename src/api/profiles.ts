@@ -33,6 +33,13 @@ export function followCounts(userId: string) {
   };
 }
 
+/** Newest first. */
+const byNewest = (a: { created_at: string }, b: { created_at: string }) => b.created_at.localeCompare(a.created_at);
+export const followersOf = (userId: string) =>
+  db.follows.filter((f) => f.followee_id === userId).sort(byNewest).map((f) => getProfile(f.follower_id)!).filter(Boolean);
+export const followingOf = (userId: string) =>
+  db.follows.filter((f) => f.follower_id === userId).sort(byNewest).map((f) => getProfile(f.followee_id)!).filter(Boolean);
+
 /** People who follow you, for the "who can see it" and "who's on it" pickers. */
 export const myFollowers = () =>
   db.follows.filter((f) => f.followee_id === db.me).map((f) => getProfile(f.follower_id)!).filter(Boolean);
