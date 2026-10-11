@@ -86,6 +86,15 @@ export function createList(input: { title: string; visibility: Visibility; viewe
   return id;
 }
 
+export function renameList(listId: string, title: string) {
+  const list = getList(listId);
+  title = title.trim();
+  if (!list || !title || title === list.title) return;
+  list.title = title;
+  commit();
+  write(() => supabase.from('lists').update({ title }).eq('id', listId), 'the new name');
+}
+
 export function setVisibility(listId: string, visibility: Visibility) {
   const list = getList(listId);
   if (!list) return;
