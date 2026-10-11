@@ -1,5 +1,6 @@
-import { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { ReactNode, useState } from 'react';
+import { Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import type { Profile } from '@/api/db';
 import { listsDoneCount, listsForProfile } from '@/api/lists';
@@ -13,10 +14,15 @@ export function ProfileHeader({ person, action }: { person: Profile; action?: Re
   const lists = listsForProfile(person.id).filter((r) => !r.invited).length;
   const { followers, following } = followCounts(person.id);
   const done = listsDoneCount(person.id);
+  const [viewing, setViewing] = useState(false);
+  const { width, height } = useWindowDimensions();
+  const big = Math.min(width, height) - space.xl * 2;
   return (
     <View style={{ marginBottom: space.xl }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Avatar person={person} size={80} ring={colors.cream} />
+        <Pressable onPress={() => setViewing(true)} disabled={!person.profile_photo} accessibilityRole={person.profile_photo ? 'button' : undefined} accessibilityLabel={`View ${person.name}'s photo`}>
+          <Avatar person={person} size={80} ring={colors.cream} />
+        </Pressable>
         <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-around', paddingLeft: space.lg }}>
           <Count n={lists} label={lists === 1 ? 'list' : 'lists'} />
           <Count n={followers} label="followers" onPress={() => router.push(`/user/${person.username}/follows?mode=followers`)} />
@@ -30,6 +36,11 @@ export function ProfileHeader({ person, action }: { person: Profile; action?: Re
         </View>
         {action}
       </View>
+      <Modal visible={viewing} transparent animationType="fade" onRequestClose={() => setViewing(false)}>
+        <Pressable style={styles.dim} onPress={() => setViewing(false)} accessibilityRole="button" accessibilityLabel="Close photo">
+          <Image source={{ uri: person.profile_photo ?? undefined }} style={{ width: big, height: big, borderRadius: big / 2 }} contentFit="cover" transition={150} />
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -42,3 +53,7 @@ function Count({ n, label, onPress }: { n: number; label: string; onPress?: () =
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  dim: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(43,53,36,0.9)' },
+});
