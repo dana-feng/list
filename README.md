@@ -35,3 +35,19 @@ assets/               icons and the sample feed photo
 Not wired yet: Supabase, TanStack Query, real SMS codes, contacts matching (`expo-contacts`), photo upload (picked photos stay on the device).
 
 One thing the mocks need that the plan's schema doesn't have: a caption on "you did it". It's stored as `items.caption` here; the "say something about it" text on a finished list isn't stored anywhere.
+
+## Database (Supabase)
+
+The tables live in `supabase/migrations/` as SQL files, applied in order:
+
+- `…_create_tables.sql`: the 11 tables, indexes, `can_view_list` and the read/write rules
+- `…_feed_and_functions.sql`: feed posts and list completion (written by the database, not the app), plus `create_list`, `username_available`, `match_contacts`, `delete_account`
+- `…_storage.sql`: the private `photos` bucket and public `avatars` bucket
+
+Sign-in for v0 is phone + code with no texts: every tester's number is a test number whose code is always `000000`. Add numbers under `[auth.sms.test_otp]` in `supabase/config.toml` (local) and in the dashboard under Authentication > Sign In / Providers > Phone (hosted).
+
+```bash
+npx supabase link --project-ref <project ref>   # once
+npx supabase db push                            # apply new migrations to the hosted project
+npx supabase migration new <name>               # start a new change
+```
