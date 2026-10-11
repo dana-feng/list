@@ -1,7 +1,8 @@
-import { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ReactNode, useState } from 'react';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { refresh } from '@/api/sync';
 import { colors, space, TAB_BAR_HEIGHT } from '@/theme';
 import { TabBar, TabName } from './TabBar';
 
@@ -16,6 +17,8 @@ type Props = {
   insideTabs?: boolean;
   tone?: 'sage' | 'night' | 'cream';
   scroll?: boolean;
+  /** Pull down to reload from the server. */
+  refreshable?: boolean;
   overlay?: ReactNode;
 };
 
@@ -25,8 +28,14 @@ const GRADIENTS = {
   cream: [colors.cream, colors.cream, colors.cream],
 } as const;
 
-export function Screen({ children, header, footer, tabBar, insideTabs, tone = 'sage', scroll = true, overlay }: Props) {
+export function Screen({ children, header, footer, tabBar, insideTabs, tone = 'sage', scroll = true, refreshable, overlay }: Props) {
   const insets = useSafeAreaInsets();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    refresh().finally(() => setRefreshing(false));
+  };
+  const spinner = tone === 'night' ? colors.onDark : colors.ink;
   const hasTabs = !!tabBar || insideTabs;
   const bottomPad = hasTabs ? TAB_BAR_HEIGHT + insets.bottom + space.xl : footer ? space.lg : insets.bottom + space.xxl;
   return (
@@ -39,6 +48,7 @@ export function Screen({ children, header, footer, tabBar, insideTabs, tone = 's
             contentContainerStyle={{ paddingHorizontal: space.xl, paddingBottom: bottomPad }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            refreshControl={refreshable ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={spinner} colors={[spinner]} /> : undefined}
           >
             {children}
           </ScrollView>
