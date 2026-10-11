@@ -4,9 +4,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { commit, db } from '@/api/db';
 import { supabase } from '@/api/supabase';
 import { signInWithCode } from '@/api/sync';
-import { Mono, Sans, SansBold } from '@/components/Text';
+import { Button, LinkText } from '@/components/Button';
+import { Hand, Mono } from '@/components/Text';
 import { AuthStep } from '@/screens/AuthStep';
-import { colors } from '@/theme';
+import { colors, corners } from '@/theme';
 
 const RESEND_AFTER = 30;
 
@@ -62,11 +63,16 @@ export default function Code() {
   };
 
   return (
-    <AuthStep step={2} title="enter the code" body={`Sent to ${phone}`}>
-      <Pressable onPress={() => input.current?.focus()} style={{ flexDirection: 'row', gap: 8 }} accessibilityLabel="6-digit code">
+    <AuthStep
+      step={2}
+      title="enter the code"
+      body={`sent to ${phone}`}
+      footer={<Button label="next" tone="paper" disabled={code.length !== 6 || busy} onPress={() => submit(code)} />}
+    >
+      <Pressable onPress={() => input.current?.focus()} style={styles.boxes} accessibilityLabel="6-digit code">
         {Array.from({ length: 6 }, (_, i) => (
-          <View key={i} style={[styles.box, i === code.length && styles.active]}>
-            <SansBold size={24}>{code[i] ?? ''}</SansBold>
+          <View key={i} style={[styles.box, corners(i), { backgroundColor: code[i] ? colors.paper : colors.straw }, i === code.length && styles.active]}>
+            <Hand size={28}>{code[i] ?? ''}</Hand>
           </View>
         ))}
       </Pressable>
@@ -83,23 +89,24 @@ export default function Code() {
         accessibilityLabel="6-digit code"
         style={styles.hidden}
       />
-      {busy ? <ActivityIndicator color={colors.ink} style={{ marginTop: 20, alignSelf: 'flex-start' }} /> : null}
+      {busy ? <ActivityIndicator color={colors.paper} style={{ marginTop: 20, alignSelf: 'flex-start' }} /> : null}
       {problem ? (
-        <Sans color={colors.danger} style={{ marginTop: 20 }} accessibilityLiveRegion="polite">{problem}</Sans>
+        <Mono size={12} color={colors.paper} style={{ marginTop: 20, marginHorizontal: 4 }} accessibilityLiveRegion="polite">{problem}</Mono>
       ) : null}
-      {wait > 0 ? (
-        <Mono size={13} color={colors.inkSoft} style={{ marginTop: 20 }}>resend in 0:{String(wait).padStart(2, '0')}</Mono>
-      ) : (
-        <Pressable onPress={() => setWait(RESEND_AFTER)} style={{ marginTop: 20 }} accessibilityRole="button">
-          <SansBold>Resend code</SansBold>
-        </Pressable>
-      )}
+      <View style={{ marginTop: 18, marginHorizontal: 4 }}>
+        {wait > 0 ? (
+          <Mono size={11.5} color={colors.onDarkSoft}>didn’t get it? resend in 0:{String(wait).padStart(2, '0')}</Mono>
+        ) : (
+          <LinkText label="resend the code" color={colors.paper} onPress={() => setWait(RESEND_AFTER)} />
+        )}
+      </View>
     </AuthStep>
   );
 }
 
 const styles = StyleSheet.create({
-  box: { flex: 1, height: 58, borderRadius: 14, backgroundColor: colors.paper, borderWidth: 1.5, borderColor: 'rgba(43,53,36,0.35)', alignItems: 'center', justifyContent: 'center' },
-  active: { borderWidth: 2, borderColor: colors.ink },
-  hidden: { position: 'absolute', opacity: 0, height: 58, width: '100%' },
+  boxes: { flexDirection: 'row', justifyContent: 'space-between' },
+  box: { width: 48, height: 60, alignItems: 'center', justifyContent: 'center' },
+  active: { borderWidth: 2.6, borderColor: colors.olive },
+  hidden: { position: 'absolute', opacity: 0, height: 60, width: '100%' },
 });

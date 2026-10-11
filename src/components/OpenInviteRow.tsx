@@ -1,47 +1,51 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import type { Item, List } from '@/api/db';
+import { photosFor } from '@/api/items';
 import { listPeople } from '@/api/lists';
 import { dayParts } from '@/lib';
-import { colors, space } from '@/theme';
-import { AvatarStack } from './Avatar';
-import { InterestButton } from './InterestButton';
-import { Mono, SansBold, Serif } from './Text';
+import { colors, corners, tilt } from '@/theme';
+import { DownButton, DownCount } from './Down';
+import { Photo } from './Photo';
+import { Hand, Mono } from './Text';
 
-/** Date block, who, thing, list, star. */
-export function OpenInviteRow({ item, list }: { item: Item; list: List }) {
+const STUBS = [colors.sage, colors.moss, colors.sage, colors.straw];
+
+/** A ticket: the date stub on the left, then who, the item, how many are down, and "i'm down". */
+export function OpenInviteRow({ item, list, index }: { item: Item; list: List; index: number }) {
   const people = listPeople(list.id);
   const date = item.date ? dayParts(item.date) : null;
+  const photo = photosFor(item.id)[0];
   return (
-    <View style={styles.row}>
-      <Pressable style={styles.main} onPress={() => router.push(`/item/${item.id}`)} accessibilityRole="button">
-      {date ? (
-        <View style={[styles.date, { backgroundColor: colors.gold }]}>
-          <Mono size={10.5}>{date.weekday}</Mono>
-          <Serif size={21} style={{ lineHeight: 23 }}>{date.day}</Serif>
-        </View>
-      ) : (
-        <View style={[styles.date, styles.noDate]} accessibilityLabel="No date yet">
-          <Serif size={20}>?</Serif>
-        </View>
-      )}
-      <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-          <AvatarStack people={people} size={20} ring="rgba(247,242,227,0.5)" />
-          <SansBold size={13.5}>{people.map((p) => p.name).join(' + ')}</SansBold>
-        </View>
-        <Serif size={20} style={{ lineHeight: 23 }}>{item.title}</Serif>
-        <Mono color={colors.inkSoft} style={{ marginTop: 4 }}>{list.title}</Mono>
+    <View style={[styles.ticket, tilt(index, 0.8)]}>
+      <View style={[styles.stub, { backgroundColor: STUBS[index % STUBS.length] }]} accessibilityLabel={date ? undefined : 'No date yet'}>
+        <Mono size={10} style={{ letterSpacing: 1 }}>{date ? date.weekday.toLowerCase() : 'date'}</Mono>
+        <Hand size={28} style={{ lineHeight: 30 }}>{date ? date.day : '?'}</Hand>
       </View>
-      </Pressable>
-      <InterestButton itemId={item.id} showCount />
+      <View style={[corners(index), styles.body]}>
+        {photo ? <Photo photo={photo} style={{ height: 132 }} /> : null}
+        <Pressable onPress={() => router.push(`/item/${item.id}`)} style={{ gap: 3 }} accessibilityRole="button">
+          <Mono size={10.5} color={colors.inkSoft} numberOfLines={1}>{people.map((p) => p.name).join(' + ')} · {list.title}</Mono>
+          <Hand size={18}>{item.title}</Hand>
+        </Pressable>
+        <View style={styles.bottom}>
+          <DownCount itemId={item.id} faces={0} />
+          <DownButton itemId={item.id} />
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 14, borderBottomWidth: 1.5, borderBottomColor: colors.line },
-  main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.md },
-  date: { width: 50, height: 54, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  noDate: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.inkSoft },
+  ticket: { flexDirection: 'row', minHeight: 104 },
+  stub: {
+    width: 66, alignItems: 'center', justifyContent: 'center', gap: 2, borderWidth: 1.5, borderColor: colors.ink,
+    borderTopLeftRadius: 10, borderBottomLeftRadius: 11, borderTopRightRadius: 4, borderBottomRightRadius: 4,
+  },
+  body: {
+    flex: 1, marginLeft: -1.5, backgroundColor: colors.cream, borderWidth: 1.5, borderColor: colors.ink, padding: 12, paddingLeft: 14, gap: 8,
+    borderTopLeftRadius: 4, borderBottomLeftRadius: 4,
+  },
+  bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 32 },
 });

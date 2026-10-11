@@ -31,6 +31,7 @@ export function progressLabel(listId: string) {
 }
 
 export function visibilityLabel(list: List) {
+  if (list.visibility === 'just_me') return 'just me';
   if (list.visibility !== 'specific') return list.visibility;
   const n = db.list_viewers.filter((v) => v.list_id === list.id).length;
   return `${n} ${n === 1 ? 'person' : 'people'}`;

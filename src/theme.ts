@@ -1,77 +1,76 @@
-import { Platform } from 'react-native';
+import { Platform, ViewStyle } from 'react-native';
 
-// Colors, fonts and spacing taken from the design canvas (simplified boards).
+// Colors, fonts and shapes taken from the "List Feed Explorations" design canvas (Final boards).
 export const colors = {
-  ink: '#2B3524',
-  inkSoft: '#56604B',
-  inkFaint: '#7C8570',
-  dark: '#3A4630',
-  cream: '#F7F2E3',
-  paper: '#FFFEF2',
-  folder: '#E8E6D5',
-  doneCard: '#D3D3BA',
-  pip: '#CBCDB2',
-  gold: '#E0C56E',
-  goldDeep: '#D4B24A',
-  goldSoft: '#F3E3A8',
-  line: 'rgba(43,53,36,0.14)',
-  lineSoft: 'rgba(43,53,36,0.08)',
-  danger: '#7A2E1E',
-  sageTop: '#E9EED3',
-  sageMid: '#B7C6A0',
-  sageBottom: '#9AAE8A',
-  nightTop: '#66774C',
-  nightMid: '#3F4C35',
-  nightBottom: '#2E3828',
-  onDark: '#F7F2E3',
-  onDarkSoft: 'rgba(247,242,227,0.72)',
+  // grounds
+  night: '#3A1000', // screen background
+  bark: '#561B00', // dark buttons, "on" chips
+  olive: '#787E31', // home tab, filled check circles, active rings
+  // papers
+  paper: '#FBEFA7', // folders, light buttons, text on dark
+  cream: '#FFF8D6',
+  sage: '#D6D79F',
+  straw: '#E6E2AE',
+  moss: '#C9CC8A',
+  gold: '#EAD79B', // done rows and cards
+  // ink
+  ink: '#521709',
+  inkSoft: 'rgba(82,23,9,0.75)',
+  inkFaint: 'rgba(82,23,9,0.45)',
+  inkTrack: 'rgba(82,23,9,0.18)',
+  rule: 'rgba(82,23,9,0.3)',
+  onDark: '#FBEFA7',
+  onDarkSoft: 'rgba(251,239,167,0.8)',
+  dim: 'rgba(40,10,0,0.62)',
 } as const;
 
 export const fonts = {
-  serif: 'Fraunces_600SemiBold',
-  serifBold: 'Fraunces_700Bold',
-  sans: 'InstrumentSans_400Regular',
-  sansMedium: 'InstrumentSans_500Medium',
-  sansSemi: 'InstrumentSans_600SemiBold',
-  sansBold: 'InstrumentSans_700Bold',
-  mono: 'DMMono_400Regular',
-  monoMedium: 'DMMono_500Medium',
+  hand: 'ShantellSans_600SemiBold',
+  handMedium: 'ShantellSans_500Medium',
+  handBold: 'ShantellSans_700Bold',
+  mono: 'IBMPlexMono_400Regular',
+  monoMedium: 'IBMPlexMono_500Medium',
 } as const;
 
 // Web preview only: fields draw their own border, so drop the browser focus ring.
 export const noOutline = Platform.select({ web: { outlineStyle: 'none' } as object, default: {} });
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28 } as const;
-export const radius = { sm: 8, md: 12, lg: 16, xl: 20 } as const;
 
-// Placeholder fills for photos and list covers until real images exist.
-export const swatches = ['#8FA070', '#DAC37A', '#B5C49C', '#5F6E4E', '#C9B48E', '#9CAD80', '#D9B88F'];
+/** Card fills that rotate through rows and slips. */
+export const cardFills = [colors.sage, colors.cream, colors.moss, colors.straw] as const;
 
-export function swatchFor(id: string) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return swatches[h % swatches.length];
-}
+/** Folder colors for lists on a profile. */
+export const folderFills = [colors.paper, colors.sage, colors.straw, colors.gold, colors.moss] as const;
 
-// Placeholder avatar colors (background, figure) until someone adds a photo.
-const tints = [
-  { bg: '#E8C390', fg: '#A06A32' }, { bg: '#B7C7A0', fg: '#5D7345' }, { bg: '#EBAE94', fg: '#A0503A' },
-  { bg: '#AFBFD6', fg: '#4E6485' }, { bg: '#EAD58E', fg: '#A07C28' }, { bg: '#D9C49C', fg: '#7D6540' },
-  { bg: '#C7B0D8', fg: '#6D5488' }, { bg: '#B5D0C8', fg: '#4F7868' }, { bg: '#E3B5A6', fg: '#8A4F40' },
-  { bg: '#CFA8B8', fg: '#7D4A60' },
+// Hand-cut corners: every box gets slightly different radii so nothing looks machine-made.
+const CORNERS: [number, number, number, number][] = [
+  [8, 5, 9, 6], [5, 9, 6, 10], [9, 6, 10, 5], [6, 10, 5, 9], [12, 8, 14, 10], [10, 13, 9, 12],
 ];
 
-export function tintFor(id: string) {
+/** Uneven corner radii, scaled. `i` picks the shape so neighbours differ. */
+export function corners(i: number, scale = 1): ViewStyle {
+  const [a, b, c, d] = CORNERS[((i % CORNERS.length) + CORNERS.length) % CORNERS.length];
+  return { borderTopLeftRadius: a * scale, borderTopRightRadius: b * scale, borderBottomRightRadius: c * scale, borderBottomLeftRadius: d * scale };
+}
+
+const TILTS = [-0.5, 0.4, -0.3, 0.5, -0.4, 0.3];
+
+/** A small rotation so stacked cards look placed by hand. */
+export const tilt = (i: number, scale = 1): ViewStyle => ({ transform: [{ rotate: `${TILTS[((i % TILTS.length) + TILTS.length) % TILTS.length] * scale}deg` }] });
+
+/** Stable number from an id, for picking colors and shapes. */
+export function hash(id: string) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return tints[h % tints.length];
+  return h;
 }
 
-/** True when a fill is dark enough that text on it should be cream rather than ink. */
-export function isDark(hex: string) {
-  const n = parseInt(hex.slice(1), 16);
-  return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) < 150;
-}
+/** Background for someone's initial until they add a photo. */
+export const tintFor = (id: string) => [colors.sage, colors.straw, colors.cream, colors.moss, colors.paper][hash(id) % 5];
 
-// Height the folder-tab bar takes above the safe area; screens pad their scroll content by this.
-export const TAB_BAR_HEIGHT = 74;
+/** Placeholder fill for photos and list covers until real images exist. */
+export const swatchFor = (id: string) => [colors.moss, colors.straw, colors.sage, colors.cream][hash(id) % 4];
+
+/** Height of the tab row above the safe area; screens pad their scroll content by this. */
+export const TAB_BAR_HEIGHT = 52;

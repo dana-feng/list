@@ -3,7 +3,7 @@
 // and the other api/ files read it synchronously so screens stay simple.
 import { useSyncExternalStore } from 'react';
 
-export type Visibility = 'anyone' | 'followers' | 'specific';
+export type Visibility = 'anyone' | 'followers' | 'specific' | 'just_me';
 export type EventKind = 'list_created' | 'item_added' | 'open_invite' | 'item_done' | 'list_done';
 
 export type Profile = { id: string; username: string; name: string; profile_photo: string | null; created_at: string };

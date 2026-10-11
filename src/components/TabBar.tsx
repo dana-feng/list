@@ -3,24 +3,27 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, space } from '@/theme';
-import { FolderCard } from './FolderCard';
-import { Icon } from './Icon';
-import { Sans, Serif } from './Text';
+import { Icon, IconName } from './Icon';
+import { Paper } from './Paper';
+import { Hand, Mono, MonoMedium } from './Text';
 
 export type TabName = 'home' | 'lists';
 
-const STRIP = 14;
+const TAB = 44;
+const TAB_UP = 52;
+/** How far the tabs reach down into the home-indicator area: enough to look attached, not the whole inset. */
+const reach = (inset: number) => Math.max(6, inset - 16);
 
-/** Home, + and lists as folder tabs. Home and lists are tabs; + opens the "new" sheet. */
-export function TabBar({ active, onTab }: { active: TabName; onTab: (tab: TabName) => void }) {
+/** Home, + and your lists as folder tabs along the bottom of the two root screens. + opens the "new" menu over the screen. */
+export function TabBar({ active, onTab }: { active: TabName | null; onTab: (tab: TabName) => void }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <Tabs active={open ? null : active} plusOpen={open} onPlus={() => setOpen(!open)} onTab={onTab} />
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.dim} onPress={() => setOpen(false)} accessibilityLabel="Close" />
-        <PlusSheet close={() => setOpen(false)} />
-        <Tabs active={null} plusOpen onPlus={() => setOpen(false)} onTab={onTab} />
+        <Pressable style={styles.dim} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel="Close" />
+        <PlusMenu close={() => setOpen(false)} />
+        <Tabs active={null} plusOpen onPlus={() => setOpen(false)} onTab={(t) => { setOpen(false); onTab(t); }} />
       </Modal>
     </>
   );
@@ -28,78 +31,74 @@ export function TabBar({ active, onTab }: { active: TabName; onTab: (tab: TabNam
 
 function Tabs({ active, plusOpen, onPlus, onTab }: { active: TabName | null; plusOpen: boolean; onPlus: () => void; onTab: (tab: TabName) => void }) {
   const insets = useSafeAreaInsets();
-  const go = (tab: TabName) => {
-    if (plusOpen) onPlus();
-    onTab(tab);
-  };
   return (
-    <View style={styles.bar} pointerEvents="box-none">
-      <View style={styles.row} pointerEvents="box-none">
-        <Tab label="Home" raised={active === 'home'} color={active === 'home' ? colors.cream : colors.dark} onPress={() => go('home')}>
-          <Icon name="home" color={active === 'home' ? colors.ink : colors.onDark} />
-        </Tab>
-        <Tab label={plusOpen ? 'Close' : 'New'} raised={plusOpen} color={colors.gold} onPress={onPlus}>
-          <Icon name={plusOpen ? 'x' : 'plus'} size={24} />
-        </Tab>
-        <Tab label="Your lists" raised={active === 'lists'} color={active === 'lists' ? colors.cream : colors.dark} onPress={() => go('lists')}>
-          <Icon name="list" color={active === 'lists' ? colors.ink : colors.onDark} />
-        </Tab>
-      </View>
-      <View style={{ height: STRIP + insets.bottom, backgroundColor: colors.cream }} />
+    <View style={[styles.bar, { height: TAB_UP + reach(insets.bottom) }]} pointerEvents="box-none">
+      <Tab icon="home" label="Home" color={colors.olive} up={active === 'home'} bottom={reach(insets.bottom)} onPress={() => onTab('home')} />
+      <Tab icon={plusOpen ? 'x' : 'plus'} label={plusOpen ? 'Close' : 'Add an item or start a list'} color={colors.paper} ink={colors.ink} up={plusOpen} bottom={reach(insets.bottom)} onPress={onPlus} />
+      <Tab icon="list" label="Your lists" color={colors.bark} up={active === 'lists'} bottom={reach(insets.bottom)} onPress={() => onTab('lists')} />
     </View>
   );
 }
 
-function Tab({ children, raised, color, onPress, label }: { children: React.ReactNode; raised: boolean; color: string; onPress: () => void; label: string }) {
+function Tab({ icon, label, color, ink = colors.paper, up, bottom, onPress }: { icon: IconName; label: string; color: string; ink?: string; up: boolean; bottom: number; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={[styles.tab, { backgroundColor: color, height: raised ? 58 : 50 }, raised && styles.raised]}
+      accessibilityState={{ selected: up }}
+      style={[styles.tab, { backgroundColor: color, height: (up ? TAB_UP : TAB) + bottom, paddingBottom: bottom }]}
     >
-      {children}
+      <Icon name={icon} size={icon === 'plus' || icon === 'x' ? 22 : 20} color={ink} strokeWidth={2.1} />
     </Pressable>
   );
 }
 
-function PlusSheet({ close }: { close: () => void }) {
+function PlusMenu({ close }: { close: () => void }) {
   const insets = useSafeAreaInsets();
   const open = (path: '/list/new' | '/item/new') => {
     close();
     router.push(path);
   };
   return (
-    <View style={[styles.sheet, { bottom: 58 + STRIP + insets.bottom + space.xl }]}>
-      <FolderCard tab="new" color={colors.cream} padding={0}>
-        <SheetRow icon="folder" title="Start a list" body="name it, invite people, choose who sees it" onPress={() => open('/list/new')} />
-        <View style={styles.dots} />
-        <SheetRow icon="square" title="Add a thing" body="to one of your lists" onPress={() => open('/item/new')} />
-      </FolderCard>
+    <View style={[styles.menu, { bottom: TAB_UP + reach(insets.bottom) + space.md }]}>
+      <Paper fill={colors.paper} edge="ink" shape={1} style={styles.menuTab}>
+        <MonoMedium size={11.5}>new</MonoMedium>
+      </Paper>
+      <Paper fill={colors.paper} edge="ink" style={styles.menuBody}>
+        <MenuRow icon="list" tint={colors.straw} title="start a list" body="on your own or with friends" onPress={() => open('/list/new')} />
+        <View style={styles.dash} />
+        <MenuRow icon="pencil" tint={colors.sage} title="add an item" body="to one of your lists" onPress={() => open('/item/new')} />
+      </Paper>
     </View>
   );
 }
 
-function SheetRow({ icon, title, body, onPress }: { icon: 'folder' | 'square'; title: string; body: string; onPress: () => void }) {
+function MenuRow({ icon, tint, title, body, onPress }: { icon: IconName; tint: string; title: string; body: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={styles.sheetRow} accessibilityRole="button">
-      <Icon name={icon} size={24} />
-      <View style={{ flex: 1 }}>
-        <Serif size={20}>{title}</Serif>
-        <Sans size={13} color={colors.inkSoft}>{body}</Sans>
+    <Pressable onPress={onPress} style={styles.menuRow} accessibilityRole="button" accessibilityLabel={title}>
+      <Paper fill={tint} shape={4} style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={icon} size={20} />
+      </Paper>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Hand size={20}>{title}</Hand>
+        <Mono size={10.5} color={colors.inkSoft}>{body}</Mono>
       </View>
-      <Icon name="right" size={18} />
+      <Icon name="right" size={16} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-  row: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, paddingHorizontal: space.lg },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-  raised: { shadowColor: '#1B2414', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: -2 } },
-  dim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(58,70,48,0.55)' },
-  sheet: { position: 'absolute', left: space.lg, right: space.lg },
-  sheetRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.lg },
-  dots: { marginHorizontal: space.lg, borderBottomWidth: 1.5, borderStyle: 'dotted', borderColor: colors.line },
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 14 },
+  tab: {
+    flex: 1, alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: 16, borderTopRightRadius: 18,
+    shadowColor: '#3A1000', shadowOpacity: 0.35, shadowRadius: 0, shadowOffset: { width: 0, height: -2 },
+  },
+  dim: { ...StyleSheet.absoluteFill, backgroundColor: colors.dim },
+  menu: { position: 'absolute', left: 34, right: 34 },
+  menuTab: { alignSelf: 'flex-start', height: 36, paddingHorizontal: 18, justifyContent: 'center', borderBottomWidth: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: -1.5, zIndex: 2 },
+  menuBody: { padding: 8, borderTopLeftRadius: 0 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 10 },
+  dash: { marginHorizontal: 10, borderTopWidth: 1.3, borderStyle: 'dashed', borderColor: colors.rule },
 });

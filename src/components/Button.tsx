@@ -1,17 +1,81 @@
-import { Pressable, StyleProp, ViewStyle } from 'react-native';
+import { ReactNode } from 'react';
+import { StyleProp, View, ViewStyle } from 'react-native';
 import { colors } from '@/theme';
-import { SansBold } from './Text';
+import { Paper } from './Paper';
+import { MonoMedium } from './Text';
 
-/** The full-width button pinned to the bottom of sign-up, pickers and "you did it". */
-export function Button({ label, onPress, tone = 'dark', disabled, style }: { label: string; onPress: () => void; tone?: 'dark' | 'gold'; disabled?: boolean; style?: StyleProp<ViewStyle> }) {
+type Tone = 'bark' | 'paper' | 'outline' | 'outlineLight' | 'dashLight';
+
+const TONES: Record<Tone, { fill?: string; text: string; edge: 'none' | 'ink' | 'light' | 'dashLight' }> = {
+  bark: { fill: colors.bark, text: colors.paper, edge: 'none' },
+  paper: { fill: colors.paper, text: colors.ink, edge: 'none' },
+  outline: { text: colors.ink, edge: 'ink' },
+  outlineLight: { text: colors.paper, edge: 'light' },
+  dashLight: { text: colors.paper, edge: 'dashLight' },
+};
+
+type Props = {
+  label: string;
+  onPress: () => void;
+  /** bark on paper, paper on the dark background. */
+  tone?: Tone;
+  disabled?: boolean;
+  icon?: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
+};
+
+/** The full-width button: "start the list", "text me a code", "done". */
+export function Button({ label, onPress, tone = 'bark', disabled, icon, style, accessibilityLabel }: Props) {
+  const t = TONES[tone];
   return (
-    <Pressable
+    <Paper
       onPress={onPress}
       disabled={disabled}
-      accessibilityRole="button"
-      style={[{ height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: tone === 'gold' ? colors.gold : colors.dark, opacity: disabled ? 0.45 : 1 }, style]}
+      fill={t.fill}
+      edge={t.edge}
+      shape={4}
+      round={1.1}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled }}
+      style={[{ height: 52, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, opacity: disabled ? 0.45 : 1 }, style]}
     >
-      <SansBold size={17} color={tone === 'gold' ? colors.ink : colors.onDark}>{label}</SansBold>
-    </Pressable>
+      {icon}
+      <MonoMedium size={13} color={t.text}>{label}</MonoMedium>
+    </Paper>
+  );
+}
+
+/**
+ * The small toggle button: "i'm down" / "down ✓", "follow" / "following", "join".
+ * Off is a dark filled pill; on is an outlined one.
+ */
+export function Pill({ label, on, onPress, accessibilityLabel, height = 32, light }: { label: string; on?: boolean; onPress: () => void; accessibilityLabel?: string; height?: number; light?: boolean }) {
+  const ink = light ? colors.paper : colors.ink;
+  return (
+    <Paper
+      onPress={onPress}
+      fill={on ? undefined : light ? colors.paper : colors.bark}
+      edge={on ? (light ? 'light' : 'ink') : 'none'}
+      edgeWidth={1.3}
+      shape={1}
+      round={1.2}
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ selected: !!on }}
+      style={{ height, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+    >
+      <MonoMedium size={11.5} color={on ? ink : light ? colors.ink : colors.paper} numberOfLines={1}>{label}</MonoMedium>
+    </Paper>
+  );
+}
+
+/** A plain underlined text action: "not now", "undo", "show all 6 done". */
+export function LinkText({ label, onPress, color = colors.ink, size = 12, wavy }: { label: string; onPress: () => void; color?: string; size?: number; wavy?: boolean }) {
+  return (
+    <Paper onPress={onPress} style={{ minHeight: 40, justifyContent: 'center', paddingHorizontal: 4, alignSelf: 'flex-start' }}>
+      <View>
+        <MonoMedium size={size} color={color} style={{ textDecorationLine: 'underline', textDecorationStyle: wavy ? 'dashed' : 'solid' }}>{label}</MonoMedium>
+      </View>
+    </Paper>
   );
 }

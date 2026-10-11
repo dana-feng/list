@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
+import { Paper } from '@/components/Paper';
 import { Mono } from '@/components/Text';
 import { AuthStep } from '@/screens/AuthStep';
 import { colors, fonts, noOutline } from '@/theme';
@@ -20,32 +21,37 @@ export default function Phone() {
   return (
     <AuthStep
       step={1}
-      title={change ? 'new number?' : "what's your number?"}
-      body={change ? "We'll text a code to the new number." : "We'll text you a code. Same flow whether you're new or coming back."}
-      footer={<Button label="Text me a code" disabled={digits.length !== 10} onPress={next} />}
+      title={change ? 'new number?' : "what's your\nnumber?"}
+      body={change ? "we'll text a code to the new number." : "we'll text you a code. no passwords."}
+      footer={
+        <View style={{ gap: 6 }}>
+          <Button label="text me a code" tone="paper" disabled={digits.length !== 10} onPress={next} />
+          {change ? null : (
+            <Mono size={10.5} center color={colors.onDarkSoft} style={{ marginTop: 6, lineHeight: 16 }}>by continuing you agree to the terms + privacy policy</Mono>
+          )}
+        </View>
+      }
     >
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <View style={[styles.box, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
-          <Mono size={17}>US +1</Mono>
-          <Icon name="down" size={13} />
-        </View>
-        <TextInput
-          value={format(digits)}
-          onChangeText={(t) => setDigits(t.replace(/\D/g, '').slice(0, 10))}
-          keyboardType="phone-pad"
-          textContentType="telephoneNumber"
-          autoComplete="tel"
-          autoFocus
-          placeholder="(347) 555-0148"
-          placeholderTextColor={colors.inkFaint}
-          accessibilityLabel="Phone number"
-          style={[styles.box, { flex: 1, minWidth: 0, fontFamily: fonts.mono, fontSize: 18, color: colors.ink }, noOutline]}
-        />
+        <Paper fill={colors.straw} shape={4} style={{ height: 58, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 6 }} accessibilityLabel="Country code: US +1">
+          <Mono size={15}>+1</Mono>
+          <Icon name="down" size={13} strokeWidth={2.2} />
+        </Paper>
+        <Paper fill={colors.paper} shape={5} style={{ flex: 1, height: 58, paddingHorizontal: 14, justifyContent: 'center' }}>
+          <TextInput
+            value={format(digits)}
+            onChangeText={(t) => setDigits(t.replace(/\D/g, '').slice(0, 10))}
+            keyboardType="phone-pad"
+            textContentType="telephoneNumber"
+            autoComplete="tel"
+            autoFocus
+            placeholder="(347) 555-0182"
+            placeholderTextColor={colors.inkFaint}
+            accessibilityLabel="Phone number"
+            style={[{ fontFamily: fonts.mono, fontSize: 17, letterSpacing: 0.5, color: colors.ink, height: 54 }, noOutline]}
+          />
+        </Paper>
       </View>
     </AuthStep>
   );
 }
-
-const styles = StyleSheet.create({
-  box: { height: 56, paddingHorizontal: 14, borderRadius: 16, backgroundColor: colors.paper, borderWidth: 1.5, borderColor: colors.ink },
-});

@@ -1,29 +1,35 @@
 import { ReactNode } from 'react';
 import { View } from 'react-native';
-import { BackButton } from '@/components/Header';
+import { BackButton, Header } from '@/components/Header';
 import { Screen } from '@/components/Screen';
-import { Sans, Serif } from '@/components/Text';
-import { colors, space } from '@/theme';
+import { Hand, Mono } from '@/components/Text';
+import { colors, fonts } from '@/theme';
 
-/** Shared layout for the sign-up steps: back arrow, step pips, big question, button pinned at the bottom. */
-export function AuthStep({ step, title, body, children, footer }: { step: number; title: string; body?: string; children: ReactNode; footer?: ReactNode }) {
+/** Shared layout for the sign-up steps: back arrow (or the name on step 1), step marks, big question, button at the bottom. */
+export function AuthStep({ step, title, body, children, footer, scroll = true }: { step: number; title: string; body?: string; children: ReactNode; footer?: ReactNode; scroll?: boolean }) {
   return (
     <Screen
+      scroll={scroll}
       footer={footer}
+      contentStyle={{ paddingHorizontal: 20 }}
       header={
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.xl, minHeight: 44, marginBottom: space.xl }}>
-          <BackButton />
-          <View style={{ flexDirection: 'row', gap: 5 }} accessibilityLabel={`Step ${step} of 4`}>
-            {[1, 2, 3, 4].map((n) => (
-              <View key={n} style={{ width: 22, height: 6, borderRadius: 3, backgroundColor: n <= step ? colors.dark : colors.pip }} />
-            ))}
-          </View>
-        </View>
+        <Header
+          left={step === 1 ? <Hand size={24} color={colors.paper} style={{ paddingLeft: 6, fontFamily: fonts.handBold }}>list</Hand> : <BackButton />}
+          center={
+            <View style={{ flexDirection: 'row', gap: 6 }} accessibilityLabel={`Step ${step} of 4`}>
+              {[1, 2, 3, 4].map((n) => (
+                <View key={n} style={{ width: 26, height: 4, borderRadius: 2, backgroundColor: colors.paper, opacity: n <= step ? 1 : 0.3 }} />
+              ))}
+            </View>
+          }
+        />
       }
     >
-      <Serif size={34} style={{ lineHeight: 39 }}>{title}</Serif>
-      {body ? <Sans size={15.5} style={{ marginTop: space.md }}>{body}</Sans> : null}
-      <View style={{ marginTop: space.xl }}>{children}</View>
+      <View style={{ marginTop: 26, marginHorizontal: 4, gap: 8 }}>
+        <Hand size={34} color={colors.paper} style={{ lineHeight: 37 }}>{title}</Hand>
+        {body ? <Mono size={12} color={colors.onDarkSoft} style={{ lineHeight: 19 }}>{body}</Mono> : null}
+      </View>
+      <View style={{ marginTop: 26, flex: scroll ? undefined : 1 }}>{children}</View>
     </Screen>
   );
 }
