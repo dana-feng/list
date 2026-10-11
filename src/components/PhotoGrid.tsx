@@ -1,70 +1,43 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import type { ItemPhoto } from '@/api/db';
-import { colors, space } from '@/theme';
+import { colors, tilt } from '@/theme';
 import { Icon } from './Icon';
+import { Paper } from './Paper';
 import { Photo } from './Photo';
-import { SansBold, Serif } from './Text';
+import { Mono, MonoMedium } from './Text';
 
-type Props = { photos: Pick<ItemPhoto, 'id' | 'path'>[]; onAdd?: () => void; onRemove?: (id: string) => void };
+type Props = { photos: Pick<ItemPhoto, 'id' | 'path'>[]; onAdd?: () => void; onRemove?: (id: string) => void; height?: number };
 
-/** Big first photo + smaller ones; add tile when you're allowed to add. */
-export function PhotoGrid({ photos, onAdd, onRemove }: Props) {
-  if (photos.length === 0) {
-    if (!onAdd) return null;
-    return (
-      <Pressable onPress={onAdd} style={[styles.empty, styles.dashed]} accessibilityRole="button" accessibilityLabel="Add photos">
-        <Icon name="image" size={26} />
-        <SansBold>+ add photos</SansBold>
-      </Pressable>
-    );
-  }
-  const [first, ...rest] = photos;
-  const tiles = [...rest.map((p) => ({ kind: 'photo' as const, p })), ...(onAdd ? [{ kind: 'add' as const }] : [])];
-  const rows: (typeof tiles)[] = [];
-  for (let i = 0; i < tiles.length; i += 3) rows.push(tiles.slice(i, i + 3));
+const WIDTHS = [196, 150, 120, 170];
+
+/** A row of photos you scroll sideways, slightly tilted. A dashed "add photo" tile at the end when you can add. */
+export function PhotoStrip({ photos, onAdd, onRemove, height = 132 }: Props) {
+  if (!photos.length && !onAdd) return null;
   return (
-    <View style={{ gap: space.sm }}>
-      <Removable id={first.id} onRemove={onRemove}>
-        <Photo photo={first} label style={{ width: '100%', aspectRatio: 1.43 }} />
-      </Removable>
-      {rows.map((row, r) => (
-        <View key={r} style={{ flexDirection: 'row', gap: space.sm }}>
-          {row.map((t) =>
-            t.kind === 'photo' ? (
-              <View key={t.p.id} style={{ flex: 1 }}>
-                <Removable id={t.p.id} onRemove={onRemove}>
-                  <Photo photo={t.p} radius={12} style={{ aspectRatio: row.length < 3 && !onAdd ? 1.45 : 1 }} />
-                </Removable>
-              </View>
-            ) : (
-              <Pressable key="add" onPress={onAdd} style={[styles.add, styles.dashed]} accessibilityRole="button" accessibilityLabel="Add photos">
-                <Serif size={24}>+</Serif>
-              </Pressable>
-            ),
-          )}
-          {onAdd ? Array.from({ length: 3 - row.length }, (_, i) => <View key={`pad${i}`} style={{ flex: 1 }} />) : null}
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row} style={{ marginHorizontal: -4 }}>
+      {photos.map((p, i) => (
+        <View key={p.id} style={[{ width: WIDTHS[i % WIDTHS.length], height }, tilt(i, 1.4)]}>
+          <Photo photo={p} shape={i} style={{ flex: 1 }} />
+          {onRemove ? (
+            <Pressable onPress={() => onRemove(p.id)} style={styles.remove} accessibilityRole="button" accessibilityLabel={`Remove photo ${i + 1}`}>
+              <View style={styles.removeDot}><Icon name="x" size={13} color={colors.paper} strokeWidth={2.6} /></View>
+            </Pressable>
+          ) : null}
         </View>
       ))}
-    </View>
-  );
-}
-
-function Removable({ id, onRemove, children }: { id: string; onRemove?: (id: string) => void; children: React.ReactNode }) {
-  return (
-    <View>
-      {children}
-      {onRemove ? (
-        <Pressable onPress={() => onRemove(id)} hitSlop={8} style={styles.remove} accessibilityRole="button" accessibilityLabel="Remove photo">
-          <Icon name="x" size={14} color={colors.onDark} strokeWidth={3} />
-        </Pressable>
+      {onAdd ? (
+        <Paper onPress={onAdd} edge="dash" shape={1} accessibilityLabel="Add a photo" style={[styles.add, { height: photos.length ? height : 92, width: 92 }]}>
+          <MonoMedium size={22} style={{ lineHeight: 24 }}>+</MonoMedium>
+          <Mono size={11}>{photos.length ? 'add photo' : 'photo'}</Mono>
+        </Paper>
       ) : null}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  dashed: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.ink },
-  empty: { height: 190, borderRadius: 16, backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center', gap: space.sm },
-  add: { flex: 1, aspectRatio: 1, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  remove: { position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(43,53,36,0.75)', alignItems: 'center', justifyContent: 'center' },
+  row: { gap: 10, paddingHorizontal: 6, paddingTop: 10, paddingBottom: 4 },
+  add: { alignItems: 'center', justifyContent: 'center', gap: 4 },
+  remove: { position: 'absolute', top: -9, right: -9, width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  removeDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.bark, alignItems: 'center', justifyContent: 'center' },
 });

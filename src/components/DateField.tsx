@@ -1,36 +1,34 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { longDay, monthYear, parseDay, toDay } from '@/lib';
-import { colors, space } from '@/theme';
+import { colors } from '@/theme';
+import { LinkText, Pill } from './Button';
 import { Icon } from './Icon';
-import { Mono, SansBold, Serif } from './Text';
+import { Paper } from './Paper';
+import { Hand, Mono, MonoMedium } from './Text';
 
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
+const WEEKDAYS = ['s', 'm', 't', 'w', 't', 'f', 's'];
 const monthOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
 
-/** Date shown as a gold chip, or picked from a month calendar that drops down under it. */
-export function DateField({ value, onChange, editing }: { value: string | null; onChange?: (v: string | null) => void; editing?: boolean }) {
+/** The date as a cream chip with a calendar icon. */
+export function DateChip({ value }: { value: string }) {
+  return (
+    <Paper fill={colors.cream} shape={2} round={1.3} style={styles.chip}>
+      <Icon name="calendar" size={14} strokeWidth={1.8} />
+      <MonoMedium size={12}>{longDay(value)}</MonoMedium>
+    </Paper>
+  );
+}
+
+/** Editing: a dashed chip that opens a month calendar under it, with "no date yet" and "done". */
+export function DateField({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => monthOf(new Date()));
-  if (!editing) {
-    if (!value) return null;
-    return (
-      <View style={[styles.chip, { backgroundColor: colors.gold }]}>
-        <Icon name="calendar" size={14} />
-        <Mono size={13}>{longDay(value)}</Mono>
-      </View>
-    );
-  }
   const today = toDay(new Date());
   const toggle = () => {
-    // open on the month of the picked date, unless that's already behind us
+    // open on the picked date's month, unless that's already behind us
     if (!open) setMonth(monthOf(value && value > today ? parseDay(value) : new Date()));
     setOpen(!open);
-  };
-  const pick = (day: string | null) => {
-    onChange?.(day);
-    setOpen(false);
   };
   const step = (by: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + by, 1));
   const canGoBack = month > monthOf(new Date());
@@ -45,27 +43,25 @@ export function DateField({ value, onChange, editing }: { value: string | null; 
   const weeks = Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7));
 
   return (
-    <View>
-      <Pressable onPress={toggle} style={[styles.chip, styles.dashed, value ? { backgroundColor: colors.goldSoft } : null]} accessibilityRole="button" accessibilityState={{ expanded: open }}>
-        <Icon name="calendar" size={14} />
-        <Mono size={13}>{value ? `${longDay(value)} · change` : '+ date'}</Mono>
-      </Pressable>
+    <View style={{ gap: 10 }}>
+      <Paper onPress={toggle} fill={colors.cream} edge="dash" edgeWidth={1.3} shape={2} round={1.3} style={[styles.chip, { height: 34 }]} accessibilityState={{ expanded: open }} accessibilityLabel={value ? `Date: ${longDay(value)}. Change` : 'Add a date'}>
+        <Icon name="calendar" size={14} strokeWidth={1.8} />
+        <MonoMedium size={12}>{value ? longDay(value) : 'add a date'}</MonoMedium>
+      </Paper>
       {open ? (
-        <View style={styles.calendar}>
+        <Paper fill={colors.cream} edge="ink" edgeWidth={1.3} shape={4} style={{ paddingHorizontal: 10, paddingTop: 8, paddingBottom: 6, gap: 6 }}>
           <View style={styles.head}>
-            <Pressable onPress={() => step(-1)} disabled={!canGoBack} hitSlop={10} style={{ opacity: canGoBack ? 1 : 0.25 }} accessibilityRole="button" accessibilityLabel="Previous month">
-              <Icon name="back" size={20} />
+            <Pressable onPress={() => step(-1)} disabled={!canGoBack} style={[styles.arrow, { opacity: canGoBack ? 1 : 0.25 }]} accessibilityRole="button" accessibilityLabel="Previous month">
+              <Icon name="back" size={16} strokeWidth={2.2} />
             </Pressable>
-            <Serif size={18}>{monthYear(month)}</Serif>
-            <Pressable onPress={() => step(1)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Next month">
-              <Icon name="right" size={20} />
+            <Hand size={15}>{monthYear(month).replace(/^(\w+)/, (m) => FULL[m] ?? m)}</Hand>
+            <Pressable onPress={() => step(1)} style={styles.arrow} accessibilityRole="button" accessibilityLabel="Next month">
+              <Icon name="right" size={16} strokeWidth={2.2} />
             </Pressable>
           </View>
           <View style={styles.week}>
             {WEEKDAYS.map((d, i) => (
-              <View key={i} style={styles.cell}>
-                <Mono size={10.5} color={colors.inkFaint}>{d}</Mono>
-              </View>
+              <View key={i} style={[styles.cell, { height: 18 }]}><Mono size={10} color={colors.inkSoft}>{d}</Mono></View>
             ))}
           </View>
           {weeks.map((week, w) => (
@@ -75,33 +71,36 @@ export function DateField({ value, onChange, editing }: { value: string | null; 
                 const on = day === value;
                 const past = day < today;
                 return (
-                  <Pressable key={day} style={styles.cell} onPress={() => pick(day)} disabled={past} accessibilityRole="button" accessibilityLabel={longDay(day)} accessibilityState={{ selected: on, disabled: past }}>
-                    <View style={[styles.day, on && { backgroundColor: colors.gold }, day === today && !on && styles.today]}>
-                      <Serif size={16} color={past ? colors.inkFaint : colors.ink} style={{ lineHeight: 20, opacity: past ? 0.5 : 1 }}>{parseDay(day).getDate()}</Serif>
+                  <Pressable key={day} style={styles.cell} onPress={() => onChange(day)} disabled={past} accessibilityRole="button" accessibilityLabel={longDay(day)} accessibilityState={{ selected: on, disabled: past }}>
+                    <View style={[styles.day, on && { backgroundColor: colors.bark }, day === today && !on && styles.today]}>
+                      <Mono size={11} color={on ? colors.paper : colors.ink} style={{ opacity: past ? 0.35 : 1 }}>{parseDay(day).getDate()}</Mono>
                     </View>
                   </Pressable>
                 );
               })}
             </View>
           ))}
-          {value ? (
-            <Pressable onPress={() => pick(null)} hitSlop={8} style={{ alignSelf: 'center', marginTop: space.sm }} accessibilityRole="button">
-              <SansBold size={14} color={colors.inkSoft}>No date</SansBold>
-            </Pressable>
-          ) : null}
-        </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <LinkText label="no date yet" size={11.5} onPress={() => { onChange(null); setOpen(false); }} />
+            <Pill label="done" onPress={() => setOpen(false)} />
+          </View>
+        </Paper>
       ) : null}
     </View>
   );
 }
 
+const FULL: Record<string, string> = {
+  jan: 'january', feb: 'february', mar: 'march', apr: 'april', may: 'may', jun: 'june',
+  jul: 'july', aug: 'august', sep: 'september', oct: 'october', nov: 'november', dec: 'december',
+};
+
 const styles = StyleSheet.create({
-  chip: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 11, height: 30, borderRadius: 9 },
-  dashed: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#8A7430' },
-  calendar: { marginTop: space.md, padding: space.md, borderRadius: 16, backgroundColor: colors.paper, borderWidth: 1.5, borderColor: colors.line },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.xs, marginBottom: space.sm },
+  chip: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, height: 30, paddingHorizontal: 10 },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  arrow: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   week: { flexDirection: 'row' },
-  cell: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center' },
-  day: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  today: { borderWidth: 1.5, borderColor: colors.goldDeep },
+  cell: { flex: 1, height: 34, alignItems: 'center', justifyContent: 'center' },
+  day: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  today: { borderWidth: 1.3, borderStyle: 'dashed', borderColor: colors.ink },
 });

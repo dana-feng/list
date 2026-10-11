@@ -6,11 +6,12 @@ import { me, saveProfile, setProfilePhoto } from '@/api/profiles';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
-import { Mono } from '@/components/Text';
+import { Paper } from '@/components/Paper';
+import { Label, Mono } from '@/components/Text';
 import { UsernameField, usernameStatus } from '@/components/UsernameField';
 import { AuthStep } from '@/screens/AuthStep';
 import { pickPhotos } from '@/pickPhotos';
-import { colors, fonts, noOutline, space } from '@/theme';
+import { colors, fonts, noOutline } from '@/theme';
 
 export default function ProfileStep() {
   useDb();
@@ -19,7 +20,7 @@ export default function ProfileStep() {
   const [username, setUsername] = useState(person.username);
   const [photo, setPhoto] = useState<string | null>(person.profile_photo);
   const [saving, setSaving] = useState(false);
-  const ok = !!name.trim() && (username === person.username && !!username || !!usernameStatus(username, person.username)?.ok);
+  const ok = !!name.trim() && ((username === person.username && !!username) || !!usernameStatus(username, person.username)?.ok);
 
   const choosePhoto = async () => {
     const [uri] = await pickPhotos(false);
@@ -34,27 +35,39 @@ export default function ProfileStep() {
   };
 
   return (
-    <AuthStep step={3} title="who are you?" footer={<Button label={saving ? 'Saving…' : 'Next'} disabled={!ok || saving} onPress={next} />}>
-      <Pressable onPress={choosePhoto} style={{ alignSelf: 'center', marginTop: -space.sm }} accessibilityRole="button" accessibilityLabel="Add a profile photo">
-        {photo ? (
-          <Avatar person={{ ...person, profile_photo: photo }} size={110} ring={colors.cream} />
-        ) : (
-          <View style={{ width: 110, height: 110, borderRadius: 55, backgroundColor: colors.paper, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.inkSoft, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="camera" size={22} />
-          </View>
-        )}
-      </Pressable>
-      <Mono color={colors.inkSoft} style={{ marginTop: space.lg, marginBottom: space.sm }}>your name</Mono>
-      <TextInput
-        value={name}
-        onChangeText={setName}
-        textContentType="givenName"
-        autoComplete="given-name"
-        accessibilityLabel="Your name"
-        style={{ height: 56, paddingHorizontal: 16, borderRadius: 16, backgroundColor: colors.paper, borderWidth: 1.5, borderColor: colors.ink, fontFamily: fonts.serif, fontSize: 20, color: colors.ink, ...noOutline }}
-      />
-      <Mono color={colors.inkSoft} style={{ marginTop: space.lg, marginBottom: space.sm }}>username</Mono>
-      <UsernameField value={username} onChange={setUsername} />
+    <AuthStep
+      step={3}
+      title="who are you?"
+      body="this is how friends will find you"
+      footer={<Button label={saving ? 'saving…' : 'next'} tone="paper" disabled={!ok || saving} onPress={next} />}
+    >
+      <View style={{ alignItems: 'center', gap: 14 }}>
+        <Pressable onPress={choosePhoto} accessibilityRole="button" accessibilityLabel={photo ? 'Change your photo' : 'Add a photo'}>
+          {photo ? (
+            <Avatar person={{ ...person, name: name || person.name, profile_photo: photo }} size={136} edge={colors.paper} />
+          ) : (
+            <View style={{ width: 136, height: 136, borderRadius: 68, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.paper, alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+              <Icon name="image" size={24} color={colors.paper} />
+              <Mono size={11} color={colors.paper}>add photo</Mono>
+            </View>
+          )}
+        </Pressable>
+      </View>
+      <Label color={colors.onDarkSoft} style={{ marginTop: 14, marginBottom: 8, marginHorizontal: 2 }}>your name</Label>
+      <Paper fill={colors.paper} shape={5} style={{ height: 54, paddingHorizontal: 14, justifyContent: 'center' }}>
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          placeholder="your name"
+          placeholderTextColor={colors.inkFaint}
+          textContentType="givenName"
+          autoComplete="given-name"
+          accessibilityLabel="Your name"
+          style={[{ fontFamily: fonts.hand, fontSize: 22, color: colors.ink, height: 50 }, noOutline]}
+        />
+      </Paper>
+      <Label color={colors.onDarkSoft} style={{ marginTop: 14, marginBottom: 8, marginHorizontal: 2 }}>pick a username</Label>
+      <UsernameField value={username} onChange={setUsername} current={person.username || undefined} />
     </AuthStep>
   );
 }

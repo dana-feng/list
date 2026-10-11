@@ -1,15 +1,19 @@
 import { View } from 'react-native';
 import { colors } from '@/theme';
 
-/** One small segment per thing, filled when done. */
-export function ProgressBar({ done, total, tone = 'dark', height = 7 }: { done: number; total: number; tone?: 'dark' | 'gold'; height?: number }) {
-  const filled = tone === 'gold' ? colors.gold : colors.dark;
-  const empty = tone === 'gold' ? 'rgba(247,242,227,0.22)' : colors.pip;
+/** How much of a list is done. `outlined` is the pen-drawn bar with an olive fill. */
+export function ProgressBar({ done, total, height = 8, outlined }: { done: number; total: number; height?: number; outlined?: boolean }) {
+  const pct = total ? Math.round((100 * done) / total) : 0;
   return (
-    <View style={{ flexDirection: 'row', gap: 3 }} accessibilityLabel={`${done} of ${total} done`}>
-      {Array.from({ length: total }, (_, i) => (
-        <View key={i} style={{ flex: 1, height, borderRadius: height / 2, backgroundColor: i < done ? filled : empty }} />
-      ))}
+    <View
+      accessibilityLabel={`${done} of ${total} done`}
+      style={{
+        flex: 1, height, borderRadius: height / 2, overflow: 'hidden',
+        backgroundColor: outlined ? 'transparent' : colors.inkTrack,
+        borderWidth: outlined ? 1.2 : 0, borderColor: colors.ink,
+      }}
+    >
+      <View style={{ width: `${pct}%`, height: '100%', borderRadius: height / 2, backgroundColor: outlined ? colors.olive : colors.ink }} />
     </View>
   );
 }

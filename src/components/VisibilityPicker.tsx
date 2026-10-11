@@ -1,53 +1,75 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import type { Visibility } from '@/api/db';
 import { colors } from '@/theme';
 import { Icon } from './Icon';
-import { Sans, SansBold } from './Text';
+import { Paper } from './Paper';
+import { Mono, MonoMedium } from './Text';
 
-const OPTIONS: { value: Visibility; title: string; body: string }[] = [
-  { value: 'anyone', title: 'Anyone', body: 'anyone with the link or your profile' },
-  { value: 'followers', title: 'Followers', body: 'people who follow you' },
-  { value: 'specific', title: 'Specific people', body: 'select from your followers' },
+/**
+ * The four choices the design offers. There's no separate "just me" setting in the database:
+ * it's "specific people" with nobody picked, which only the people on the list can see.
+ */
+export type Choice = 'followers' | 'specific' | 'anyone' | 'me';
+
+export const choiceOf = (visibility: Visibility, viewers: number): Choice =>
+  visibility === 'specific' && viewers === 0 ? 'me' : visibility;
+
+export function choiceLabel(choice: Choice, viewers: number) {
+  if (choice === 'specific') return `${viewers} ${viewers === 1 ? 'person' : 'people'}`;
+  if (choice === 'me') return 'just me';
+  return choice;
+}
+
+const OPTIONS: { value: Choice; title: string; sub: string }[] = [
+  { value: 'followers', title: 'followers', sub: 'people who follow you' },
+  { value: 'specific', title: 'specific people', sub: 'only people you pick' },
+  { value: 'anyone', title: 'anyone', sub: 'anyone who finds your profile' },
+  { value: 'me', title: 'just me', sub: 'private for now' },
 ];
 
-/** Anyone / Followers / Specific people. Choosing the last one opens the follower picker. */
-export function VisibilityPicker({ value, onChange, onPickPeople, specificCount }: { value: Visibility; onChange: (v: Visibility) => void; onPickPeople: () => void; specificCount: number }) {
+/** The dashed "who can see" button: people icon, current choice, chevron. */
+export function VisibilityButton({ label, onPress, open, disabled }: { label: string; onPress?: () => void; open?: boolean; disabled?: boolean }) {
   return (
-    <View style={styles.box} accessibilityRole="radiogroup">
-      {OPTIONS.map((o) => {
-        const on = o.value === value;
-        const specific = o.value === 'specific';
-        return (
-          <Pressable
-            key={o.value}
-            onPress={() => (specific ? onPickPeople() : onChange(o.value))}
-            style={[styles.option, on && { backgroundColor: colors.folder }]}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: on }}
-          >
-            <View style={{ flex: 1 }}>
-              <SansBold size={16}>{o.title}</SansBold>
-              <Sans size={13.5} color={colors.inkSoft}>
-                {specific && on ? `${specificCount} selected · change` : o.body}
-              </Sans>
-            </View>
-            {specific ? (
-              <Icon name="right" size={18} />
-            ) : (
-              <View style={[styles.radio, on && { backgroundColor: colors.dark, borderColor: colors.dark }]}>
-                {on ? <View style={styles.radioDot} /> : null}
-              </View>
-            )}
-          </Pressable>
-        );
-      })}
-    </View>
+    <Paper
+      onPress={onPress}
+      disabled={disabled || !onPress}
+      edge={onPress ? 'dash' : 'none'}
+      edgeWidth={1.3}
+      shape={2}
+      round={1.2}
+      accessibilityLabel={`Who can see it: ${label}`}
+      accessibilityState={{ expanded: open }}
+      style={{ height: 30, paddingHorizontal: onPress ? 10 : 0, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}
+    >
+      <Icon name="people" size={15} strokeWidth={1.7} />
+      <Mono size={11.5}>{label}</Mono>
+      {onPress ? <Icon name="down" size={13} /> : null}
+    </Paper>
   );
 }
 
-const styles = StyleSheet.create({
-  box: { backgroundColor: colors.paper, borderRadius: 16, borderWidth: 1.5, borderColor: colors.ink, padding: 4 },
-  option: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 11 },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.inkSoft, alignItems: 'center', justifyContent: 'center' },
-  radioDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.paper },
-});
+/** The dropdown of choices under that button. Picking "specific people" opens the people picker instead. */
+export function VisibilityMenu({ value, onPick }: { value: Choice; onPick: (c: Choice) => void }) {
+  return (
+    <Paper fill={colors.cream} edge="ink" shape={3} style={{ padding: 6, marginTop: 6, shadowColor: '#3A1000', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 8 } }} accessibilityRole={undefined}>
+      {OPTIONS.map((o) => {
+        const on = o.value === value;
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => onPick(o.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8, borderRadius: 8, backgroundColor: on ? colors.sage : 'transparent', minHeight: 44 }}
+          >
+            <View style={{ flex: 1, gap: 2 }}>
+              <MonoMedium size={12}>{o.title}</MonoMedium>
+              <Mono size={10} color={colors.inkSoft}>{o.sub}</Mono>
+            </View>
+            {on ? <Icon name="check" size={16} strokeWidth={2.2} /> : null}
+          </Pressable>
+        );
+      })}
+    </Paper>
+  );
+}

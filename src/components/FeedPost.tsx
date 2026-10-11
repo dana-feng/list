@@ -1,81 +1,137 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import type { FeedEvent } from '@/api/db';
-import { getItem, photosFor } from '@/api/items';
-import { getList, listPeople, listProgress } from '@/api/lists';
+import { db, FeedEvent, Profile } from '@/api/db';
+import { getItem, itemsForList, photosFor } from '@/api/items';
+import { getList, listPeople, listProgress, progressLabel } from '@/api/lists';
 import { getProfile } from '@/api/profiles';
 import { longDay, names, timeAgo } from '@/lib';
-import { colors, space } from '@/theme';
+import { colors, hash } from '@/theme';
 import { AvatarStack } from './Avatar';
-import { InterestButton } from './InterestButton';
-import { Photo } from './Photo';
+import { DownButton, DownCount } from './Down';
+import { Paper } from './Paper';
+import { PhotoCarousel, Photo } from './Photo';
 import { ProgressBar } from './ProgressBar';
-import { Mono, Sans, SansBold, Serif } from './Text';
+import { Strike } from './Scribble';
+import { Hand, Mono, MonoMedium } from './Text';
 
 const VERB = {
   open_invite: 'open invite',
-  item_added: 'added a thing',
-  item_done: 'did it',
+  item_added: 'added an item',
+  item_done: 'done',
   list_done: 'finished a list',
   list_created: 'started a list',
 } as const;
 
-/** One post on Home: open invite, added a thing, did it, finished a list, started a list. */
-export function FeedPost({ event }: { event: FeedEvent }) {
+/** "irina · open invite · 2h", with their face(s). Tapping the name opens their profile. */
+function Who({ people, verb, at, joined }: { people: Profile[]; verb: string; at: string; joined?: boolean }) {
+  const solo = people.length === 1 ? people[0] : null;
+  const label = names(people);
+  return (
+    <View style={styles.who}>
+      <AvatarStack people={people} size={24} />
+      <Mono size={11} color={colors.inkSoft} style={{ flex: 1 }}>
+        {solo && solo.id !== db.me ? (
+          <MonoMedium size={11} onPress={() => router.push(`/user/${solo.username}`)} accessibilityRole="link">{label}</MonoMedium>
+        ) : (
+          <MonoMedium size={11}>{label}</MonoMedium>
+        )}
+        {joined ? ' ' : ' · '}
+        {verb} · {timeAgo(at)}
+      </Mono>
+    </View>
+  );
+}
+
+/** One post on Home. Each kind has its own card: an open invite, a crossed-off item, a new list. */
+export function FeedPost({ event, index }: { event: FeedEvent; index: number }) {
   const list = getList(event.list_id);
   const item = event.item_id ? getItem(event.item_id) : undefined;
   const actor = getProfile(event.actor_id);
   if (!list || !actor || (event.item_id && !item)) return null;
 
-  // "did it" and "finished" belong to everyone on the list, not just whoever tapped the box
-  const shared = event.kind === 'item_done' || event.kind === 'list_done';
-  const people = shared ? listPeople(list.id) : [actor];
   const { done, total } = listProgress(list.id);
-  // list posts have no photo of their own; anything about an item shows its first one
-  const photo = item ? photosFor(item.id).find((p) => p.path != null) : undefined;
-  const open = () => router.push(item ? `/item/${item.id}` : `/list/${list.id}`);
+  const photos = item ? photosFor(item.id) : [];
+  const openItem = () => router.push(item ? `/item/${item.id}` : `/list/${list.id}`);
 
-  const meta: string[] = [];
-  if (item) {
-    if (event.kind !== 'item_done' && item.date) meta.push(longDay(item.date));
-    meta.push(event.kind === 'item_done' ? `${list.title} · ${done}/${total}` : list.title);
-  } else {
-    meta.push(`${total} ${total === 1 ? 'thing' : 'things'}`);
+  // "done" and "finished" belong to everyone on the list, not just whoever crossed it off
+  if (event.kind === 'item_done' && item) {
+    const people = listPeople(list.id);
+    if (!photos.length) {
+      return (
+        <Paper fill={colors.gold} shape={index} lean={index} style={[styles.card, { gap: 8 }]} onPress={openItem} accessibilityLabel={`${item.title}, done`}>
+          <Who people={people} verb={VERB.item_done} at={event.created_at} joined={people.length > 1} />
+          <View style={{ alignSelf: 'flex-start' }}>
+            <Hand size={18}>{item.title}</Hand>
+            <Strike seed={hash(item.id) % 97} />
+          </View>
+          <Mono size={11}>{list.title} · {done}/{total}</Mono>
+        </Paper>
+      );
+    }
+    return (
+      <Paper fill={colors.cream} edge="ink" shape={index + 1} lean={index} style={[styles.card, { paddingHorizontal: 6, marginHorizontal: -6 }]}>
+        <View style={{ paddingHorizontal: 6 }}>
+          <Who people={people} verb={VERB.item_done} at={event.created_at} joined={people.length > 1} />
+        </View>
+        <PhotoCarousel photos={photos} height={photos.length > 1 ? 360 : 260} />
+        <Pressable onPress={openItem} style={{ paddingHorizontal: 6, gap: 4 }} accessibilityRole="button">
+          <Hand size={20}>{item.title}</Hand>
+          <Mono size={11}>{list.title} · {done}/{total}</Mono>
+        </Pressable>
+      </Paper>
+    );
   }
 
-  return (
-    <View style={styles.post}>
-      <Pressable style={styles.who} onPress={() => router.push(`/user/${actor.username}`)}>
-        <AvatarStack people={people} size={30} ring="rgba(247,242,227,0.5)" />
-        <Sans size={15} color={colors.inkSoft} style={{ flex: 1 }}>
-          <SansBold size={15}>{names(people)}</SansBold>
-          {shared ? ' ' : ' · '}
-          {VERB[event.kind]} · {timeAgo(event.created_at)}
-        </Sans>
-      </Pressable>
-      {photo ? (
-        <Pressable onPress={open} accessibilityRole="button" accessibilityLabel={item!.title}>
-          <Photo photo={photo} style={styles.photo} />
-        </Pressable>
-      ) : null}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-        <Pressable onPress={open} style={{ flex: 1 }} accessibilityRole="button">
-          <Serif size={23} style={{ lineHeight: 27 }}>{item ? item.title : list.title}</Serif>
-          <Mono color={colors.inkSoft} style={{ marginTop: 5 }}>{meta.join(' · ')}</Mono>
-          {event.kind === 'list_done' ? (
-            <View style={{ marginTop: space.md }}>
-              <ProgressBar done={done} total={total} />
-            </View>
+  if (event.kind === 'list_created' || event.kind === 'list_done') {
+    const finished = event.kind === 'list_done';
+    const fill = finished ? colors.gold : colors.straw;
+    const open = itemsForList(list.id).open.map((i) => i.title);
+    const preview = open.length > 3 ? `${open.slice(0, 3).join(' · ')} · +${open.length - 3} more` : open.join(' · ');
+    const people = finished ? listPeople(list.id) : [actor];
+    return (
+      <Pressable onPress={openItem} style={[styles.folderPost, { transform: [{ rotate: `${index % 2 ? 0.3 : -0.3}deg` }] }]} accessibilityRole="button" accessibilityLabel={list.title}>
+        <View style={[styles.postTab, { backgroundColor: fill }]}>
+          <Mono size={10.5}>{progressLabel(list.id)}</Mono>
+        </View>
+        <Paper fill={fill} edge="ink" edgeWidth={1.2} shape={2} style={[styles.card, { borderTopLeftRadius: 0, gap: 8 }]}>
+          <Who people={people} verb={VERB[event.kind]} at={event.created_at} joined />
+          <Hand size={20}>{list.title}</Hand>
+          {finished ? (
+            <View style={{ flexDirection: 'row' }}><ProgressBar done={done} total={total} outlined /></View>
+          ) : preview ? (
+            <Mono size={11} style={{ lineHeight: 17 }}>{preview}</Mono>
           ) : null}
-        </Pressable>
-        {item && !item.done_at ? <InterestButton itemId={item.id} showCount /> : null}
-      </View>
-    </View>
+        </Paper>
+      </Pressable>
+    );
+  }
+
+  // open invite, or a plain "added an item"
+  if (!item) return null;
+  const invite = event.kind === 'open_invite';
+  const meta = [item.date ? longDay(item.date) : null, list.title].filter(Boolean).join(' · ');
+  return (
+    <Paper fill={invite ? colors.sage : colors.cream} edge="ink" shape={index} lean={index} style={styles.card}>
+      <Who people={[actor]} verb={VERB[event.kind]} at={event.created_at} />
+      {invite && photos.length ? <Photo photo={photos[0]} style={{ height: 150 }} /> : null}
+      <Pressable onPress={openItem} style={{ gap: 4 }} accessibilityRole="button">
+        <Hand size={22} style={{ lineHeight: 25 }}>{item.title}</Hand>
+        <Mono size={11}>{meta}</Mono>
+      </Pressable>
+      {invite && item.open_invite && !item.done_at ? (
+        <View style={styles.bottom}>
+          <DownCount itemId={item.id} />
+          <DownButton itemId={item.id} />
+        </View>
+      ) : null}
+    </Paper>
   );
 }
 
 const styles = StyleSheet.create({
-  post: { paddingVertical: space.lg, borderBottomWidth: 1.5, borderBottomColor: colors.line },
-  who: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.md },
-  photo: { width: '100%', aspectRatio: 1.17, marginBottom: space.md },
+  card: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 14, gap: 10 },
+  who: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 32 },
+  folderPost: {},
+  postTab: { alignSelf: 'flex-start', height: 28, paddingHorizontal: 12, justifyContent: 'center', borderTopLeftRadius: 9, borderTopRightRadius: 11, borderWidth: 1.2, borderBottomWidth: 0, borderColor: colors.ink, marginBottom: -1.2, zIndex: 2 },
 });

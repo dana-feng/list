@@ -1,11 +1,21 @@
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, TextInput } from 'react-native';
 import { colors, fonts, noOutline } from '@/theme';
 import { Icon } from './Icon';
+import { Paper } from './Paper';
 
-export function SearchField({ value, onChange, placeholder, autoFocus, strong }: { value: string; onChange: (v: string) => void; placeholder?: string; autoFocus?: boolean; strong?: boolean }) {
+type Props = { value: string; onChange: (v: string) => void; placeholder?: string; autoFocus?: boolean; tone?: 'dash' | 'paper' };
+
+/** dash: a dashed box inside a folder. paper: the filled field on the dark background (search). */
+export function SearchField({ value, onChange, placeholder, autoFocus, tone = 'dash' }: Props) {
+  const paper = tone === 'paper';
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 48, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.paper, borderWidth: 1.5, borderColor: strong ? colors.ink : 'rgba(43,53,36,0.3)' }}>
-      <Icon name="search" size={18} color={colors.inkSoft} />
+    <Paper
+      fill={paper ? colors.paper : colors.cream}
+      edge={paper ? 'light' : 'dash'}
+      shape={paper ? 5 : 4}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: paper ? 48 : 44, paddingLeft: 12, paddingRight: 6 }}
+    >
+      <Icon name="search" size={paper ? 17 : 16} strokeWidth={2} />
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -15,13 +25,13 @@ export function SearchField({ value, onChange, placeholder, autoFocus, strong }:
         autoCapitalize="none"
         autoCorrect={false}
         accessibilityLabel={placeholder ?? 'Search'}
-        style={[{ flex: 1, fontFamily: fonts.sans, fontSize: 16, color: colors.ink, height: 44 }, noOutline]}
+        style={[{ flex: 1, fontFamily: fonts.mono, fontSize: paper ? 15 : 13, color: colors.ink, height: 42 }, noOutline]}
       />
       {value ? (
-        <Pressable onPress={() => onChange('')} hitSlop={10} accessibilityLabel="Clear search">
-          <Icon name="x" size={16} color={colors.inkSoft} />
+        <Pressable onPress={() => onChange('')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel="Clear search">
+          <Icon name="x" size={16} strokeWidth={2.2} />
         </Pressable>
       ) : null}
-    </View>
+    </Paper>
   );
 }

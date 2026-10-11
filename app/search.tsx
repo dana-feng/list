@@ -2,33 +2,38 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { useDb } from '@/api/db';
 import { searchPeople } from '@/api/profiles';
+import { FolderTab } from '@/components/FolderTab';
 import { BackButton } from '@/components/Header';
 import { PeopleList } from '@/components/PeopleList';
-import { Screen } from '@/components/Screen';
+import { FolderScreen } from '@/components/Screen';
 import { SearchField } from '@/components/SearchField';
-import { Mono, Sans } from '@/components/Text';
-import { colors, space } from '@/theme';
+import { Hand, Mono } from '@/components/Text';
+import { colors } from '@/theme';
 
 /** People by name or @username. */
 export default function Search() {
   useDb();
   const [q, setQ] = useState('');
+  const term = q.trim();
   const people = searchPeople(q);
   return (
-    <Screen
+    <FolderScreen
+      tabs="home"
       header={
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg, paddingHorizontal: space.xl, marginBottom: space.lg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 8, paddingRight: 18 }}>
           <BackButton />
           <View style={{ flex: 1 }}>
-            <SearchField value={q} onChange={setQ} placeholder="name or @username" autoFocus strong />
+            <SearchField tone="paper" value={q} onChange={setQ} placeholder="find people" autoFocus />
           </View>
         </View>
       }
+      folderTabs={<FolderTab label={term ? `people · “${term}”` : 'people'} />}
     >
-      <Mono size={13} style={{ marginBottom: space.sm }}>people</Mono>
-      <PeopleList people={people} />
-      {q.trim() && !people.length ? <Sans color={colors.inkSoft} style={{ marginTop: space.md }}>No one by that name yet.</Sans> : null}
-      {!q.trim() ? <Sans color={colors.inkSoft} style={{ marginTop: space.md }}>Type a name or username.</Sans> : null}
-    </Screen>
+      <PeopleList people={people} notes />
+      {term && !people.length ? (
+        <Hand size={20} center color={colors.inkSoft} style={{ marginTop: 30, lineHeight: 26 }}>no one by that name yet</Hand>
+      ) : null}
+      {!term ? <Mono size={12} center color={colors.inkSoft} style={{ marginTop: 30 }}>search by name or @handle</Mono> : null}
+    </FolderScreen>
   );
 }

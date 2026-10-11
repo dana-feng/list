@@ -1,59 +1,102 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Item, useDb } from '@/api/db';
+import { db, useDb } from '@/api/db';
 import { deleteItem, itemsForList, markDone, undoDone } from '@/api/items';
-import { canViewList, getList, invitedBy, isMember, listPeople, listProgress, membership, progressLabel, renameList, respondInvite, setVisibility, viewerIds, visibilityLabel } from '@/api/lists';
+import {
+  canViewList, getList, inviteMembers, invitedBy, isMember, listPeople, listProgress, membership, renameList, respondInvite,
+  setViewers, setVisibility, viewerIds,
+} from '@/api/lists';
+import { isFollowing } from '@/api/profiles';
 import { AvatarStack } from '@/components/Avatar';
-import { DoneToast } from '@/components/DoneToast';
-import { FolderCard } from '@/components/FolderCard';
-import { Header } from '@/components/Header';
-import { Icon } from '@/components/Icon';
-import { ItemRow } from '@/components/ItemRow';
+import { LinkText, Pill } from '@/components/Button';
+import { DoneSheet } from '@/components/DoneSheet';
+import { FolderTab } from '@/components/FolderTab';
+import { Header, SaveAction, TextAction } from '@/components/Header';
+import { DoneRow, OpenRow } from '@/components/ItemRow';
+import { ListFields } from '@/components/ListFields';
+import { Paper } from '@/components/Paper';
 import { ProgressBar } from '@/components/ProgressBar';
-import { Screen } from '@/components/Screen';
-import { Mono, Sans, SansBold, Serif } from '@/components/Text';
-import { TextAction } from '@/components/TextAction';
-import { TitleField } from '@/components/TitleField';
-import { VisibilityPicker } from '@/components/VisibilityPicker';
-import { colors, space } from '@/theme';
+import { FolderScreen } from '@/components/Screen';
+import { Hand, Label, Mono } from '@/components/Text';
+import { Choice, choiceOf } from '@/components/VisibilityPicker';
+import { names } from '@/lib';
+import { colors } from '@/theme';
+
+const SHOW_DONE = 3;
 
 /**
- * A list, yours or a friend's. Members get checkboxes and the paper plane; everyone else gets stars.
- * Members can also Edit: rename the list and take things off it. Nothing changes until Done.
+ * A list, yours or a friend's. On yours: tap an item's circle, then scribble across it to cross it off.
+ * On a friend's: open invites get "i'm down". Owners can also edit: rename, owners, who can see it, take items off.
  */
 export default function ListScreen() {
-  const db = useDb();
+  useDb();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [toast, setToast] = useState<Item | null>(null);
-  const [pickingVisibility, setPickingVisibility] = useState(false);
+  const list = getList(id);
+
+  const [armed, setArmed] = useState<string | null>(null);
+  const [nudge, setNudge] = useState(false);
+  const [cele, setCele] = useState<string | null>(null);
+  const [allDone, setAllDone] = useState(false);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState('');
+  const [invites, setInvites] = useState<string[]>([]);
+  const [choice, setChoice] = useState<Choice>('followers');
+  const [viewers, setViewerDraft] = useState<string[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
-  const list = getList(id);
 
   if (!list || !canViewList(id)) {
     return (
-      <Screen header={<Header />}>
-        <Serif size={24}>can't open this list</Serif>
-        <Sans color={colors.inkSoft}>It's private, or it's gone.</Sans>
-      </Screen>
+      <FolderScreen tabs="lists" header={<Header />} folderTabs={<FolderTab label="list" />}>
+        <Hand size={24}>can’t open this list</Hand>
+        <Mono size={12} color={colors.inkSoft}>it’s private, or it’s gone.</Mono>
+      </FolderScreen>
     );
   }
 
   const member = isMember(id);
   const invited = membership(id)?.status === 'invited';
-  const owner = member; // everyone on a list is an equal owner
+  const people = listPeople(id);
   const { done, total } = listProgress(id);
   const items = itemsForList(id);
   const open = items.open.filter((i) => !removed.includes(i.id));
   const finished = items.done.filter((i) => !removed.includes(i.id));
+  const shownDone = allDone || editing ? finished : finished.slice(0, SHOW_DONE);
+  const others = people.filter((p) => p.id !== db.me);
+  const owner = others[0] ?? people[0];
 
+  // ---- crossing things off ----
+  const arm = (itemId: string) => {
+    setNudge(false);
+    setArmed(armed === itemId ? null : itemId);
+  };
+  const scribbled = (itemId: string, crossed: boolean) => {
+    if (!crossed) {
+      setNudge(true);
+      setTimeout(() => setNudge(false), 1600);
+      return;
+    }
+    setArmed(null);
+    setNudge(false);
+    markDone(itemId);
+    setCele(itemId);
+  };
+  // once that's out of the way, a finished list gets its own moment
+  const afterCele = (toCard: boolean) => {
+    const itemId = cele;
+    setCele(null);
+    if (toCard && itemId) router.push(`/done/${itemId}`);
+    else if (getList(id)?.completed_at) router.push(`/done/${id}?kind=list`);
+  };
+
+  // ---- editing ----
   const startEdit = () => {
     setTitle(list.title);
+    setInvites([]);
+    setChoice(choiceOf(list.visibility, viewerIds(id).length));
+    setViewerDraft(viewerIds(id));
     setRemoved([]);
-    setToast(null);
-    setPickingVisibility(false);
+    setArmed(null);
     setEditing(true);
   };
   const stopEdit = () => {
@@ -62,100 +105,133 @@ export default function ListScreen() {
   };
   const save = () => {
     renameList(id, title);
+    if (invites.length) inviteMembers(id, invites);
+    const before = choiceOf(list.visibility, viewerIds(id).length);
+    if (choice === 'me' || choice === 'specific') {
+      const next = choice === 'me' ? [] : viewers;
+      const was = viewerIds(id);
+      if (next.length !== was.length || next.some((v) => !was.includes(v))) setViewers(id, next);
+      if (list.visibility !== 'specific') setVisibility(id, 'specific');
+    } else if (choice !== before) {
+      setVisibility(id, choice);
+    }
     removed.forEach(deleteItem);
     stopEdit();
   };
-  const remove = editing ? (item: Item) => setRemoved((r) => [...r, item.id]) : undefined;
 
-  const check = (item: Item) => {
-    if (item.done_at) {
-      undoDone(item.id);
-      setToast(null);
-    } else {
-      markDone(item.id);
-      setToast(item);
-    }
-  };
-  // once the post is out, a finished list gets its own "you finished" moment
-  const afterToast = () => {
-    setToast(null);
-    if (getList(id)?.completed_at) router.push(`/done/${id}?kind=list`);
-  };
+  const why =
+    member || invited
+      ? null
+      : list.visibility === 'anyone'
+        ? "you can see this list because it's open to anyone"
+        : list.visibility === 'specific'
+          ? 'you can see this list because they picked you'
+          : (() => {
+              const followed = people.find((p) => isFollowing(p.id));
+              return followed ? `you can see this list because you follow ${followed.name}` : null;
+            })();
+
+  const celeItem = cele ? items.done.find((i) => i.id === cele) ?? items.open.find((i) => i.id === cele) : undefined;
+  const tabLabel = member || invited ? `${list.title} · ${done}/${total}` : `${owner ? `${owner.name}'s · ` : ''}${list.title}`;
 
   return (
-    <Screen
+    <FolderScreen
+      tabs={member ? 'lists' : 'home'}
+      scrollEnabled={!armed}
       header={
         editing ? (
-          <Header left={<TextAction label="Cancel" quiet onPress={stopEdit} />} right={<TextAction label="Done" onPress={save} />} />
+          <Header left={<TextAction label="cancel" onPress={stopEdit} />} title="edit" right={<SaveAction onPress={save} disabled={!title.trim()} />} />
         ) : (
-          <Header right={member ? <TextAction label="Edit" onPress={startEdit} /> : undefined} />
+          <Header right={member ? <TextAction label="edit" onPress={startEdit} /> : undefined} />
         )
       }
-      overlay={
-        toast ? (
-          <DoneToast
-            title={toast.title}
-            onAddPics={() => { setToast(null); router.push(`/done/${toast.id}`); }}
-            onUndo={() => { undoDone(toast.id); setToast(null); }}
-            onLater={afterToast}
-          />
-        ) : null
-      }
+      folderTabs={<FolderTab label={tabLabel} onPress={!member && owner ? () => router.push(`/user/${owner.username}`) : undefined} />}
+      overlay={celeItem ? <DoneSheet title={celeItem.title} count={`${listProgress(id).done} of ${listProgress(id).total} done`} onCard={() => afterCele(true)} onLater={() => afterCele(false)} /> : null}
     >
-      <FolderCard tab={progressLabel(id)} style={{ marginHorizontal: -4, marginBottom: space.lg }}>
-        {editing ? (
-          <TitleField editing value={title} onChange={setTitle} placeholder="name your list" />
-        ) : (
-          <Serif size={28} style={{ lineHeight: 32 }}>{list.title}</Serif>
-        )}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space.lg, marginBottom: space.lg }}>
-          <AvatarStack people={listPeople(id)} size={30} />
-          {owner && !editing ? (
-            <Pressable onPress={() => setPickingVisibility(!pickingVisibility)} hitSlop={10} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }} accessibilityRole="button" accessibilityLabel={`Who can see it: ${visibilityLabel(list)}`}>
-              <Mono size={13}>{visibilityLabel(list)}</Mono>
-              <Icon name="down" size={14} />
-            </Pressable>
-          ) : (
-            <Mono size={13}>{visibilityLabel(list)}</Mono>
-          )}
-        </View>
-        {owner && pickingVisibility ? (
-          <View style={{ marginBottom: space.lg }}>
-            <VisibilityPicker
-              value={list.visibility}
-              specificCount={viewerIds(id).length}
-              onChange={(v) => { setVisibility(id, v); setPickingVisibility(false); }}
-              onPickPeople={() => router.push(`/list/${id}/people?mode=viewers`)}
-            />
-            <Pressable onPress={() => router.push(`/list/${id}/people?mode=members`)} style={{ paddingTop: space.md }} accessibilityRole="button">
-              <SansBold>+ invite people to this list</SansBold>
-            </Pressable>
+      {editing ? (
+        <ListFields
+          title={title}
+          onTitle={setTitle}
+          owners={invites}
+          lockedOwners={db.list_members.filter((m) => m.list_id === id && m.user_id !== db.me).map((m) => m.user_id)}
+          onOwners={setInvites}
+          choice={choice}
+          viewers={viewers}
+          onVisibility={(c, v) => { setChoice(c); setViewerDraft(v); }}
+        />
+      ) : (
+        <View style={{ paddingHorizontal: 4 }}>
+          <Hand size={28} style={{ lineHeight: 30 }}>{list.title}</Hand>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <AvatarStack people={people} size={22} />
+            <Mono size={11}>{names(people)}</Mono>
           </View>
-        ) : null}
-        <ProgressBar done={done} total={total} height={8} />
-      </FolderCard>
+          {!member ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }}>
+              <ProgressBar done={done} total={total} height={9} outlined />
+              <Mono size={10.5}>{done} of {total}</Mono>
+            </View>
+          ) : null}
+        </View>
+      )}
 
       {invited ? (
-        <View style={{ backgroundColor: colors.cream, borderRadius: 16, borderWidth: 2, borderColor: colors.gold, padding: space.lg, marginHorizontal: -4, marginBottom: space.lg }}>
-          <Sans>{invitedBy(id)?.name} invited you to this list.</Sans>
-          <View style={{ flexDirection: 'row', gap: space.xl, marginTop: space.md }}>
-            <Pressable onPress={() => respondInvite(id, true)} accessibilityRole="button"><SansBold>Join</SansBold></Pressable>
-            <Pressable onPress={() => { respondInvite(id, false); router.back(); }} accessibilityRole="button"><Sans color={colors.inkSoft}>No thanks</Sans></Pressable>
+        <Paper fill={colors.cream} edge="ink" shape={2} style={{ padding: 14, marginTop: 16, gap: 10 }}>
+          <Mono size={12}>{invitedBy(id)?.name ?? 'someone'} invited you to this list.</Mono>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pill label="join" height={36} onPress={() => respondInvite(id, true)} />
+            <Pill label="no thanks" on height={36} onPress={() => { respondInvite(id, false); router.back(); }} />
           </View>
-        </View>
+        </Paper>
       ) : null}
 
-      <View style={{ marginHorizontal: -4 }}>
-        {open.map((item) => <ItemRow key={item.id} item={item} member={member} onCheck={check} onRemove={remove} />)}
+      <Label style={{ marginTop: 18, marginBottom: 8, marginHorizontal: 2 }}>to do</Label>
+      <View style={{ gap: member ? 6 : 8 }}>
+        {open.map((item, i) => (
+          <OpenRow
+            key={item.id}
+            item={item}
+            index={i}
+            member={member}
+            armed={armed === item.id}
+            nudge={armed === item.id && nudge}
+            onArm={() => arm(item.id)}
+            onScribble={(crossed) => scribbled(item.id, crossed)}
+            onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}
+          />
+        ))}
         {member && !editing ? (
-          <Pressable onPress={() => router.push(`/item/new?list=${id}`)} style={{ paddingHorizontal: 10, paddingVertical: space.lg }} accessibilityRole="button">
-            <SansBold size={16} color={colors.dark}>+ add a thing</SansBold>
-          </Pressable>
-        ) : <View style={{ height: space.md }} />}
-        {finished.map((item) => <ItemRow key={item.id} item={item} member={member} onCheck={check} onRemove={remove} />)}
-        {removed.length ? <Mono color={colors.inkSoft} style={{ paddingHorizontal: 10, paddingTop: space.sm }}>{removed.length} to delete · tap Done to confirm</Mono> : null}
-        {total === 0 && !member ? <Sans color={colors.inkSoft}>Nothing on this list yet.</Sans> : null}
+          <Paper onPress={() => router.push(`/item/new?list=${id}`)} edge="dash" shape={3} style={{ height: 48, justifyContent: 'center', paddingLeft: 18 }} accessibilityLabel="Add an item to this list">
+            <Hand size={18} color={colors.inkSoft}>+ write another</Hand>
+          </Paper>
+        ) : null}
+        {!open.length && !member ? <Mono size={12} color={colors.inkSoft}>nothing left to do here.</Mono> : null}
       </View>
-    </Screen>
+
+      {finished.length ? (
+        <>
+          <Label style={{ marginTop: 24, marginBottom: 8, marginHorizontal: 2 }}>done · {finished.length}</Label>
+          <View style={{ gap: 4 }}>
+            {shownDone.map((item, i) => (
+              <DoneRow
+                key={item.id}
+                item={item}
+                index={i}
+                onUndo={member ? () => undoDone(item.id) : undefined}
+                onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}
+              />
+            ))}
+            {!allDone && !editing && finished.length > SHOW_DONE ? (
+              <LinkText label={`show all ${finished.length} done`} onPress={() => setAllDone(true)} />
+            ) : null}
+          </View>
+        </>
+      ) : null}
+
+      {editing && removed.length ? (
+        <Mono size={11} color={colors.inkSoft} style={{ marginTop: 12 }}>{removed.length} to delete · tap save to confirm</Mono>
+      ) : null}
+      {why ? <Mono size={10.5} color={colors.inkSoft} style={{ marginTop: 22, marginHorizontal: 4, lineHeight: 16 }}>{why}</Mono> : null}
+    </FolderScreen>
   );
 }

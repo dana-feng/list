@@ -1,31 +1,56 @@
+import { useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useDb } from '@/api/db';
-import { followersOf, followingOf, getProfileByUsername } from '@/api/profiles';
+import { followCounts, followersOf, followingOf, getProfileByUsername } from '@/api/profiles';
+import { FolderTab } from '@/components/FolderTab';
 import { Header } from '@/components/Header';
 import { PeopleList } from '@/components/PeopleList';
-import { Screen } from '@/components/Screen';
-import { Mono, Sans } from '@/components/Text';
-import { colors, space } from '@/theme';
+import { FolderScreen } from '@/components/Screen';
+import { SearchField } from '@/components/SearchField';
+import { Mono } from '@/components/Text';
+import { colors } from '@/theme';
 
-/** Who follows someone (mode=followers) or who they follow (mode=following). */
+type Mode = 'followers' | 'following';
+
+/** Someone's people: who follows them and who they follow, as two folder tabs. */
 export default function Follows() {
   const db = useDb();
-  const { username, mode } = useLocalSearchParams<{ username: string; mode: 'followers' | 'following' }>();
+  const { username, mode } = useLocalSearchParams<{ username: string; mode?: Mode }>();
+  const [tab, setTab] = useState<Mode>(mode === 'following' ? 'following' : 'followers');
+  const [q, setQ] = useState('');
   const person = getProfileByUsername(username);
-  const following = mode === 'following';
   const own = person?.id === db.me;
-  const people = person ? (following ? followingOf(person.id) : followersOf(person.id)) : [];
+  const counts = person ? followCounts(person.id) : { followers: 0, following: 0 };
+  const all = person ? (tab === 'following' ? followingOf(person.id) : followersOf(person.id)) : [];
+  const s = q.trim().toLowerCase().replace(/^@/, '');
+  const people = s ? all.filter((p) => p.name.toLowerCase().includes(s) || p.username.includes(s)) : all;
   const empty = !person
     ? `@${username} doesn't exist.`
-    : following
-      ? `${own ? "You aren't" : `${person.name} isn't`} following anyone yet.`
-      : `No one follows ${own ? 'you' : person.name} yet.`;
+    : s
+      ? 'no one by that name here.'
+      : tab === 'following'
+        ? `${own ? "you aren't" : `${person.name} isn't`} following anyone yet.`
+        : `no one follows ${own ? 'you' : person.name} yet.`;
+
   return (
-    <Screen refreshable header={<Header center={<Mono size={14} center>@{username}</Mono>} right={<View style={{ width: 26 }} />} />}>
-      <Mono size={13} style={{ marginBottom: space.sm }}>{following ? 'following' : 'followers'}</Mono>
+    <FolderScreen
+      tabs={own ? 'lists' : 'home'}
+      refreshable
+      roundCorner={tab === 'following'}
+      header={<Header title={person ? `${own ? 'your' : `${person.name}'s`} people` : `@${username}`} />}
+      folderTabs={
+        <>
+          <FolderTab tab label={`${counts.followers} followers`} on={tab === 'followers'} onPress={() => setTab('followers')} />
+          <FolderTab tab label={`${counts.following} following`} on={tab === 'following'} onPress={() => setTab('following')} />
+        </>
+      }
+    >
+      <View style={{ marginBottom: 14 }}>
+        <SearchField value={q} onChange={setQ} placeholder="find someone" />
+      </View>
       <PeopleList people={people} />
-      {!people.length ? <Sans color={colors.inkSoft} style={{ marginTop: space.md }}>{empty}</Sans> : null}
-    </Screen>
+      {!people.length ? <Mono size={12} color={colors.inkSoft} style={{ marginTop: 12 }}>{empty}</Mono> : null}
+    </FolderScreen>
   );
 }

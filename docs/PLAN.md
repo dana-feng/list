@@ -1,10 +1,10 @@
 # list: React Native build plan
 
-Last updated Oct 11, 2026. Designs live on the design canvas (claude.ai artifact "*-list, simplified"); this file is the build plan that goes with them.
+Last updated Oct 11, 2026. Designs live on the design canvas (claude.ai artifact "List Feed Explorations", the "Final" boards); this file is the build plan that goes with them.
 
 ## Summary
 
-v0 is an Expo (React Native) app on Supabase, iOS only, matching the design canvas: phone sign-up, lists you share with friends, things with photos and notes, stars for "interested?", and a feed of what your people are doing.
+v0 is an Expo (React Native) app on Supabase, iOS only, matching the design canvas: phone sign-up, lists you share with friends, items with photos and notes that you cross off with a scribble, "i'm down" on open invites, and a feed of what your people are doing.
 
 **Where things stand:** the screens are built, the database is live, and the app reads and writes Supabase (PRs #1–#4). What's left is testing on phones, fixing what that turns up, and the TestFlight items in phase 6.
 
@@ -19,7 +19,7 @@ v0 is an Expo (React Native) app on Supabase, iOS only, matching the design canv
 | Auth | Supabase phone + password | v0: any US number, code `000000` (used as the password), "Enable phone confirmations" off, Twilio fields hold placeholders. Real texts later: Twilio Verify, ~$0.06 a sign-in |
 | Database | Supabase Postgres + row-level security | Visibility rules live in the database, not the app |
 | Photos | Supabase Storage | `photos` (private, same visibility as the list), `avatars` (public) |
-| Fonts | Fraunces, Instrument Sans, DM Mono | Same type as the mocks |
+| Fonts | Shantell Sans (handwritten), IBM Plex Mono | Same type as the mocks; only the five weights used are bundled |
 | Phone features | expo-image-picker, expo-contacts, expo-image, expo-sqlite (saved sign-in) | |
 | Ship | EAS Build + Submit | |
 
@@ -102,28 +102,23 @@ View, edit and new are one screen each with a mode, so a list or thing looks the
 
 | Component | What it is |
 | --- | --- |
-| Screen | Sage gradient background + safe area |
-| FolderCard | Card with a tab sticking up from its top-left ("5/9 done", "new list", "invited") |
-| ProgressBar | Row of small segments under a list, one per thing, filled when done |
-| TextAction | Plain-text header action (Edit, Save, Create, Add, Cancel) |
-| Avatar, AvatarStack | Round photo; overlapping row of them |
-| TabBar | Home, +, lists as folder tabs |
-| TitleField, NotesField, DateField | Text in view mode, dashed-underline inputs in edit |
-| PhotoGrid | Big first photo + smaller ones; add button when you can add |
-| ListPicker | List dropdown inside the folder tab (search, recent, + new list) |
-| VisibilityPicker | Anyone / Followers / Specific people |
-| PersonPicker | Searchable follower list with checkboxes (select or invite) |
-| UsernameField | Input with live available / taken message |
-| Checkbox | The square you tick to mark done |
-| InterestButton | Star + "interested?" label; gold when tapped; hidden on your own things |
-| AskButton | The paper plane that turns on an open invite |
-| ItemRow | One thing on a list: open (yours), open (a friend's), or done |
-| ListFolderCard | A list on a profile grid; invited version with Join / No thanks |
-| PeopleRow | Who's doing it, then who's interested + count |
-| FeedPost, OpenInviteRow | Feed posts; Open Invite rows with the date block |
-| PersonRow, FollowButton | Photo, name, @username; dark "Follow" / grey "Following" |
-| ProfileHeader | Photo, lists / followers / following counts, name, lists done |
-| DoneToast | "Done: …" with Add pics / Undo / Later |
+| Screen, FolderScreen | Dark background + safe area; FolderScreen adds the header row, folder tabs and the big paper folder most screens use |
+| Paper | A hand-cut box: uneven corners, optional pen line (solid or dashed), slight tilt. Everything else is built from it |
+| FolderTab | A tab on the folder ("all", "open invites · 4", "list · 5/9") |
+| Header, TextAction, SaveAction | Top row on the dark background: back / cancel, handwritten title, edit / save |
+| TabBar | Home, + and your lists as folder tabs; + opens the "new" menu. Drawn on pushed screens too |
+| Button, Pill, LinkText | Full-width button; small toggle ("i'm down" / "down ✓", "follow" / "following"); underlined text action |
+| Avatar, AvatarStack | Photo, or an initial on a paper circle; overlapping row of them |
+| ScribblePad, Scribble | "Scribble to finish": arm with the circle, scribble across the card to cross it off; the scribble drawn over done titles |
+| ItemRow (OpenRow, DoneRow) | An item still to do (circle, invite chip / i'm down) or crossed off (gold, scribbled) |
+| DoneSheet | "you did it!" after crossing something off: add photos + make the card, or not now |
+| ListFields, VisibilityPicker, PersonPicker | Name / owners / who can see it, shared by new list and editing a list; the people sheet |
+| DateField, NotesField, PhotoStrip, Switch | Item fields in view and edit |
+| ListPicker | "add it to" dropdown in the new-item folder tab |
+| Down | "i'm down" button and "3 are down" with faces (the interests table) |
+| FeedPost, OpenInviteRow | Feed cards per kind; open-invite tickets with the date stub |
+| ListFolderCard, FolderGrid, ProfileHeader | Lists on a profile (invited version with join / no); counts, name, lists done |
+| PersonRow, PeopleList, FollowButton, SearchField | People slips with follow buttons; the dashed / paper search field |
 
 ## Build phases
 
