@@ -1,33 +1,23 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, List } from '@/api/db';
-import { photosFor } from '@/api/items';
 import { invitedBy, listPeople, listProgress, progressLabel, respondInvite, visibilityLabel } from '@/api/lists';
 import { colors, folderFills, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { Icon } from './Icon';
 import { Pill } from './Button';
-import { Photo } from './Photo';
 import { ProgressBar } from './ProgressBar';
 import { Hand, Mono, MonoMedium } from './Text';
-
-/** The first photo anyone added to something on the list, for its cover. */
-function coverOf(listId: string) {
-  const ids = new Set(db.items.filter((i) => i.list_id === listId).map((i) => i.id));
-  const photo = db.item_photos.find((p) => ids.has(p.item_id));
-  return photo ? photosFor(photo.item_id)[0] : undefined;
-}
 
 const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id === listId && i.open_invite && !i.done_at).length;
 
 /**
- * A list as a folder on a profile: a tab with how far along it is, a cover, the name and a progress bar.
+ * A list as a folder on a profile: a tab with how far along it is, a cover placeholder, the name and a progress bar.
  * `invited` is the olive "invited" folder with join / no. `own` adds who's on it and who can see it.
  */
 export function ListFolderCard({ list, invited, own, index }: { list: List; invited?: boolean; own?: boolean; index: number }) {
   const { done, total } = listProgress(list.id);
   const fill = invited ? colors.cream : folderFills[hash(list.id) % folderFills.length];
-  const cover = coverOf(list.id);
   const inviter = invitedBy(list.id);
   const invites = own ? 0 : openInviteCount(list.id);
   const pct = total ? Math.round((100 * done) / total) : 0;
@@ -44,11 +34,10 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
         accessibilityLabel={`Open ${list.title}`}
         style={[styles.body, { backgroundColor: fill, borderColor: invited ? colors.olive : colors.paper, borderWidth: invited ? 2 : 1.6 }]}
       >
-        {cover ? <Photo photo={cover} style={{ height: 66 }} /> : (
-          <View style={[styles.cover, { backgroundColor: invited ? colors.sage : fill === colors.paper ? colors.sage : colors.paper }]}>
-            <Icon name="image" size={22} />
-          </View>
-        )}
+        {/* placeholder until lists get their own cover images */}
+        <View style={[styles.cover, { backgroundColor: invited ? colors.sage : fill === colors.paper ? colors.sage : colors.paper }]}>
+          <Icon name="image" size={22} />
+        </View>
         <Hand size={17} style={{ lineHeight: 19 }}>{list.title}</Hand>
         {invited ? (
           <>
