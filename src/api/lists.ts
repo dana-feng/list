@@ -1,5 +1,5 @@
 import { commit, db, List, now, Visibility } from './db';
-import { getProfile } from './profiles';
+import { getProfile, isFollowing } from './profiles';
 import { supabase } from './supabase';
 import { newId, write } from './sync';
 
@@ -17,8 +17,24 @@ export const listPeople = (listId: string, status: 'joined' | 'invited' = 'joine
     .map((m) => getProfile(m.user_id)!)
     .filter(Boolean);
 
-/** The database only sends lists you're allowed to see (can_view_list), so having it means you can view it. */
-export const canViewList = (listId: string) => !!getList(listId);
+/** You follow someone who's on the list: what "followers" means for a list and for an open invite. */
+export const followsSomeoneOn = (listId: string) =>
+  db.list_members.some((m) => m.list_id === listId && m.status === 'joined' && isFollowing(m.user_id));
+
+/**
+ * Whether you can see the whole list. Same rule as can_view_list in the database.
+ * Having the list locally isn't enough: an open invite that includes you also brings its
+ * list's name and people along, without the rest of what's on it.
+ */
+export function canViewList(listId: string) {
+  const list = getList(listId);
+  if (!list) return false;
+  if (membership(listId)) return true;
+  if (list.visibility === 'anyone') return true;
+  if (list.visibility === 'followers') return followsSomeoneOn(listId);
+  if (list.visibility === 'specific') return db.list_viewers.some((v) => v.list_id === listId && v.user_id === db.me);
+  return false;
+}
 
 export function listProgress(listId: string) {
   const items = db.items.filter((i) => i.list_id === listId);

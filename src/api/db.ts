@@ -4,6 +4,8 @@
 import { useSyncExternalStore } from 'react';
 
 export type Visibility = 'anyone' | 'followers' | 'specific' | 'just_me';
+/** Who an open invite goes to. Separate from who can see the list. */
+export type InviteAudience = 'followers' | 'specific' | 'anyone';
 export type EventKind = 'list_created' | 'item_added' | 'open_invite' | 'item_done' | 'list_done';
 
 export type Profile = { id: string; username: string; name: string; profile_photo: string | null; created_at: string };
@@ -18,6 +20,7 @@ export type Item = {
   notes: string;
   date: string | null; // YYYY-MM-DD
   open_invite: boolean;
+  invite_audience: InviteAudience;
   caption: string | null;
   done_at: string | null;
   done_by: string | null;
@@ -25,6 +28,7 @@ export type Item = {
 };
 /** path is a storage path in the photos bucket, or a local file uri while it's uploading. */
 export type ItemPhoto = { id: string; item_id: string; path: string; position: number; added_by: string | null; created_at: string };
+export type ItemInvitee = { item_id: string; user_id: string };
 export type Interest = { item_id: string; user_id: string; created_at: string };
 export type FeedEvent = { id: string; actor_id: string; kind: EventKind; list_id: string; item_id: string | null; created_at: string };
 
@@ -42,6 +46,7 @@ export type Db = {
   list_viewers: ListViewer[];
   items: Item[];
   item_photos: ItemPhoto[];
+  item_invitees: ItemInvitee[];
   interests: Interest[];
   events: FeedEvent[];
   /** storage path -> signed url for photos in the private bucket */
@@ -56,6 +61,7 @@ export const emptyTables = () => ({
   list_viewers: [] as ListViewer[],
   items: [] as Item[],
   item_photos: [] as ItemPhoto[],
+  item_invitees: [] as ItemInvitee[],
   interests: [] as Interest[],
   events: [] as FeedEvent[],
   photoUrls: {} as Record<string, string>,

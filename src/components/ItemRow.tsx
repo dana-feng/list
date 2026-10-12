@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import type { Item } from '@/api/db';
-import { interestedPeople, toggleOpenInvite } from '@/api/items';
+import { interestedPeople, isInvitedTo, toggleOpenInvite } from '@/api/items';
 import { monthDay, shortDay } from '@/lib';
-import { cardFills, colors, corners, hash, tilt } from '@/theme';
+import { colors, corners, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { DownButton, downText } from './Down';
 import { Icon } from './Icon';
@@ -28,19 +28,20 @@ type OpenProps = {
 
 /** Something still to do. Tap the circle, then scribble across the card to cross it off. */
 export function OpenRow({ item, index, member, armed, nudge, onArm, onScribble, onRemove }: OpenProps) {
-  const fill = cardFills[hash(item.id) % cardFills.length];
   const open = () => router.push(`/item/${item.id}`);
   const down = item.open_invite ? interestedPeople(item.id) : [];
+  // on someone else's list, it's only an open invite for you if you're in its audience
+  const invited = !member && isInvitedTo(item.id);
 
   // a friend's list: date + open invite in the small line, "i'm down" on the right
   const sub = member
     ? item.open_invite ? downText(item.id) : ''
-    : [item.date ? shortDay(item.date) : 'no date yet', item.open_invite ? `open invite · ${interestedPeople(item.id).length} down` : null].filter(Boolean).join(' · ');
+    : [item.date ? shortDay(item.date) : 'no date yet', invited ? `open invite · ${interestedPeople(item.id).length} down` : null].filter(Boolean).join(' · ');
 
   return (
     <ScribblePad armed={!!armed} onFinish={(crossed) => onScribble?.(crossed)} leftGap={52} style={tilt(index)}>
       <View
-        style={[styles.row, corners(index), { backgroundColor: fill, borderColor: armed ? colors.bark : colors.ink, borderWidth: armed ? 2.2 : 1.5 }]}
+        style={[styles.row, corners(index), { backgroundColor: colors.sage, borderColor: armed ? colors.bark : colors.ink, borderWidth: armed ? 2.2 : 1.5 }]}
       >
         {member && !onRemove ? (
           <Pressable
@@ -87,7 +88,7 @@ export function OpenRow({ item, index, member, armed, nudge, onArm, onScribble, 
               <Icon name="right" size={16} strokeWidth={2.2} />
             </Pressable>
           </>
-        ) : item.open_invite ? (
+        ) : invited ? (
           <DownButton itemId={item.id} />
         ) : (
           <Pressable onPress={open} style={styles.chevron} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>

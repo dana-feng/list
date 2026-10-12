@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { db, useDb } from '@/api/db';
+import { db, InviteAudience, useDb } from '@/api/db';
 import {
-  addItem, addPhoto, deleteItem, getItem, interestedPeople, isInterested, markDone, photosFor, removePhoto, toggleInterest,
-  toggleOpenInvite, undoDone, updateItem,
+  addItem, addPhoto, deleteItem, getItem, interestedPeople, inviteeIds, isInterested, isInvitedTo, markDone, photosFor, removePhoto, setInvite,
+  toggleInterest, undoDone, updateItem,
 } from '@/api/items';
-import { canViewList, getList, isMember, listPeople, listProgress, viewerIds } from '@/api/lists';
+import { getList, isMember, listPeople, listProgress, viewerIds } from '@/api/lists';
 import { AvatarStack } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { DateChip, DateField } from '@/components/DateField';
@@ -17,18 +17,22 @@ import { FieldRow, TitleInput } from '@/components/ListFields';
 import { ListPicker, ListPickerTab } from '@/components/ListPicker';
 import { NotesField } from '@/components/NotesField';
 import { Paper } from '@/components/Paper';
+import { PersonPicker } from '@/components/PersonPicker';
 import { PhotoStrip } from '@/components/PhotoGrid';
 import { Circle } from '@/components/Scribble';
 import { ScribblePad } from '@/components/ScribblePad';
 import { FolderScreen } from '@/components/Screen';
 import { Switch } from '@/components/Switch';
 import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
-import { VisibilityButton, choiceLabel } from '@/components/VisibilityPicker';
+import { INVITE_OPTIONS, VisibilityButton, VisibilityMenu, choiceLabel } from '@/components/VisibilityPicker';
 import { monthDay, toDay } from '@/lib';
 import { pickPhotos } from '@/pickPhotos';
 import { colors } from '@/theme';
 
-type Draft = { listId: string | null; title: string; date: string | null; notes: string; open_invite: boolean; photos: string[] };
+type Draft = {
+  listId: string | null; title: string; date: string | null; notes: string; photos: string[];
+  open_invite: boolean; invite_audience: InviteAudience; invitees: string[];
+};
 
 /** "followers", "irina's followers", "just me", "3 people"… for an item's list. */
 function whoCanSee(listId: string, member: boolean) {
@@ -40,7 +44,16 @@ function whoCanSee(listId: string, member: boolean) {
     return owner ? `${owner.name}'s followers` : 'followers';
   }
   if (!member && choice === 'specific') return 'people they picked';
+  if (!member && choice === 'just_me') return 'only the people on it';
   return choiceLabel(choice, viewerIds(listId).length);
+}
+
+/** "followers", "irina's followers", "3 people", "people they picked", "anyone": who an item's open invite goes to. */
+function whoIsInvited(listId: string, audience: InviteAudience, invitees: number, member: boolean) {
+  if (audience === 'anyone') return 'anyone';
+  if (audience === 'specific') return member ? `${invitees} ${invitees === 1 ? 'person' : 'people'}` : 'people they picked';
+  const owner = member ? undefined : listPeople(listId)[0];
+  return owner ? `${owner.name}'s followers` : 'followers';
 }
 
 const dayOf = (iso: string) => (toDay(new Date(iso)) === toDay(new Date()) ? 'today' : monthDay(iso));
@@ -59,15 +72,19 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const [nudge, setNudge] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [inviteMenu, setInviteMenu] = useState(false);
+  const [pickingInvitees, setPickingInvitees] = useState(false);
   const [draft, setDraft] = useState<Draft>({
-    listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, notes: item?.notes ?? '', open_invite: item?.open_invite ?? false, photos: [],
+    listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, notes: item?.notes ?? '', photos: [],
+    open_invite: item?.open_invite ?? false, invite_audience: item?.invite_audience ?? 'followers', invitees: item ? inviteeIds(item.id) : [],
   });
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const list = draft.listId ? getList(draft.listId) : undefined;
 
   // deleted here: stay blank while the screen slides away
   if (deleted) return <FolderScreen header={<Header />} folderTabs={<FolderTab label=" " />}>{null}</FolderScreen>;
-  if (!isNew && (!item || !list || !canViewList(list.id))) {
+  // having the item means you may see it: it's on a list you can see, or it's an open invite that includes you
+  if (!isNew && (!item || !list)) {
     return (
       <FolderScreen header={<Header />} folderTabs={<FolderTab label="item" />}>
         <Hand size={24}>can’t open this</Hand>
@@ -83,7 +100,8 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const photos = item ? photosFor(item.id) : draft.photos.map((path, i) => ({ id: `new${i}`, path }));
 
   const startEdit = () => {
-    if (item) set({ title: item.title, date: item.date, notes: item.notes, open_invite: item.open_invite });
+    if (item) set({ title: item.title, date: item.date, notes: item.notes, open_invite: item.open_invite, invite_audience: item.invite_audience, invitees: inviteeIds(item.id) });
+    setInviteMenu(false);
     setConfirmingDelete(false);
     setArmed(false);
     setEditing(true);
@@ -96,14 +114,17 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const save = () => {
     if (isNew) {
       if (!draft.listId) return;
-      addItem({ list_id: draft.listId, title: draft.title, date: draft.date, notes: draft.notes, open_invite: draft.open_invite, photos: draft.photos });
+      addItem({
+        list_id: draft.listId, title: draft.title, date: draft.date, notes: draft.notes, photos: draft.photos,
+        open_invite: draft.open_invite, invite_audience: draft.invite_audience, invitees: draft.invitees,
+      });
       // from a list's "+ write another", go back to it; from the + menu, land on the list
       if (listId) goBack();
       else router.replace(`/list/${draft.listId}`);
       return;
     }
     updateItem(item!.id, { title: draft.title.trim() || item!.title, date: draft.date, notes: draft.notes });
-    if (draft.open_invite !== item!.open_invite) toggleOpenInvite(item!.id);
+    setInvite(item!.id, { open: draft.open_invite, audience: draft.invite_audience, invitees: draft.invitees });
     setEditing(false);
   };
   const addPhotos = async () => {
@@ -146,6 +167,18 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const down = item?.open_invite ? interestedPeople(item.id) : [];
   const canDown = !!item && canSayDown(item.id);
   const iAmDown = !!item && isInterested(item.id);
+  // someone else's item: only an open invite for you if you're in its audience
+  const invitedHere = !!item && !member && isInvitedTo(item.id);
+  const showInvite = member || invitedHere;
+  const inviteOn = editing ? draft.open_invite : member ? !!item?.open_invite : invitedHere;
+  const invitedLabel = editing
+    ? whoIsInvited(draft.listId ?? '', draft.invite_audience, draft.invitees.length, true)
+    : item ? whoIsInvited(item.list_id, item.invite_audience, inviteeIds(item.id).length, member) : '';
+  const pickAudience = (audience: InviteAudience) => {
+    setInviteMenu(false);
+    if (audience === 'specific') setPickingInvitees(true);
+    else set({ invite_audience: audience, invitees: [] });
+  };
 
   const card = (
     <Paper fill={done ? colors.gold : colors.sage} edge="ink" edgeWidth={armed ? 2.2 : 1.5} shape={4} lean={0} style={[styles.card, armed && { borderColor: colors.bark }]}>
@@ -157,20 +190,33 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       {editing ? <DateField value={draft.date} onChange={(date) => set({ date })} /> : item!.date ? <DateChip value={item!.date} /> : null}
 
       <View style={{ gap: 4 }}>
-        <FieldRow label="open invite">
-          {editing ? (
-            <Switch on={draft.open_invite} onPress={() => set({ open_invite: !draft.open_invite })} label="Open invite" text={draft.open_invite ? 'on · followers can say they’re down' : 'off'} />
-          ) : item!.open_invite ? (
-            <>
-              {down.length ? <AvatarStack people={down} size={22} /> : null}
-              <Mono size={11.5}>{member ? `on · ${downText(item!.id)}` : downText(item!.id)}</Mono>
-            </>
-          ) : (
-            <Mono size={11.5}>off</Mono>
-          )}
-        </FieldRow>
-        <FieldRow label="who can see">
-          <VisibilityButton label={list ? whoCanSee(list.id, member) : 'pick a list first'} />
+        {showInvite ? (
+          <FieldRow label="open invite">
+            {editing ? (
+              <Switch on={draft.open_invite} onPress={() => { setInviteMenu(false); set({ open_invite: !draft.open_invite }); }} label="Open invite" text={draft.open_invite ? 'on' : 'off'} />
+            ) : inviteOn ? (
+              <>
+                {down.length ? <AvatarStack people={down} size={22} /> : null}
+                <Mono size={11.5}>{member ? `on · ${downText(item!.id)}` : downText(item!.id)}</Mono>
+              </>
+            ) : (
+              <Mono size={11.5}>off</Mono>
+            )}
+          </FieldRow>
+        ) : null}
+        {/* who the invite goes to: its own choice, whatever the list is set to */}
+        {inviteOn ? (
+          <FieldRow label="invited">
+            <VisibilityButton what="Who’s invited" label={invitedLabel} open={inviteMenu} onPress={editing ? () => setInviteMenu(!inviteMenu) : undefined} />
+          </FieldRow>
+        ) : null}
+        {editing && inviteOn && inviteMenu ? (
+          <View style={{ marginLeft: 102 }}>
+            <VisibilityMenu value={draft.invite_audience} options={INVITE_OPTIONS} onPick={pickAudience} />
+          </View>
+        ) : null}
+        <FieldRow label="sees list">
+          <VisibilityButton what="Who can see the list" label={list ? whoCanSee(list.id, member) : 'pick a list first'} />
         </FieldRow>
       </View>
 
@@ -266,6 +312,18 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
             <LinkText label="delete this from the list" color={colors.bark} wavy onPress={() => setConfirmingDelete(true)} />
           </View>
         )
+      ) : null}
+
+      {pickingInvitees ? (
+        <PersonPicker
+          title="who’s invited"
+          initial={draft.invitees}
+          onClose={() => setPickingInvitees(false)}
+          onDone={(ids) => {
+            if (ids.length) set({ invite_audience: 'specific', invitees: ids });
+            setPickingInvitees(false);
+          }}
+        />
       ) : null}
 
       {isNew && picking ? (

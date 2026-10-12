@@ -45,7 +45,7 @@ export default function ListScreen() {
   const [viewers, setViewerDraft] = useState<string[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
 
-  if (!list || !canViewList(id)) {
+  if (!list) {
     return (
       <FolderScreen header={<Header />} folderTabs={<FolderTab label="list" />}>
         <Hand size={24}>can’t open this list</Hand>
@@ -55,6 +55,8 @@ export default function ListScreen() {
   }
 
   const member = isMember(id);
+  // false when you're only here through an open invite: you get the list's name, its people and what you're invited to
+  const whole = canViewList(id);
   const invited = membership(id)?.status === 'invited';
   const people = listPeople(id);
   const { done, total } = listProgress(id);
@@ -118,6 +120,8 @@ export default function ListScreen() {
   const why =
     member || invited
       ? null
+      : !whole
+        ? "you're only seeing what you're invited to on this list"
       : list.visibility === 'anyone'
         ? "you can see this list because it's open to anyone"
         : list.visibility === 'specific'
@@ -161,7 +165,7 @@ export default function ListScreen() {
             <AvatarStack people={people} size={22} />
             <Mono size={11}>{names(people)}</Mono>
           </View>
-          {!member ? (
+          {!member && whole ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }}>
               <ProgressBar done={done} total={total} height={9} outlined />
               <Mono size={10.5}>{done} of {total}</Mono>
@@ -180,7 +184,7 @@ export default function ListScreen() {
         </Paper>
       ) : null}
 
-      <Label style={{ marginTop: 18, marginBottom: 8, marginHorizontal: 2 }}>to do</Label>
+      <Label style={{ marginTop: 18, marginBottom: 8, marginHorizontal: 2 }}>{whole ? 'to do' : 'open invites'}</Label>
       <View style={{ gap: member ? 6 : 8 }}>
         {open.map((item, i) => (
           <OpenRow

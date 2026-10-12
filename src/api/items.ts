@@ -1,5 +1,5 @@
-import { commit, db, Item, now } from './db';
-import { getList, isListDone, isMember, listProgress } from './lists';
+import { commit, db, InviteAudience, Item, now } from './db';
+import { followsSomeoneOn, getList, isListDone, isMember, listProgress } from './lists';
 import { getProfile } from './profiles';
 import { supabase } from './supabase';
 import { isLocal, newId, uploadImage, write } from './sync';
@@ -23,17 +23,32 @@ export const photoUri = (path: string) => (isLocal(path) ? path : db.photoUrls[p
 export const interestedPeople = (itemId: string) =>
   db.interests.filter((i) => i.item_id === itemId).map((i) => getProfile(i.user_id)!).filter(Boolean);
 
+export const inviteeIds = (itemId: string) => db.item_invitees.filter((v) => v.item_id === itemId).map((v) => v.user_id);
+
+/**
+ * An open invite that's still open and includes you. Same rule as can_see_invite in the database.
+ * On a list you can see, an item can be someone's open invite without being one for you.
+ */
+export function isInvitedTo(itemId: string) {
+  const item = getItem(itemId);
+  if (!item || !item.open_invite || item.done_at) return false;
+  if (item.invite_audience === 'anyone') return true;
+  if (item.invite_audience === 'followers') return followsSomeoneOn(item.list_id);
+  return db.item_invitees.some((v) => v.item_id === itemId && v.user_id === db.me);
+}
+
 export const isInterested = (itemId: string) => db.interests.some((i) => i.item_id === itemId && i.user_id === db.me);
 
 /** Your own star: only on open invites, and never on a list you're on. */
 export function toggleInterest(itemId: string) {
   const item = getItem(itemId);
-  if (!item || !item.open_invite || isMember(item.list_id)) return;
+  if (!item || isMember(item.list_id)) return;
   if (isInterested(itemId)) {
     db.interests = db.interests.filter((i) => !(i.item_id === itemId && i.user_id === db.me));
     commit();
     write(() => supabase.from('interests').delete().eq('item_id', itemId).eq('user_id', db.me), 'that');
   } else {
+    if (!isInvitedTo(itemId)) return;
     db.interests.push({ item_id: itemId, user_id: db.me, created_at: now() });
     commit();
     write(() => supabase.from('interests').insert({ item_id: itemId, user_id: db.me }), 'your star');
@@ -76,13 +91,40 @@ export function undoDone(itemId: string) {
   write(() => supabase.from('items').update({ done_at: null }).eq('id', itemId), 'that undo');
 }
 
-export type ItemInput = { list_id: string; title: string; notes: string; date: string | null; open_invite: boolean; photos: string[] };
+/** Changes who the people picked for an invite are. Queued ahead of whatever turns the invite on. */
+function setInvitees(itemId: string, userIds: string[]) {
+  const before = inviteeIds(itemId);
+  const added = userIds.filter((u) => !before.includes(u));
+  const removed = before.filter((u) => !userIds.includes(u));
+  if (!added.length && !removed.length) return;
+  db.item_invitees = db.item_invitees.filter((v) => v.item_id !== itemId).concat(userIds.map((user_id) => ({ item_id: itemId, user_id })));
+  commit();
+  if (removed.length) write(() => supabase.from('item_invitees').delete().eq('item_id', itemId).in('user_id', removed), "who's invited");
+  if (added.length) write(() => supabase.from('item_invitees').insert(added.map((user_id) => ({ item_id: itemId, user_id }))), "who's invited");
+}
+
+/** The open invite and who it goes to, saved together from the edit screen. */
+export function setInvite(itemId: string, invite: { open: boolean; audience: InviteAudience; invitees: string[] }) {
+  const item = getItem(itemId);
+  if (!item || !isMember(item.list_id)) return;
+  setInvitees(itemId, invite.audience === 'specific' ? invite.invitees : []);
+  if (item.open_invite === invite.open && item.invite_audience === invite.audience) return;
+  item.open_invite = invite.open;
+  item.invite_audience = invite.audience;
+  commit();
+  write(() => supabase.from('items').update({ open_invite: invite.open, invite_audience: invite.audience }).eq('id', itemId), 'the open invite');
+}
+
+export type ItemInput = {
+  list_id: string; title: string; notes: string; date: string | null; photos: string[];
+  open_invite: boolean; invite_audience: InviteAudience; invitees: string[];
+};
 
 export function addItem(input: ItemInput) {
   const id = newId();
   const item: Item = {
     id, list_id: input.list_id, title: input.title.trim(), notes: input.notes, date: input.date,
-    open_invite: input.open_invite, caption: null, done_at: null, done_by: null, created_at: now(),
+    open_invite: input.open_invite, invite_audience: input.invite_audience, caption: null, done_at: null, done_by: null, created_at: now(),
   };
   db.items.push(item);
   const list = getList(input.list_id);
@@ -90,6 +132,7 @@ export function addItem(input: ItemInput) {
   commit();
   const { caption: _c, done_at: _d, done_by: _b, created_at: _t, ...row } = item;
   write(() => supabase.from('items').insert(row), 'your thing');
+  if (input.invite_audience === 'specific') setInvitees(id, input.invitees);
   input.photos.forEach((uri) => addPhoto(id, uri));
   return id;
 }
@@ -110,6 +153,7 @@ export function deleteItem(itemId: string) {
   const paths = photosFor(itemId).map((p) => (isLocal(p.path) ? `${item.list_id}/${itemId}/${p.id}.jpg` : p.path));
   db.items = db.items.filter((i) => i.id !== itemId);
   db.item_photos = db.item_photos.filter((p) => p.item_id !== itemId);
+  db.item_invitees = db.item_invitees.filter((v) => v.item_id !== itemId);
   db.interests = db.interests.filter((i) => i.item_id !== itemId);
   db.events = db.events.filter((e) => e.item_id !== itemId);
   const list = getList(item.list_id);

@@ -61,6 +61,7 @@ The tables live in `supabase/migrations/` as SQL files, applied in order:
 - `…_storage.sql`: the private `photos` bucket and public `avatars` bucket
 - `…_create_list_with_id.sql`: lets the app pick a new list's id so it can show it right away
 - `…_avatar_read_policy.sql`: lets signed-in people read the `avatars` bucket, which profile photo uploads need
+- `…_invite_audience.sql`: an open invite gets its own audience (followers, specific people, anyone), separate from who can see the list. The app needs this one applied before it will load.
 
 Phone sign-in settings on the hosted project (Authentication > Sign In / Providers > Phone): provider on, **Enable phone confirmations off**. The Twilio fields hold placeholders; nothing is sent while confirmations are off. To turn on real texts later: put in real Twilio details, turn confirmations on, and switch `signInWithCode` in `src/api/sync.ts` to `signInWithOtp` / `verifyOtp`.
 

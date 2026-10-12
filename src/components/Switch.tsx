@@ -5,7 +5,7 @@ import { Mono } from './Text';
 /** A hand-drawn on/off switch with what it means next to it. */
 export function Switch({ on, onPress, label, text }: { on: boolean; onPress: () => void; label: string; text: string }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="switch" accessibilityState={{ checked: on }} accessibilityLabel={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 32 }}>
+    <Pressable onPress={onPress} accessibilityRole="switch" accessibilityState={{ checked: on }} accessibilityLabel={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 32, maxWidth: '100%' }}>
       <View
         style={{
           width: 46, height: 26, borderRadius: 13, borderTopLeftRadius: 13, borderTopRightRadius: 14, borderBottomRightRadius: 13, borderBottomLeftRadius: 12,
@@ -14,7 +14,7 @@ export function Switch({ on, onPress, label, text }: { on: boolean; onPress: () 
       >
         <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: colors.paper, borderWidth: 1.5, borderColor: colors.ink, marginLeft: on ? 22 : 3 }} />
       </View>
-      <Mono size={11.5}>{text}</Mono>
+      <Mono size={11.5} style={{ flexShrink: 1 }}>{text}</Mono>
     </Pressable>
   );
 }
