@@ -25,6 +25,12 @@ export function listProgress(listId: string) {
   return { done: items.filter((i) => i.done_at).length, total: items.length };
 }
 
+/** Finished = it has things on it and every one is crossed off. Same rule the database uses for completed_at. */
+export function isListDone(listId: string) {
+  const { done, total } = listProgress(listId);
+  return total > 0 && done === total;
+}
+
 export function progressLabel(listId: string) {
   const { done, total } = listProgress(listId);
   return total > 0 && done === total ? 'all done' : `${done}/${total} done`;

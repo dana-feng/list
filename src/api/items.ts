@@ -1,5 +1,5 @@
 import { commit, db, Item, now } from './db';
-import { getList, isMember, listProgress } from './lists';
+import { getList, isListDone, isMember, listProgress } from './lists';
 import { getProfile } from './profiles';
 import { supabase } from './supabase';
 import { isLocal, newId, uploadImage, write } from './sync';
@@ -57,8 +57,7 @@ export function markDone(itemId: string) {
   if (!item || !list || item.done_at) return false;
   item.done_at = now();
   item.done_by = db.me;
-  const { done, total } = listProgress(list.id);
-  const finished = done === total;
+  const finished = isListDone(list.id);
   if (finished) list.completed_at = now();
   commit();
   const done_at = item.done_at;
