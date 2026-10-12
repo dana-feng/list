@@ -23,6 +23,10 @@ const PHOTO_URL_SECONDS = 60 * 60 * 24 * 7;
 
 let inFlight: Promise<void> | null = null;
 let again = false;
+// Writes still on their way to the database, and a count of every local change made so far.
+// A reload that overlaps either one would put back rows from before the change, so it's dropped.
+let pending = 0;
+let changes = 0;
 
 /** Reload everything you can see. Calls made while one is running are merged into one more run. */
 export function refresh(): Promise<void> {
@@ -45,6 +49,7 @@ export function refresh(): Promise<void> {
 }
 
 async function load() {
+  const seen = changes;
   const [profiles, follows, lists, members, viewers, items, photos, interests, events] = await Promise.all([
     supabase.from('profiles').select('*'),
     supabase.from('follows').select('*'),
@@ -59,6 +64,12 @@ async function load() {
   const failed = [profiles, follows, lists, members, viewers, items, photos, interests, events].find((r) => r.error);
   if (failed?.error) {
     console.warn('refresh failed', failed.error.message);
+    return;
+  }
+  // Something changed locally while this was loading, so these rows are already out of date.
+  // Every write refreshes once it lands; if none is left, go round again now.
+  if (pending > 0 || changes !== seen) {
+    if (pending === 0) again = true;
     return;
   }
 
@@ -99,6 +110,8 @@ let queue: Promise<unknown> = Promise.resolve();
 
 /** Runs database writes one at a time, in the order they were made, then refreshes. */
 export function write(run: () => PromiseLike<Result> | Promise<Result>, what = 'that'): Promise<boolean> {
+  pending++;
+  changes++;
   const next = queue.then(async () => {
     let ok = true;
     try {
@@ -111,6 +124,8 @@ export function write(run: () => PromiseLike<Result> | Promise<Result>, what = '
     } catch (e) {
       ok = false;
       Alert.alert(`Couldn't save ${what}`, e instanceof Error ? e.message : String(e));
+    } finally {
+      pending--;
     }
     await refresh();
     return ok;

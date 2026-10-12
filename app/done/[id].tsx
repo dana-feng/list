@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useDb } from '@/api/db';
 import { addPhoto, getItem, itemsForList, photosFor } from '@/api/items';
-import { getList, listPeople, listProgress } from '@/api/lists';
+import { getList, isListDone, listPeople, listProgress } from '@/api/lists';
 import { AvatarStack } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { BackButton, goBack, Header } from '@/components/Header';
@@ -20,7 +21,12 @@ import { colors, hash } from '@/theme';
 export default function Done() {
   useDb();
   const { id, kind } = useLocalSearchParams<{ id: string; kind?: string }>();
-  return kind === 'list' ? <ListDone listId={id} /> : <ItemDone itemId={id} />;
+  // Closing the last item's card turns this same screen into the finished list,
+  // rather than swapping one full-screen modal for another.
+  const [finishedList, setFinishedList] = useState<string | null>(null);
+  if (kind === 'list') return <ListDone listId={id} />;
+  if (finishedList) return <ListDone listId={finishedList} />;
+  return <ItemDone itemId={id} onListDone={setFinishedList} />;
 }
 
 function Nothing() {
@@ -31,7 +37,7 @@ function Nothing() {
   );
 }
 
-function ItemDone({ itemId }: { itemId: string }) {
+function ItemDone({ itemId, onListDone }: { itemId: string; onListDone: (listId: string) => void }) {
   const item = getItem(itemId);
   const list = item && getList(item.list_id);
   if (!item || !list) return <Nothing />;
@@ -41,7 +47,7 @@ function ItemDone({ itemId }: { itemId: string }) {
   const photos = photosFor(item.id);
   const add = async () => (await pickPhotos()).forEach((uri) => addPhoto(item.id, uri));
   const finish = () => {
-    if (list.completed_at) router.replace(`/done/${list.id}?kind=list`);
+    if (item.done_at && isListDone(list.id)) onListDone(list.id);
     else goBack();
   };
 

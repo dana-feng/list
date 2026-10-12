@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { db, useDb } from '@/api/db';
 import { deleteItem, itemsForList, markDone, undoDone } from '@/api/items';
 import {
-  canViewList, getList, inviteMembers, invitedBy, isMember, listPeople, listProgress, membership, renameList, respondInvite,
+  canViewList, getList, inviteMembers, invitedBy, isListDone, isMember, listPeople, listProgress, membership, renameList, respondInvite,
   setViewers, setVisibility, viewerIds,
 } from '@/api/lists';
 import { isFollowing } from '@/api/profiles';
@@ -86,7 +86,7 @@ export default function ListScreen() {
     const itemId = cele;
     setCele(null);
     if (toCard && itemId) router.push(`/done/${itemId}`);
-    else if (getList(id)?.completed_at) router.push(`/done/${id}?kind=list`);
+    else if (isListDone(id)) router.push(`/done/${id}?kind=list`);
   };
 
   // ---- editing ----
