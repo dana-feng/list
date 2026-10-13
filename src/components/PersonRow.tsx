@@ -17,7 +17,7 @@ export function FollowButton({ userId }: { userId: string }) {
   return <Pill label={on ? 'following' : 'follow'} on={on} height={36} onPress={() => toggleFollow(userId)} accessibilityLabel={on ? 'Following. Tap to unfollow' : 'Follow'} />;
 }
 
-const openProfile = (p: Profile) => router.push(p.id === db.me ? '/me' : `/user/${p.username}`);
+export const openProfile = (p: Profile) => router.push(p.id === db.me ? '/me' : `/user/${p.username}`);
 
 /** A person on a slip of paper: face, name, @username, a short line, and a follow button (or whatever `right` is). */
 export function PersonRow({ person, index, sub, right, onPress }: { person: Profile; index: number; sub?: string; right?: ReactNode; onPress?: () => void }) {
