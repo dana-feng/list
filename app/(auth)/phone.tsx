@@ -21,11 +21,11 @@ export default function Phone() {
   return (
     <AuthStep
       step={1}
-      title={change ? 'new number?' : "what's your\nnumber?"}
+      title={change ? 'phone number' : "what's your\nnumber?"}
       body={change ? "we'll text a code to the new number." : "we'll text you a code. no passwords."}
       footer={
         <View style={{ gap: 6 }}>
-          <Button label="text me a code" tone="paper" disabled={digits.length !== 10} onPress={next} />
+          <Button label="send code" tone="paper" disabled={digits.length !== 10} onPress={next} />
           {change ? null : (
             <Mono size={10.5} center color={colors.onDarkSoft} style={{ marginTop: 6, lineHeight: 16 }}>by continuing you agree to the terms + privacy policy</Mono>
           )}
@@ -45,8 +45,6 @@ export default function Phone() {
             textContentType="telephoneNumber"
             autoComplete="tel"
             autoFocus
-            placeholder="(347) 555-0182"
-            placeholderTextColor={colors.inkFaint}
             accessibilityLabel="Phone number"
             style={[{ fontFamily: fonts.mono, fontSize: 17, letterSpacing: 0.5, color: colors.ink, height: 54 }, noOutline]}
           />

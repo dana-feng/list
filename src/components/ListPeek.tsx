@@ -62,13 +62,13 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
             </View>
           </Pressable>
 
-          <Paper fill={colors.paper} shape={4} round={1.2} style={styles.menu}>
+          <Paper fill={fill} shape={4} round={1.2} style={styles.menu}>
             {confirming ? (
               <>
                 <Mono size={12} center color={colors.inkSoft}>are you sure?</Mono>
                 <View style={{ flexDirection: 'row', gap: 16 }}>
-                  <LinkText label="delete it" color={colors.bark} onPress={() => deleteList(list.id)} />
-                  <LinkText label="keep it" onPress={onClose} />
+                  <LinkText label="yes" color={colors.bark} onPress={() => deleteList(list.id)} />
+                  <LinkText label="no" onPress={onClose} />
                 </View>
               </>
             ) : (
@@ -84,7 +84,7 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
 const styles = StyleSheet.create({
   fill: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
   stack: { width: '100%', maxWidth: 340 },
-  tab: { alignSelf: 'flex-start', height: 36, paddingHorizontal: 14, justifyContent: 'center', borderTopLeftRadius: 10, borderTopRightRadius: 12 },
+  tab: { alignSelf: 'flex-start', height: 36, minWidth: 72, paddingHorizontal: 14, justifyContent: 'center', borderTopLeftRadius: 10, borderTopRightRadius: 12 },
   body: { padding: 18, gap: 12, borderTopLeftRadius: 0, borderTopRightRadius: 18, borderBottomRightRadius: 16, borderBottomLeftRadius: 19 },
   items: { gap: 8, marginTop: 4 },
   circle: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: colors.ink },

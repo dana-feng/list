@@ -13,7 +13,7 @@ export function canSayDown(itemId: string) {
   return !!item && isInvitedTo(itemId) && !isMember(item.list_id);
 }
 
-/** "i'm down" / "down ✓" on an open invite. Hidden on your own lists and on anything not asked about. */
+/** "interested" on an open invite: an outline until you tap it, filled in once you are. Hidden on your own lists and on anything not asked about. */
 export function DownButton({ itemId }: { itemId: string }) {
   useDb();
   if (!canSayDown(itemId)) return null;
@@ -21,29 +21,27 @@ export function DownButton({ itemId }: { itemId: string }) {
   const title = getItem(itemId)?.title ?? '';
   return (
     <Pill
-      label={on ? 'down ✓' : "i'm down"}
+      label="interested"
       on={on}
+      filled={on}
       onPress={() => toggleInterest(itemId)}
-      accessibilityLabel={on ? `You're down for ${title}. Tap to take it back` : `I'm down for ${title}`}
+      accessibilityLabel={on ? `You're interested in ${title}. Tap to take it back` : `I'm interested in ${title}`}
     />
   );
 }
 
-/** "3 are down", "you + 2 more are down", or "no one yet", with faces. */
+/** "3 interested", or nothing when no one is yet. */
 export function downText(itemId: string) {
-  const people = interestedPeople(itemId);
-  const n = people.length;
-  if (!n) return 'no one yet';
-  if (isInterested(itemId)) return n === 1 ? "you're down" : `you + ${n - 1} more are down`;
-  return `${n} ${n === 1 ? 'is' : 'are'} down`;
+  const n = interestedPeople(itemId).length;
+  return n ? `${n} interested` : '';
 }
 
-export function DownCount({ itemId, size = 11, faces = 22 }: { itemId: string; size?: number; faces?: number }) {
+export function DownCount({ itemId, size = 11, faces = 20 }: { itemId: string; size?: number; faces?: number }) {
   useDb();
   const people = interestedPeople(itemId);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-      {people.length && faces ? <AvatarStack people={people} size={faces} max={4} /> : null}
+      {people.length && faces ? <AvatarStack people={people} size={faces} max={3} /> : null}
       <Mono size={size} color={colors.ink} numberOfLines={1} style={{ flexShrink: 1 }}>{downText(itemId)}</Mono>
     </View>
   );

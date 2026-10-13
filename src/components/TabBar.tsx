@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, space } from '@/theme';
 import { Icon, IconName } from './Icon';
 import { Paper } from './Paper';
-import { Hand, Mono, MonoMedium } from './Text';
+import { Hand, MonoMedium } from './Text';
 
 export type TabName = 'home' | 'lists';
 
@@ -62,28 +62,25 @@ function PlusMenu({ close }: { close: () => void }) {
   };
   return (
     <View style={[styles.menu, { bottom: TAB_UP + reach(insets.bottom) + space.md }]}>
-      <Paper fill={colors.paper} edge="ink" shape={1} style={styles.menuTab}>
+      <Paper fill={colors.paper} edge="olive" edgeWidth={2} shape={1} style={styles.menuTab}>
         <MonoMedium size={11.5}>new</MonoMedium>
       </Paper>
-      <Paper fill={colors.paper} edge="ink" style={styles.menuBody}>
-        <MenuRow icon="list" tint={colors.straw} title="start a list" body="on your own or with friends" onPress={() => open('/list/new')} />
+      <Paper fill={colors.paper} edge="olive" edgeWidth={2} style={styles.menuBody}>
+        <MenuRow icon="list" tint={colors.straw} title="start a list" onPress={() => open('/list/new')} />
         <View style={styles.dash} />
-        <MenuRow icon="pencil" tint={colors.sage} title="add an item" body="to one of your lists" onPress={() => open('/item/new')} />
+        <MenuRow icon="pencil" tint={colors.sage} title="add an item" onPress={() => open('/item/new')} />
       </Paper>
     </View>
   );
 }
 
-function MenuRow({ icon, tint, title, body, onPress }: { icon: IconName; tint: string; title: string; body: string; onPress: () => void }) {
+function MenuRow({ icon, tint, title, onPress }: { icon: IconName; tint: string; title: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={styles.menuRow} accessibilityRole="button" accessibilityLabel={title}>
       <Paper fill={tint} shape={4} style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center' }}>
         <Icon name={icon} size={20} />
       </Paper>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Hand size={20}>{title}</Hand>
-        <Mono size={10.5} color={colors.inkSoft}>{body}</Mono>
-      </View>
+      <Hand size={20} style={{ flex: 1 }}>{title}</Hand>
       <Icon name="right" size={16} />
     </Pressable>
   );
@@ -97,7 +94,7 @@ const styles = StyleSheet.create({
   },
   dim: { ...StyleSheet.absoluteFill, backgroundColor: colors.dim },
   menu: { position: 'absolute', left: 34, right: 34 },
-  menuTab: { alignSelf: 'flex-start', height: 36, paddingHorizontal: 18, justifyContent: 'center', borderBottomWidth: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: -1.5, zIndex: 2 },
+  menuTab: { alignSelf: 'flex-start', height: 36, paddingHorizontal: 18, justifyContent: 'center', borderBottomWidth: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: -2, zIndex: 2 },
   menuBody: { padding: 8, borderTopLeftRadius: 0 },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 10 },
   dash: { marginHorizontal: 10, borderTopWidth: 1.3, borderStyle: 'dashed', borderColor: colors.rule },

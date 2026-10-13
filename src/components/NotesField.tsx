@@ -4,7 +4,7 @@ import { Paper } from './Paper';
 import { Hand, Mono } from './Text';
 
 /** Notes on a cream sheet. A dashed sheet you can type on while editing. */
-export function NotesField({ value, onChange, editing, placeholder = 'links, addresses, who to ask…' }: { value: string; onChange?: (v: string) => void; editing?: boolean; placeholder?: string }) {
+export function NotesField({ value, onChange, onBlur, editing, placeholder }: { value: string; onChange?: (v: string) => void; onBlur?: () => void; editing?: boolean; placeholder?: string }) {
   if (!editing) {
     return (
       <Paper fill={colors.cream} shape={3} lean={1} style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
@@ -17,6 +17,7 @@ export function NotesField({ value, onChange, editing, placeholder = 'links, add
       <TextInput
         value={value}
         onChangeText={onChange}
+        onBlur={onBlur}
         multiline
         placeholder={placeholder}
         placeholderTextColor={colors.inkFaint}
