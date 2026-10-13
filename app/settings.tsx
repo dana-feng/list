@@ -60,16 +60,17 @@ export default function Settings() {
         header={<Header left={<TextAction label="cancel" onPress={() => setEditing(false)} />} title="edit profile" right={<SaveAction onPress={save} disabled={!canSave} />} />}
         folderTabs={<FolderTab label="you" />}
       >
-        <View style={{ alignItems: 'center', gap: 10, marginTop: 6 }}>
+        {/* the pencil on the corner says the photo can be changed */}
+        <Pressable onPress={changePhoto} accessibilityRole="button" accessibilityLabel="Change photo" style={{ alignSelf: 'center', marginTop: 6 }}>
           <Avatar person={person} size={104} fill={colors.sage} />
-          <Paper onPress={changePhoto} edge="dash" edgeWidth={1.2} shape={2} round={1.3} style={{ height: 34, paddingHorizontal: 12, justifyContent: 'center' }}>
-            <Mono size={11.5}>change photo</Mono>
-          </Paper>
-        </View>
+          <View style={styles.photoBadge}>
+            <Icon name="pencil" size={16} color={colors.paper} strokeWidth={2.1} />
+          </View>
+        </Pressable>
         <Field label="name">
           <TextInput value={name} onChangeText={setName} accessibilityLabel="Name" style={[styles.input, noOutline]} />
         </Field>
-        <Field label="username" help={status ? (status.ok ? "✓ that one's yours" : status.text) : undefined}>
+        <Field label="username" help={status ? (status.ok ? "that one's yours" : status.text) : undefined}>
           <Mono size={14} color={colors.inkSoft}>@</Mono>
           <TextInput
             value={username}
@@ -80,7 +81,7 @@ export default function Settings() {
             style={[styles.input, noOutline]}
           />
         </Field>
-        <Field label="phone number" help="we'll text a code to confirm a new number" onPress={() => router.push('/phone?change=1')}>
+        <Field label="phone number" onPress={() => router.push('/phone?change=1')}>
           <Mono size={14} style={{ flex: 1 }}>{masked}</Mono>
           <Icon name="right" size={14} strokeWidth={2.2} />
         </Field>
@@ -89,7 +90,7 @@ export default function Settings() {
   }
 
   return (
-    <FolderScreen header={<Header title="settings" />} folderTabs={<FolderTab label="you + your account" />}>
+    <FolderScreen header={<Header />} folderTabs={<FolderTab label="settings" />}>
       <Paper onPress={startEdit} fill={colors.sage} edge="ink" shape={4} lean={2} style={styles.me} accessibilityLabel="Edit profile">
         <Avatar person={person} size={52} fill={colors.cream} />
         <View style={{ flex: 1, gap: 2 }}>
@@ -111,7 +112,7 @@ export default function Settings() {
       <View style={{ alignItems: 'center', marginTop: 10 }}>
         {confirming ? (
           <View style={{ alignItems: 'center', gap: 2 }}>
-            <Mono size={12} center color={colors.inkSoft} style={{ maxWidth: 260, lineHeight: 18 }}>this deletes your lists, photos and everything you’re down for, for good.</Mono>
+            <Mono size={12} center color={colors.inkSoft} style={{ maxWidth: 260, lineHeight: 18 }}>this deletes your lists, photos and everything you’re interested in, for good.</Mono>
             <View style={{ flexDirection: 'row', gap: 18 }}>
               <LinkText label="delete everything" color={colors.bark} onPress={destroy} />
               <LinkText label="keep my account" onPress={() => setConfirming(false)} />
@@ -154,6 +155,10 @@ function Row({ label, value, onPress }: { label: string; value?: string; onPress
 }
 
 const styles = StyleSheet.create({
+  photoBadge: {
+    position: 'absolute', right: 0, bottom: 0, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.bark, borderWidth: 2, borderColor: colors.paper,
+  },
   me: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 },
   label: { marginTop: 22, marginBottom: 8, marginHorizontal: 2 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: 4, borderBottomWidth: 1.2, borderStyle: 'dashed', borderColor: colors.rule },

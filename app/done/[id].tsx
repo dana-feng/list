@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useDb } from '@/api/db';
-import { addPhoto, getItem, itemsForList, photosFor } from '@/api/items';
+import { addPhoto, getItem, itemsForList, photosFor, removePhoto } from '@/api/items';
 import { getList, isListDone, listPeople, listProgress } from '@/api/lists';
 import { AvatarStack } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { BackButton, goBack, Header } from '@/components/Header';
-import { Icon } from '@/components/Icon';
 import { PhotoCarousel } from '@/components/Photo';
 import { Paper } from '@/components/Paper';
 import { Circle, Strike } from '@/components/Scribble';
@@ -17,7 +16,7 @@ import { monthDay, names } from '@/lib';
 import { pickPhotos } from '@/pickPhotos';
 import { colors, hash } from '@/theme';
 
-/** "done :)" for an item, or every item crossed off for a whole list (?kind=list, id = the list). */
+/** Photos for an item you just crossed off, or every item crossed off for a whole list (?kind=list, id = the list). */
 export default function Done() {
   useDb();
   const { id, kind } = useLocalSearchParams<{ id: string; kind?: string }>();
@@ -55,22 +54,14 @@ function ItemDone({ itemId, onListDone }: { itemId: string; onListDone: (listId:
     <Screen
       contentStyle={{ paddingHorizontal: 0 }}
       header={<Header left={<BackButton icon="x" label="Close" onPress={finish} />} center={<Mono size={11} color={colors.onDarkSoft} style={{ letterSpacing: 1.2 }}>done · {done} of {total}</Mono>} />}
-      footer={
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Button label={photos.length ? 'add more' : 'add photos'} tone="dashLight" icon={<Icon name="image" size={18} color={colors.paper} />} onPress={add} style={{ flex: 1 }} />
-          <Button label="done" tone="paper" onPress={finish} style={{ flex: 1 }} />
-        </View>
-      }
+      footer={<Button label="done" tone="paper" onPress={finish} />}
     >
-      <Hand size={34} color={colors.paper} style={{ lineHeight: 38, marginHorizontal: 22, marginTop: 6, marginBottom: 16 }}>done :)</Hand>
-      <View style={{ paddingLeft: 22 }}>
+      <View style={{ paddingLeft: 22, marginTop: 6 }}>
+        {/* the empty slot is always the last thing to swipe to, so there's always somewhere to add more */}
         {photos.length ? (
-          <PhotoCarousel photos={photos} height={392} peek={70} gap={12} count={false} />
+          <PhotoCarousel photos={photos} height={392} peek={70} gap={12} count={false} onRemove={removePhoto} last={(size) => <AddPhotos onPress={add} style={size} />} />
         ) : (
-          <Paper onPress={add} edge="dashLight" shape={4} style={styles.empty} accessibilityLabel="Add photos">
-            <Hand size={30} color={colors.paper}>+</Hand>
-            <Mono size={13} color={colors.paper}>add photos</Mono>
-          </Paper>
+          <AddPhotos onPress={add} style={{ height: 392, marginRight: 22 }} />
         )}
       </View>
       <View style={{ marginHorizontal: 22, marginTop: 18, gap: 10 }}>
@@ -79,9 +70,18 @@ function ItemDone({ itemId, onListDone }: { itemId: string; onListDone: (listId:
           <AvatarStack people={people} size={26} />
           <Mono size={11} color={colors.paper}>{names(people)}</Mono>
         </View>
-        <Mono size={10.5} color={colors.onDarkSoft}>from {list.title}</Mono>
+        <Mono size={10.5} color={colors.onDarkSoft}>{list.title}</Mono>
       </View>
     </Screen>
+  );
+}
+
+function AddPhotos({ onPress, style }: { onPress: () => void; style: StyleProp<ViewStyle> }) {
+  return (
+    <Paper onPress={onPress} edge="dashLight" shape={4} style={[styles.empty, style]} accessibilityLabel="Add photos">
+      <Hand size={30} color={colors.paper}>+</Hand>
+      <Mono size={13} color={colors.paper}>add photos</Mono>
+    </Paper>
   );
 }
 
@@ -116,6 +116,6 @@ function ListDone({ listId }: { listId: string }) {
 }
 
 const styles = StyleSheet.create({
-  empty: { height: 392, marginRight: 22, alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(251,239,167,0.08)' },
+  empty: { alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(251,239,167,0.08)' },
   doneRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, borderBottomWidth: 1.2, borderStyle: 'dashed', borderColor: colors.rule },
 });

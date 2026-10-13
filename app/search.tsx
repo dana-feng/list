@@ -7,7 +7,7 @@ import { BackButton } from '@/components/Header';
 import { PeopleList } from '@/components/PeopleList';
 import { FolderScreen } from '@/components/Screen';
 import { SearchField } from '@/components/SearchField';
-import { Hand, Mono } from '@/components/Text';
+import { Hand } from '@/components/Text';
 import { colors } from '@/theme';
 
 /** People by name or @username. */
@@ -32,7 +32,6 @@ export default function Search() {
       {term && !people.length ? (
         <Hand size={20} center color={colors.inkSoft} style={{ marginTop: 30, lineHeight: 26 }}>no one by that name yet</Hand>
       ) : null}
-      {!term ? <Mono size={12} center color={colors.inkSoft} style={{ marginTop: 30 }}>search by name or @handle</Mono> : null}
     </FolderScreen>
   );
 }

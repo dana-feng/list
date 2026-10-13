@@ -11,7 +11,7 @@ import { Hand, Mono } from './Text';
 
 const STUBS = [colors.sage, colors.moss, colors.sage, colors.straw];
 
-/** A ticket: the date stub on the left, then who, the item, how many are down, and "i'm down". */
+/** A ticket: the date stub on the left, then who, the item, how many are interested, and "interested". */
 export function OpenInviteRow({ item, list, index }: { item: Item; list: List; index: number }) {
   const people = listPeople(list.id);
   const date = item.date ? dayParts(item.date) : null;
@@ -29,7 +29,7 @@ export function OpenInviteRow({ item, list, index }: { item: Item; list: List; i
           <Hand size={18}>{item.title}</Hand>
         </Pressable>
         <View style={styles.bottom}>
-          <DownCount itemId={item.id} faces={0} />
+          <DownCount itemId={item.id} />
           <DownButton itemId={item.id} />
         </View>
       </View>

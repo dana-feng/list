@@ -1,4 +1,4 @@
-import { Pressable, View } from 'react-native';
+import { Pressable } from 'react-native';
 import type { InviteAudience, Visibility } from '@/api/db';
 import { colors } from '@/theme';
 import { Icon } from './Icon';
@@ -10,24 +10,24 @@ export type Choice = Visibility;
 
 export function choiceLabel(choice: Choice, viewers: number) {
   if (choice === 'specific') return `${viewers} ${viewers === 1 ? 'person' : 'people'}`;
-  if (choice === 'just_me') return 'just me';
+  if (choice === 'just_me') return 'owners';
   return choice;
 }
 
-type Option<T> = { value: T; title: string; sub: string };
+type Option<T> = { value: T; title: string };
 
 const OPTIONS: Option<Choice>[] = [
-  { value: 'followers', title: 'followers', sub: 'people who follow you' },
-  { value: 'specific', title: 'specific people', sub: 'only people you pick' },
-  { value: 'anyone', title: 'anyone', sub: 'anyone who finds your profile' },
-  { value: 'just_me', title: 'just me', sub: 'only the people on it' },
+  { value: 'followers', title: 'followers' },
+  { value: 'specific', title: 'specific people' },
+  { value: 'anyone', title: 'anyone' },
+  { value: 'just_me', title: 'owners' },
 ];
 
 /** Who an open invite goes to. Its own choice, whatever the list is set to. */
 export const INVITE_OPTIONS: Option<InviteAudience>[] = [
-  { value: 'followers', title: 'followers', sub: 'people who follow you' },
-  { value: 'specific', title: 'specific people', sub: 'only people you pick' },
-  { value: 'anyone', title: 'anyone', sub: 'anyone who can find you' },
+  { value: 'followers', title: 'followers' },
+  { value: 'specific', title: 'specific people' },
+  { value: 'anyone', title: 'anyone' },
 ];
 
 /** The dashed "who can see" button: people icon, current choice, chevron. */
@@ -65,10 +65,7 @@ export function VisibilityMenu<T extends string = Choice>({ value, onPick, optio
             accessibilityState={{ selected: on }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8, borderRadius: 8, backgroundColor: on ? colors.sage : 'transparent', minHeight: 44 }}
           >
-            <View style={{ flex: 1, gap: 2 }}>
-              <MonoMedium size={12}>{o.title}</MonoMedium>
-              <Mono size={10} color={colors.inkSoft}>{o.sub}</Mono>
-            </View>
+            <MonoMedium size={12} style={{ flex: 1 }}>{o.title}</MonoMedium>
             {on ? <Icon name="check" size={16} strokeWidth={2.2} /> : null}
           </Pressable>
         );

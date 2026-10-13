@@ -14,7 +14,7 @@ function make(font: string, defaultSize: number, extra?: (size: number) => TextS
   };
 }
 
-/** Display serif: titles, names, big numbers. */
+/** Display sans: titles, names, big numbers. */
 export const Hand = make(fonts.hand, 18, (size) => ({ lineHeight: Math.round(size * 1.15) }));
 export const HandMedium = make(fonts.handMedium, 16, (size) => ({ lineHeight: Math.round(size * 1.2) }));
 /** Typewriter: everything else. */

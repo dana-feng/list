@@ -18,7 +18,7 @@ const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id ===
 
 /**
  * A list as a folder on a profile: a tab with how far along it is, a cover placeholder, the name and a progress bar.
- * `invited` is the olive "invited" folder with join / no. `own` adds who's on it and who can see it.
+ * `invited` is the olive "invited" folder with join / no. Who's on it always shows; `own` adds who can see it.
  */
 export function ListFolderCard({ list, invited, own, index }: { list: List; invited?: boolean; own?: boolean; index: number }) {
   const { done, total } = listProgress(list.id);
@@ -76,16 +76,16 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
                 <ProgressBar done={done} total={total} />
                 {own ? null : <Mono size={10}>{pct}%</Mono>}
               </View>
-              {own ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <AvatarStack people={listPeople(list.id)} size={22} max={3} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                <AvatarStack people={listPeople(list.id)} size={22} max={3} />
+                {own ? (
                   <Mono size={10}>{visibilityLabel(list)}</Mono>
-                </View>
-              ) : invites ? (
-                <View style={styles.chip}>
-                  <Mono size={10} color={colors.paper}>{invites} open invite{invites > 1 ? 's' : ''}</Mono>
-                </View>
-              ) : null}
+                ) : invites ? (
+                  <View style={styles.chip}>
+                    <Mono size={10} color={colors.paper}>{invites} open invite{invites > 1 ? 's' : ''}</Mono>
+                  </View>
+                ) : null}
+              </View>
             </>
           )}
         </Pressable>
@@ -96,8 +96,8 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
 }
 
 const styles = StyleSheet.create({
-  tab: { alignSelf: 'flex-start', height: 32, paddingHorizontal: 12, justifyContent: 'center', borderTopLeftRadius: 10, borderTopRightRadius: 12, borderWidth: 1.6, borderBottomWidth: 0, marginBottom: -1.6, zIndex: 2 },
+  tab: { alignSelf: 'flex-start', height: 32, minWidth: 64, paddingHorizontal: 12, justifyContent: 'center', borderTopLeftRadius: 10, borderTopRightRadius: 12, borderWidth: 1.6, borderBottomWidth: 0, marginBottom: -1.6, zIndex: 2 },
   body: { padding: 12, paddingBottom: 10, gap: 8, borderTopLeftRadius: 0, borderTopRightRadius: 14, borderBottomRightRadius: 12, borderBottomLeftRadius: 15 },
   cover: { height: 66, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  chip: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9, backgroundColor: colors.bark },
+  chip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9, backgroundColor: colors.bark },
 });

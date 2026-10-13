@@ -37,7 +37,7 @@ export default function Follows() {
     <FolderScreen
       refreshable
       roundCorner={tab === 'following'}
-      header={<Header title={person ? `${own ? 'your' : `${person.name}'s`} people` : `@${username}`} />}
+      header={<Header />}
       folderTabs={
         <>
           <FolderTab tab label={`${counts.followers} followers`} on={tab === 'followers'} onPress={() => setTab('followers')} />

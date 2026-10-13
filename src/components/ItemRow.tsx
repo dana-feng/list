@@ -7,14 +7,14 @@ import { colors, corners, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { DownButton, downText } from './Down';
 import { Icon } from './Icon';
-import { Paper } from './Paper';
 import { Circle, Strike } from './Scribble';
+import { Switch } from './Switch';
 import { Hand, HandMedium, Mono } from './Text';
 
 type OpenProps = {
   item: Item;
   index: number;
-  /** On the list: you get the circle and the invite chip. Otherwise "i'm down". */
+  /** On the list: you get the circle and the invite switch. Otherwise "interested". */
   member: boolean;
   /** Tapping the circle. */
   onDone?: () => void;
@@ -29,10 +29,10 @@ export function OpenRow({ item, index, member, onDone, onRemove }: OpenProps) {
   // on someone else's list, it's only an open invite for you if you're in its audience
   const invited = !member && isInvitedTo(item.id);
 
-  // a friend's list: date + open invite in the small line, "i'm down" on the right
+  // a friend's list: date + open invite in the small line, "interested" on the right
   const sub = member
     ? item.open_invite ? downText(item.id) : ''
-    : [item.date ? shortDay(item.date) : 'no date yet', invited ? `open invite · ${interestedPeople(item.id).length} down` : null].filter(Boolean).join(' · ');
+    : [item.date ? shortDay(item.date) : 'no date yet', invited ? ['open invite', downText(item.id)].filter(Boolean).join(' · ') : null].filter(Boolean).join(' · ');
 
   return (
     <View style={tilt(index)}>
@@ -46,7 +46,7 @@ export function OpenRow({ item, index, member, onDone, onRemove }: OpenProps) {
           <Hand size={18}>{item.title}</Hand>
           {sub ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              {member && down.length ? <AvatarStack people={down} size={19} max={3} /> : null}
+              {(member || invited) && down.length ? <AvatarStack people={down} size={19} max={3} /> : null}
               <Mono size={11} color={colors.inkSoft}>{sub}</Mono>
             </View>
           ) : null}
@@ -57,19 +57,7 @@ export function OpenRow({ item, index, member, onDone, onRemove }: OpenProps) {
           </Pressable>
         ) : member ? (
           <>
-            <Paper
-              onPress={() => toggleOpenInvite(item.id)}
-              fill={item.open_invite ? colors.bark : undefined}
-              edge={item.open_invite ? 'none' : 'dash'}
-              shape={5}
-              round={1.4}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: item.open_invite }}
-              accessibilityLabel={item.open_invite ? 'Open invite is on. Turn off' : 'Post as an open invite'}
-              style={styles.chip}
-            >
-              <Mono size={11} color={item.open_invite ? colors.paper : colors.ink}>{item.open_invite ? 'open invite' : 'invite'}</Mono>
-            </Paper>
+            <Switch on={item.open_invite} onPress={() => toggleOpenInvite(item.id)} label={item.open_invite ? 'Open invite is on. Turn off' : 'Post as an open invite'} text="invite" stacked />
             <Pressable onPress={open} style={styles.chevron} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
               <Icon name="right" size={16} strokeWidth={2.2} />
             </Pressable>
@@ -116,7 +104,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingLeft: 8, paddingRight: 6, minHeight: 64 },
   circle: { width: 44, height: 46, alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, gap: 4, paddingVertical: 2 },
-  chip: { height: 32, paddingHorizontal: 10, justifyContent: 'center' },
   chevron: { width: 32, height: 44, alignItems: 'center', justifyContent: 'center' },
   done: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.gold, paddingVertical: 8, paddingLeft: 6, paddingRight: 14, minHeight: 48 },
   remove: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },

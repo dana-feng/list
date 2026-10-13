@@ -29,7 +29,7 @@ export default function User() {
   const follow =
     person.id === db.me ? undefined : (
       <Button
-        label={following ? 'following ✓' : 'follow'}
+        label={following ? 'following' : 'follow'}
         tone={following ? 'outlineLight' : 'paper'}
         onPress={() => toggleFollow(person.id)}
         accessibilityLabel={following ? `Following ${person.name}. Tap to unfollow` : `Follow ${person.name}`}

@@ -4,7 +4,7 @@ import { listProgress, myLists } from '@/api/lists';
 import { colors } from '@/theme';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
-import { Label, Mono, MonoMedium } from './Text';
+import { Mono, MonoMedium } from './Text';
 
 /** Inside the folder tab on a new item: the chosen list (dashed underline) and a chevron. */
 export function ListPickerTab({ list, open, onPress }: { list?: List; open: boolean; onPress: () => void }) {
@@ -16,12 +16,11 @@ export function ListPickerTab({ list, open, onPress }: { list?: List; open: bool
   );
 }
 
-/** "add it to": your lists, how far along each is, and "+ start a new list". */
-export function ListPicker({ value, onPick, onNew }: { value?: string; onPick: (list: List) => void; onNew: () => void }) {
+/** Your lists and how far along each is. */
+export function ListPicker({ value, onPick }: { value?: string; onPick: (list: List) => void }) {
   const lists = myLists();
   return (
     <Paper fill={colors.cream} edge="ink" shape={3} style={styles.box}>
-      <Label size={10.5} style={{ marginHorizontal: 8, marginTop: 4, marginBottom: 6 }}>add it to</Label>
       {lists.map((l) => {
         const { done, total } = listProgress(l.id);
         const on = l.id === value;
@@ -35,9 +34,7 @@ export function ListPicker({ value, onPick, onNew }: { value?: string; onPick: (
           </Pressable>
         );
       })}
-      <Pressable onPress={onNew} style={styles.newRow} accessibilityRole="button">
-        <Mono size={12}>+ start a new list</Mono>
-      </Pressable>
+      {!lists.length ? <Mono size={12} color={colors.inkSoft} style={{ padding: 10 }}>no lists yet.</Mono> : null}
     </Paper>
   );
 }
@@ -49,5 +46,4 @@ const styles = StyleSheet.create({
     shadowColor: '#3A1000', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 10 }, elevation: 8,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 46, paddingHorizontal: 10, borderRadius: 8 },
-  newRow: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 10, marginTop: 4, borderTopWidth: 1.2, borderStyle: 'dashed', borderColor: colors.rule },
 });

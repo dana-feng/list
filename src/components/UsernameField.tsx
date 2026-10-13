@@ -11,7 +11,7 @@ export function usernameStatus(value: string, current?: string) {
   if (!/^[a-z0-9._]+$/.test(v)) return { ok: false, text: 'letters, numbers, dots and underscores only' };
   if (v.length < 3) return { ok: false, text: 'at least 3 characters' };
   if (v.length > 20) return { ok: false, text: '20 characters at most' };
-  return usernameAvailable(v) ? { ok: true, text: "✓ it's free" } : { ok: false, text: 'taken — try another' };
+  return usernameAvailable(v) ? { ok: true, text: "it's free" } : { ok: false, text: 'taken — try another' };
 }
 
 /** The sign-up username box: paper on the dark background, "@", and the live check under it. */
