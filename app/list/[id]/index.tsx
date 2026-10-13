@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { db, useDb } from '@/api/db';
 import { deleteItem, itemsForList, markDone, undoDone } from '@/api/items';
 import {
-  canViewList, getList, inviteMembers, invitedBy, isListDone, isMember, listPeople, listProgress, membership, renameList, respondInvite,
+  canViewList, deleteList, getList, inviteMembers, invitedBy, isListDone, isMember, listPeople, listProgress, membership, renameList, respondInvite,
   setViewers, setVisibility, viewerIds,
 } from '@/api/lists';
 import { isFollowing } from '@/api/profiles';
@@ -12,7 +12,7 @@ import { AvatarStack } from '@/components/Avatar';
 import { LinkText, Pill } from '@/components/Button';
 import { DoneSheet } from '@/components/DoneSheet';
 import { FolderTab } from '@/components/FolderTab';
-import { Header, SaveAction, TextAction } from '@/components/Header';
+import { goBack, Header, SaveAction, TextAction } from '@/components/Header';
 import { DoneRow, OpenRow } from '@/components/ItemRow';
 import { ListFields } from '@/components/ListFields';
 import { Paper } from '@/components/Paper';
@@ -42,7 +42,11 @@ export default function ListScreen() {
   const [choice, setChoice] = useState<Choice>('followers');
   const [viewers, setViewerDraft] = useState<string[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleted, setDeleted] = useState(false);
 
+  // deleted here: stay blank while the screen slides away
+  if (deleted) return <FolderScreen header={<Header />} folderTabs={<FolderTab label=" " />}>{null}</FolderScreen>;
   if (!list) {
     return (
       <FolderScreen header={<Header />} folderTabs={<FolderTab label="list" />}>
@@ -85,6 +89,7 @@ export default function ListScreen() {
     setChoice(list.visibility);
     setViewerDraft(viewerIds(id));
     setRemoved([]);
+    setConfirmingDelete(false);
     setEditing(true);
   };
   const stopEdit = () => {
@@ -101,6 +106,11 @@ export default function ListScreen() {
     if (choice !== list.visibility) setVisibility(id, choice);
     removed.forEach(deleteItem);
     stopEdit();
+  };
+  const destroy = () => {
+    setDeleted(true);
+    deleteList(id);
+    goBack();
   };
 
   const why =
@@ -211,6 +221,21 @@ export default function ListScreen() {
 
       {editing && removed.length ? (
         <Mono size={11} color={colors.inkSoft} style={{ marginTop: 12 }}>{removed.length} to delete · tap save to confirm</Mono>
+      ) : null}
+      {editing ? (
+        <View style={{ alignItems: 'center', marginTop: 22 }}>
+          {confirmingDelete ? (
+            <View style={{ alignItems: 'center', gap: 2 }}>
+              <Mono size={12} center color={colors.inkSoft}>are you sure?</Mono>
+              <View style={{ flexDirection: 'row', gap: 18 }}>
+                <LinkText label="delete it" color={colors.bark} onPress={destroy} />
+                <LinkText label="keep it" onPress={() => setConfirmingDelete(false)} />
+              </View>
+            </View>
+          ) : (
+            <LinkText label="delete this list" color={colors.bark} onPress={() => setConfirmingDelete(true)} />
+          )}
+        </View>
       ) : null}
       {why ? <Mono size={10.5} color={colors.inkSoft} style={{ marginTop: 22, marginHorizontal: 4, lineHeight: 16 }}>{why}</Mono> : null}
     </FolderScreen>

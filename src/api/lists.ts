@@ -1,7 +1,7 @@
 import { commit, db, List, now, Visibility } from './db';
 import { getProfile, isFollowing } from './profiles';
 import { supabase } from './supabase';
-import { newId, write } from './sync';
+import { isLocal, newId, write } from './sync';
 
 export const getList = (id: string) => db.lists.find((l) => l.id === id);
 
@@ -148,6 +148,33 @@ export function inviteMembers(listId: string, userIds: string[]) {
     () => supabase.from('list_members').insert(fresh.map((user_id) => ({ list_id: listId, user_id, status: 'invited', invited_by: db.me }))),
     'those invites',
   );
+}
+
+/** Deletes a list for everyone on it, along with its items, photos and feed posts. */
+export function deleteList(listId: string) {
+  if (!getList(listId) || !isMember(listId)) return;
+  const itemIds = db.items.filter((i) => i.list_id === listId).map((i) => i.id);
+  // photos still uploading are queued ahead of this, so they'll be at their storage path by the time it runs
+  const paths = db.item_photos
+    .filter((p) => itemIds.includes(p.item_id))
+    .map((p) => (isLocal(p.path) ? `${listId}/${p.item_id}/${p.id}.jpg` : p.path));
+  db.lists = db.lists.filter((l) => l.id !== listId);
+  db.list_members = db.list_members.filter((m) => m.list_id !== listId);
+  db.list_viewers = db.list_viewers.filter((v) => v.list_id !== listId);
+  db.items = db.items.filter((i) => i.list_id !== listId);
+  db.item_photos = db.item_photos.filter((p) => !itemIds.includes(p.item_id));
+  db.item_invitees = db.item_invitees.filter((v) => !itemIds.includes(v.item_id));
+  db.interests = db.interests.filter((i) => !itemIds.includes(i.item_id));
+  db.events = db.events.filter((e) => e.list_id !== listId);
+  commit();
+  write(async () => {
+    // photos go first: the storage rules only let people on the list remove them, and once the list is gone nobody is
+    if (paths.length) {
+      const files = await supabase.storage.from('photos').remove(paths);
+      if (files.error) return files;
+    }
+    return supabase.from('lists').delete().eq('id', listId);
+  }, 'that');
 }
 
 // Draft for list/new, so the people pickers can edit it before the list exists.
