@@ -28,7 +28,7 @@ function PersonChip({ person, you }: { person: Profile; you?: boolean }) {
   );
 }
 
-/** The big handwritten title field with a dashed underline. */
+/** The big title field with a dashed underline. */
 export function TitleInput({ value, onChange, placeholder, size = 30, autoFocus }: { value: string; onChange: (v: string) => void; placeholder: string; size?: number; autoFocus?: boolean }) {
   return (
     <TextInput

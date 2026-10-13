@@ -26,7 +26,7 @@ import { colors } from '@/theme';
 const SHOW_DONE = 3;
 
 /**
- * A list, yours or a friend's. On yours: tap an item's circle, then scribble across it to cross it off.
+ * A list, yours or a friend's. On yours: tap an item's circle to cross it off.
  * On a friend's: open invites get "i'm down". Owners can also edit: rename, owners, who can see it, take items off.
  */
 export default function ListScreen() {
@@ -34,8 +34,6 @@ export default function ListScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const list = getList(id);
 
-  const [armed, setArmed] = useState<string | null>(null);
-  const [nudge, setNudge] = useState(false);
   const [cele, setCele] = useState<string | null>(null);
   const [allDone, setAllDone] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -68,18 +66,7 @@ export default function ListScreen() {
   const owner = others[0] ?? people[0];
 
   // ---- crossing things off ----
-  const arm = (itemId: string) => {
-    setNudge(false);
-    setArmed(armed === itemId ? null : itemId);
-  };
-  const scribbled = (itemId: string, crossed: boolean) => {
-    if (!crossed) {
-      setNudge(true);
-      setTimeout(() => setNudge(false), 1600);
-      return;
-    }
-    setArmed(null);
-    setNudge(false);
+  const crossOff = (itemId: string) => {
     markDone(itemId);
     setCele(itemId);
   };
@@ -98,7 +85,6 @@ export default function ListScreen() {
     setChoice(list.visibility);
     setViewerDraft(viewerIds(id));
     setRemoved([]);
-    setArmed(null);
     setEditing(true);
   };
   const stopEdit = () => {
@@ -136,7 +122,6 @@ export default function ListScreen() {
 
   return (
     <FolderScreen
-      scrollEnabled={!armed}
       header={
         editing ? (
           <Header left={<TextAction label="cancel" onPress={stopEdit} />} title="edit" right={<SaveAction onPress={save} disabled={!title.trim()} />} />
@@ -192,10 +177,7 @@ export default function ListScreen() {
             item={item}
             index={i}
             member={member}
-            armed={armed === item.id}
-            nudge={armed === item.id && nudge}
-            onArm={() => arm(item.id)}
-            onScribble={(crossed) => scribbled(item.id, crossed)}
+            onDone={() => crossOff(item.id)}
             onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}
           />
         ))}

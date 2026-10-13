@@ -3,7 +3,7 @@ import { colors, fonts, noOutline } from '@/theme';
 import { Paper } from './Paper';
 import { Hand, Mono } from './Text';
 
-/** Notes on a cream sheet, handwritten. A dashed sheet you can type on while editing. */
+/** Notes on a cream sheet. A dashed sheet you can type on while editing. */
 export function NotesField({ value, onChange, editing, placeholder = 'links, addresses, who to ask…' }: { value: string; onChange?: (v: string) => void; editing?: boolean; placeholder?: string }) {
   if (!editing) {
     return (

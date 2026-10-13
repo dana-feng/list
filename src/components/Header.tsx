@@ -19,7 +19,7 @@ export function BackButton({ label = 'Back', onPress = goBack, icon = 'back' }: 
   );
 }
 
-/** Top row on the dark background: left (back arrow by default), a handwritten title, actions on the right. */
+/** Top row on the dark background: left (back arrow by default), a title, actions on the right. */
 export function Header({ left, title, center, right }: { left?: ReactNode; title?: string; center?: ReactNode; right?: ReactNode }) {
   return (
     <View style={styles.row}>

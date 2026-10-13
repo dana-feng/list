@@ -20,7 +20,6 @@ import { Paper } from '@/components/Paper';
 import { PersonPicker } from '@/components/PersonPicker';
 import { PhotoStrip } from '@/components/PhotoGrid';
 import { Circle } from '@/components/Scribble';
-import { ScribblePad } from '@/components/ScribblePad';
 import { FolderScreen } from '@/components/Screen';
 import { Switch } from '@/components/Switch';
 import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
@@ -68,8 +67,6 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const isNew = !id;
   const [editing, setEditing] = useState(isNew);
   const [picking, setPicking] = useState(isNew && !listId);
-  const [armed, setArmed] = useState(false);
-  const [nudge, setNudge] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [inviteMenu, setInviteMenu] = useState(false);
@@ -103,7 +100,6 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     if (item) set({ title: item.title, date: item.date, notes: item.notes, open_invite: item.open_invite, invite_audience: item.invite_audience, invitees: inviteeIds(item.id) });
     setInviteMenu(false);
     setConfirmingDelete(false);
-    setArmed(false);
     setEditing(true);
   };
   const destroy = () => {
@@ -133,14 +129,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     else set({ photos: [...draft.photos, ...uris] });
   };
   const removeNew = (photoId: string) => set({ photos: draft.photos.filter((_, i) => `new${i}` !== photoId) });
-  const scribbled = (crossed: boolean) => {
-    if (!crossed) {
-      setNudge(true);
-      setTimeout(() => setNudge(false), 1600);
-      return;
-    }
-    setArmed(false);
-    setNudge(false);
+  const finish = () => {
     const finishedList = markDone(item!.id);
     if (finishedList) router.push(`/done/${list!.id}?kind=list`);
   };
@@ -181,7 +170,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   };
 
   const card = (
-    <Paper fill={done ? colors.gold : colors.sage} edge="ink" edgeWidth={armed ? 2.2 : 1.5} shape={4} lean={0} style={[styles.card, armed && { borderColor: colors.bark }]}>
+    <Paper fill={done ? colors.gold : colors.sage} edge="ink" edgeWidth={1.5} shape={4} lean={0} style={styles.card}>
       {editing ? (
         <TitleInput value={draft.title} onChange={(title) => set({ title })} placeholder="what's the item?" size={28} autoFocus={isNew && !picking} />
       ) : (
@@ -229,37 +218,17 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   );
 
   return (
-    <FolderScreen scrollEnabled={!armed} header={header} folderTabs={tab}>
+    <FolderScreen header={header} folderTabs={tab}>
       {editing && !isNew ? <Mono size={11} color={colors.inkSoft} style={{ marginHorizontal: 4, marginBottom: 10 }}>editing — tap anything dashed</Mono> : null}
 
-      {member && !editing && !done ? (
-        <ScribblePad armed={armed} onFinish={scribbled}>{card}</ScribblePad>
-      ) : card}
+      {card}
 
       {/* crossing it off (yours) */}
       {member && !editing && item && !done ? (
-        <>
-          <Paper
-            onPress={() => { setNudge(false); setArmed(!armed); }}
-            fill={armed ? colors.bark : undefined}
-            edge={armed ? 'none' : 'ink'}
-            edgeWidth={1.4}
-            shape={4}
-            accessibilityState={{ selected: armed }}
-            accessibilityLabel={armed ? 'Cancel' : `Mark ${item.title} as done: tap, then scribble across the card`}
-            accessibilityActions={[{ name: 'markDone', label: 'Mark as done now' }]}
-            onAccessibilityAction={(e) => e.nativeEvent.actionName === 'markDone' && scribbled(true)}
-            style={styles.arm}
-          >
-            <Circle filled={armed} size={24} />
-            <MonoMedium size={13} color={armed ? colors.paper : colors.ink} style={{ flex: 1 }}>{armed ? 'cancel' : 'mark as done'}</MonoMedium>
-          </Paper>
-          {armed ? (
-            <MonoMedium size={12} color={colors.bark} style={{ marginTop: 8, marginHorizontal: 4 }} accessibilityLiveRegion="polite">
-              {nudge ? 'almost — all the way across' : 'now scribble across the card ↑'}
-            </MonoMedium>
-          ) : null}
-        </>
+        <Paper onPress={finish} edge="ink" edgeWidth={1.4} shape={4} accessibilityLabel={`Mark ${item.title} as done`} style={styles.arm}>
+          <Circle size={24} />
+          <MonoMedium size={13} style={{ flex: 1 }}>mark as done</MonoMedium>
+        </Paper>
       ) : null}
       {member && !editing && item && done ? (
         <View style={styles.doneRow}>

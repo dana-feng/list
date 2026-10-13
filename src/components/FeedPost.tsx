@@ -7,9 +7,8 @@ import { getProfile } from '@/api/profiles';
 import { longDay, names, timeAgo } from '@/lib';
 import { colors, hash } from '@/theme';
 import { AvatarStack } from './Avatar';
-import { DownButton, DownCount } from './Down';
 import { Paper } from './Paper';
-import { PhotoCarousel, Photo } from './Photo';
+import { PhotoCarousel } from './Photo';
 import { ProgressBar } from './ProgressBar';
 import { Strike } from './Scribble';
 import { Hand, Mono, MonoMedium } from './Text';
@@ -42,7 +41,7 @@ function Who({ people, verb, at, joined }: { people: Profile[]; verb: string; at
   );
 }
 
-/** One post on Home. Each kind has its own card: an open invite, a crossed-off item, a new list. */
+/** One post on Home. Each kind has its own card: an added item, a crossed-off item, a new list. */
 export function FeedPost({ event, index }: { event: FeedEvent; index: number }) {
   const list = getList(event.list_id);
   const item = event.item_id ? getItem(event.item_id) : undefined;
@@ -106,24 +105,16 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
     );
   }
 
-  // open invite, or a plain "added an item"
-  if (!item) return null;
-  const invite = event.kind === 'open_invite';
+  // a plain "added an item". Open invites never reach here: they live under Open Invite.
+  if (!item || event.kind === 'open_invite') return null;
   const meta = [item.date ? longDay(item.date) : null, list.title].filter(Boolean).join(' · ');
   return (
-    <Paper fill={invite ? colors.sage : colors.cream} edge="ink" shape={index} lean={index} style={styles.card}>
+    <Paper fill={colors.cream} edge="ink" shape={index} lean={index} style={styles.card}>
       <Who people={[actor]} verb={VERB[event.kind]} at={event.created_at} />
-      {invite && photos.length ? <Photo photo={photos[0]} style={{ height: 150 }} /> : null}
       <Pressable onPress={openItem} style={{ gap: 4 }} accessibilityRole="button">
         <Hand size={22} style={{ lineHeight: 25 }}>{item.title}</Hand>
         <Mono size={11}>{meta}</Mono>
       </Pressable>
-      {invite && item.open_invite && !item.done_at ? (
-        <View style={styles.bottom}>
-          <DownCount itemId={item.id} />
-          <DownButton itemId={item.id} />
-        </View>
-      ) : null}
     </Paper>
   );
 }
@@ -131,7 +122,6 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
 const styles = StyleSheet.create({
   card: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 14, gap: 10 },
   who: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 32 },
   folderPost: {},
   postTab: { alignSelf: 'flex-start', height: 28, paddingHorizontal: 12, justifyContent: 'center', borderTopLeftRadius: 9, borderTopRightRadius: 11, borderWidth: 1.2, borderBottomWidth: 0, borderColor: colors.ink, marginBottom: -1.2, zIndex: 2 },
 });
