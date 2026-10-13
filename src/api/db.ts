@@ -24,6 +24,8 @@ export type Item = {
   caption: string | null;
   done_at: string | null;
   done_by: string | null;
+  /** Place among the list's to-dos once someone has dragged them into an order; null until then. */
+  position: number | null;
   created_at: string;
 };
 /** path is a storage path in the photos bucket, or a local file uri while it's uploading. */
