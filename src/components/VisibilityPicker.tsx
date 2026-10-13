@@ -1,5 +1,5 @@
 import { Pressable, View } from 'react-native';
-import type { Visibility } from '@/api/db';
+import type { InviteAudience, Visibility } from '@/api/db';
 import { colors } from '@/theme';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
@@ -14,15 +14,24 @@ export function choiceLabel(choice: Choice, viewers: number) {
   return choice;
 }
 
-const OPTIONS: { value: Choice; title: string; sub: string }[] = [
+type Option<T> = { value: T; title: string; sub: string };
+
+const OPTIONS: Option<Choice>[] = [
   { value: 'followers', title: 'followers', sub: 'people who follow you' },
   { value: 'specific', title: 'specific people', sub: 'only people you pick' },
   { value: 'anyone', title: 'anyone', sub: 'anyone who finds your profile' },
   { value: 'just_me', title: 'just me', sub: 'only the people on it' },
 ];
 
+/** Who an open invite goes to. Its own choice, whatever the list is set to. */
+export const INVITE_OPTIONS: Option<InviteAudience>[] = [
+  { value: 'followers', title: 'followers', sub: 'people who follow you' },
+  { value: 'specific', title: 'specific people', sub: 'only people you pick' },
+  { value: 'anyone', title: 'anyone', sub: 'anyone who can find you' },
+];
+
 /** The dashed "who can see" button: people icon, current choice, chevron. */
-export function VisibilityButton({ label, onPress, open, disabled }: { label: string; onPress?: () => void; open?: boolean; disabled?: boolean }) {
+export function VisibilityButton({ label, onPress, open, disabled, what = 'Who can see it' }: { label: string; onPress?: () => void; open?: boolean; disabled?: boolean; what?: string }) {
   return (
     <Paper
       onPress={onPress}
@@ -31,7 +40,7 @@ export function VisibilityButton({ label, onPress, open, disabled }: { label: st
       edgeWidth={1.3}
       shape={2}
       round={1.2}
-      accessibilityLabel={`Who can see it: ${label}`}
+      accessibilityLabel={`${what}: ${label}`}
       accessibilityState={{ expanded: open }}
       style={{ height: 30, paddingHorizontal: onPress ? 10 : 0, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}
     >
@@ -43,10 +52,10 @@ export function VisibilityButton({ label, onPress, open, disabled }: { label: st
 }
 
 /** The dropdown of choices under that button. Picking "specific people" opens the people picker instead. */
-export function VisibilityMenu({ value, onPick }: { value: Choice; onPick: (c: Choice) => void }) {
+export function VisibilityMenu<T extends string = Choice>({ value, onPick, options = OPTIONS as unknown as Option<T>[] }: { value: T; onPick: (c: T) => void; options?: Option<T>[] }) {
   return (
     <Paper fill={colors.cream} edge="ink" shape={3} style={{ padding: 6, marginTop: 6, shadowColor: '#3A1000', shadowOpacity: 0.25, shadowRadius: 9, shadowOffset: { width: 0, height: 8 } }} accessibilityRole={undefined}>
-      {OPTIONS.map((o) => {
+      {options.map((o) => {
         const on = o.value === value;
         return (
           <Pressable

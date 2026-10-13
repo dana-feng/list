@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo-google-fonts/fraunces": "^0.4.1",
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
-    "@expo-google-fonts/shantell-sans": "^0.4.1",
     "@expo/metro-runtime": "~57.0.16",
     "@supabase/supabase-js": "^2.117.3",
     "expo": "~57.0.27",

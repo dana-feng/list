@@ -1,16 +1,16 @@
 import { View } from 'react-native';
 import { useDb } from '@/api/db';
-import { getItem, interestedPeople, isInterested, toggleInterest } from '@/api/items';
+import { getItem, interestedPeople, isInterested, isInvitedTo, toggleInterest } from '@/api/items';
 import { isMember } from '@/api/lists';
 import { colors } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { Pill } from './Button';
 import { Mono } from './Text';
 
-/** Whether you can say you're down: it's an open invite, still open, and on someone else's list. */
+/** Whether you can say you're down: an open invite that includes you, still open, on someone else's list. */
 export function canSayDown(itemId: string) {
   const item = getItem(itemId);
-  return !!item && item.open_invite && !item.done_at && !isMember(item.list_id);
+  return !!item && isInvitedTo(itemId) && !isMember(item.list_id);
 }
 
 /** "i'm down" / "down ✓" on an open invite. Hidden on your own lists and on anything not asked about. */

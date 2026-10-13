@@ -50,7 +50,7 @@ export function refresh(): Promise<void> {
 
 async function load() {
   const seen = changes;
-  const [profiles, follows, lists, members, viewers, items, photos, interests, events] = await Promise.all([
+  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events] = await Promise.all([
     supabase.from('profiles').select('*'),
     supabase.from('follows').select('*'),
     supabase.from('lists').select('*'),
@@ -58,10 +58,11 @@ async function load() {
     supabase.from('list_viewers').select('*'),
     supabase.from('items').select('*'),
     supabase.from('item_photos').select('*'),
+    supabase.from('item_invitees').select('*'),
     supabase.from('interests').select('*'),
     supabase.from('events').select('*').order('created_at', { ascending: false }).limit(FEED_LIMIT),
   ]);
-  const failed = [profiles, follows, lists, members, viewers, items, photos, interests, events].find((r) => r.error);
+  const failed = [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events].find((r) => r.error);
   if (failed?.error) {
     console.warn('refresh failed', failed.error.message);
     return;
@@ -80,6 +81,7 @@ async function load() {
   db.list_viewers = viewers.data ?? [];
   db.items = items.data ?? [];
   db.item_photos = photos.data ?? [];
+  db.item_invitees = invitees.data ?? [];
   db.interests = interests.data ?? [];
   db.events = events.data ?? [];
 

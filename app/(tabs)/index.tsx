@@ -41,7 +41,7 @@ export default function Home() {
       <View style={{ gap: 22 }}>
         {tab === 'all' ? (
           posts.length ? posts.map((e, i) => <FeedPost key={e.id} event={e} index={i} />) : (
-            <Empty title="quiet in here" body="follow a few people, or start a list. what you and your people do shows up here." />
+            <Empty title="quiet in here" body="follow a few people. what they add, cross off and ask about shows up here." />
           )
         ) : invites.length ? (
           invites.map((r, i) => <OpenInviteRow key={r.item.id} {...r} index={i} />)

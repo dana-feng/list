@@ -26,7 +26,7 @@ import { colors } from '@/theme';
 const SHOW_DONE = 3;
 
 /**
- * A list, yours or a friend's. On yours: tap an item's circle, then scribble across it to cross it off.
+ * A list, yours or a friend's. On yours: tap an item's circle to cross it off.
  * On a friend's: open invites get "i'm down". Owners can also edit: rename, owners, who can see it, take items off.
  */
 export default function ListScreen() {
@@ -34,8 +34,6 @@ export default function ListScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const list = getList(id);
 
-  const [armed, setArmed] = useState<string | null>(null);
-  const [nudge, setNudge] = useState(false);
   const [cele, setCele] = useState<string | null>(null);
   const [allDone, setAllDone] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -45,7 +43,7 @@ export default function ListScreen() {
   const [viewers, setViewerDraft] = useState<string[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
 
-  if (!list || !canViewList(id)) {
+  if (!list) {
     return (
       <FolderScreen header={<Header />} folderTabs={<FolderTab label="list" />}>
         <Hand size={24}>can’t open this list</Hand>
@@ -55,6 +53,8 @@ export default function ListScreen() {
   }
 
   const member = isMember(id);
+  // false when you're only here through an open invite: you get the list's name, its people and what you're invited to
+  const whole = canViewList(id);
   const invited = membership(id)?.status === 'invited';
   const people = listPeople(id);
   const { done, total } = listProgress(id);
@@ -66,18 +66,7 @@ export default function ListScreen() {
   const owner = others[0] ?? people[0];
 
   // ---- crossing things off ----
-  const arm = (itemId: string) => {
-    setNudge(false);
-    setArmed(armed === itemId ? null : itemId);
-  };
-  const scribbled = (itemId: string, crossed: boolean) => {
-    if (!crossed) {
-      setNudge(true);
-      setTimeout(() => setNudge(false), 1600);
-      return;
-    }
-    setArmed(null);
-    setNudge(false);
+  const crossOff = (itemId: string) => {
     markDone(itemId);
     setCele(itemId);
   };
@@ -96,7 +85,6 @@ export default function ListScreen() {
     setChoice(list.visibility);
     setViewerDraft(viewerIds(id));
     setRemoved([]);
-    setArmed(null);
     setEditing(true);
   };
   const stopEdit = () => {
@@ -118,6 +106,8 @@ export default function ListScreen() {
   const why =
     member || invited
       ? null
+      : !whole
+        ? "you're only seeing what you're invited to on this list"
       : list.visibility === 'anyone'
         ? "you can see this list because it's open to anyone"
         : list.visibility === 'specific'
@@ -132,7 +122,6 @@ export default function ListScreen() {
 
   return (
     <FolderScreen
-      scrollEnabled={!armed}
       header={
         editing ? (
           <Header left={<TextAction label="cancel" onPress={stopEdit} />} title="edit" right={<SaveAction onPress={save} disabled={!title.trim()} />} />
@@ -161,7 +150,7 @@ export default function ListScreen() {
             <AvatarStack people={people} size={22} />
             <Mono size={11}>{names(people)}</Mono>
           </View>
-          {!member ? (
+          {!member && whole ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }}>
               <ProgressBar done={done} total={total} height={9} outlined />
               <Mono size={10.5}>{done} of {total}</Mono>
@@ -180,7 +169,7 @@ export default function ListScreen() {
         </Paper>
       ) : null}
 
-      <Label style={{ marginTop: 18, marginBottom: 8, marginHorizontal: 2 }}>to do</Label>
+      <Label style={{ marginTop: 18, marginBottom: 8, marginHorizontal: 2 }}>{whole ? 'to do' : 'open invites'}</Label>
       <View style={{ gap: member ? 6 : 8 }}>
         {open.map((item, i) => (
           <OpenRow
@@ -188,10 +177,7 @@ export default function ListScreen() {
             item={item}
             index={i}
             member={member}
-            armed={armed === item.id}
-            nudge={armed === item.id && nudge}
-            onArm={() => arm(item.id)}
-            onScribble={(crossed) => scribbled(item.id, crossed)}
+            onDone={() => crossOff(item.id)}
             onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}
           />
         ))}

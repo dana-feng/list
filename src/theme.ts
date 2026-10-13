@@ -25,9 +25,10 @@ export const colors = {
 } as const;
 
 export const fonts = {
-  hand: 'ShantellSans_600SemiBold',
-  handMedium: 'ShantellSans_500Medium',
-  handBold: 'ShantellSans_700Bold',
+  // the display face (a soft serif). The keys are still called "hand" from when this was a handwriting font.
+  hand: 'Fraunces_600SemiBold',
+  handMedium: 'Fraunces_500Medium',
+  handBold: 'Fraunces_700Bold',
   mono: 'IBMPlexMono_400Regular',
   monoMedium: 'IBMPlexMono_500Medium',
 } as const;

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, List } from '@/api/db';
+import { isInvitedTo } from '@/api/items';
 import { invitedBy, listPeople, listProgress, progressLabel, respondInvite, visibilityLabel } from '@/api/lists';
 import { colors, folderFills, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
@@ -9,7 +10,8 @@ import { Pill } from './Button';
 import { ProgressBar } from './ProgressBar';
 import { Hand, Mono, MonoMedium } from './Text';
 
-const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id === listId && i.open_invite && !i.done_at).length;
+/** Open invites on the list that include you. */
+const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id === listId && isInvitedTo(i.id)).length;
 
 /**
  * A list as a folder on a profile: a tab with how far along it is, a cover placeholder, the name and a progress bar.
