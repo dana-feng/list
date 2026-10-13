@@ -50,6 +50,7 @@ export function refresh(): Promise<void> {
 
 async function load() {
   const seen = changes;
+  const who = db.me;
   const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events] = await Promise.all([
     supabase.from('profiles').select('*'),
     supabase.from('follows').select('*'),
@@ -67,6 +68,8 @@ async function load() {
     console.warn('refresh failed', failed.error.message);
     return;
   }
+  // Signed out (or into another account) while this was loading.
+  if (db.me !== who) return;
   // Something changed locally while this was loading, so these rows are already out of date.
   // Every write refreshes once it lands; if none is left, go round again now.
   if (pending > 0 || changes !== seen) {
@@ -86,9 +89,10 @@ async function load() {
   db.events = events.data ?? [];
 
   await signPhotoUrls();
-  if (db.status === 'needsProfile' || db.status === 'ready') {
-    db.status = db.profiles.some((p) => p.id === db.me) ? 'ready' : 'needsProfile';
-  }
+  if (db.me !== who) return;
+  // This is the only place that decides between ready and needsProfile: only once your
+  // profile row has actually been looked up.
+  db.status = db.profiles.some((p) => p.id === db.me) ? 'ready' : 'needsProfile';
   commit();
 }
 
@@ -179,8 +183,18 @@ async function startSession(session: Session | null) {
   if (db.me === user.id && db.status !== 'loading' && db.status !== 'signedOut') return;
   db.me = user.id;
   db.phone = user.phone ?? '';
-  db.status = 'needsProfile';
+  // Don't guess needsProfile here. At launch that would hide the splash and redirect an
+  // already-onboarded person to the profile step before their profile had loaded.
+  // Status stays as it is (loading at launch, signedOut mid sign-in) until refresh() decides.
   await refresh();
+  if (db.me !== user.id || db.status === 'ready' || db.status === 'needsProfile') return;
+  // The full reload failed (e.g. offline). Check just your profile so we don't get stuck.
+  const { data, error } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle();
+  if (db.me !== user.id) return;
+  // If even that fails, assume you're onboarded: the next successful refresh corrects it, and
+  // sending an existing account to the profile step is the worse mistake.
+  db.status = error || data ? 'ready' : 'needsProfile';
+  commit();
 }
 
 let started = false;
