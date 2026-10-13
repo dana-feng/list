@@ -1,4 +1,6 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { db, List } from '@/api/db';
 import { isInvitedTo } from '@/api/items';
@@ -6,6 +8,7 @@ import { invitedBy, listPeople, listProgress, progressLabel, respondInvite, visi
 import { colors, folderFills, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { Icon } from './Icon';
+import { ListPeek } from './ListPeek';
 import { Pill } from './Button';
 import { ProgressBar } from './ProgressBar';
 import { Hand, Mono, MonoMedium } from './Text';
@@ -24,50 +27,70 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
   const invites = own ? 0 : openInviteCount(list.id);
   const pct = total ? Math.round((100 * done) / total) : 0;
   const open = () => router.push(`/list/${list.id}`);
+  // press and hold one of your own lists to bring it up close, with delete underneath
+  const [peeking, setPeeking] = useState(false);
+  const [press] = useState(() => new Animated.Value(1));
+  const canPeek = !!own && !invited;
+  // the folder sinks while you hold it, then a tap from the phone as it comes up
+  const sink = (to: number) => Animated.spring(press, { toValue: to, useNativeDriver: true, friction: 8, tension: to < 1 ? 40 : 120 }).start();
+  const peek = () => {
+    if (Platform.OS === 'android') Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press);
+    else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    sink(1);
+    setPeeking(true);
+  };
 
   return (
     <View style={[{ flex: 1 }, invited ? null : tilt(index)]}>
-      <View style={[styles.tab, { backgroundColor: invited ? colors.olive : fill, borderColor: invited ? colors.olive : colors.paper }]}>
-        <MonoMedium size={11} color={invited ? colors.paper : colors.ink}>{invited ? 'invited' : progressLabel(list.id)}</MonoMedium>
-      </View>
-      <Pressable
-        onPress={open}
-        accessibilityRole="button"
-        accessibilityLabel={`Open ${list.title}`}
-        style={[styles.body, { backgroundColor: fill, borderColor: invited ? colors.olive : colors.paper, borderWidth: invited ? 2 : 1.6 }]}
-      >
-        {/* placeholder until lists get their own cover images */}
-        <View style={[styles.cover, { backgroundColor: invited ? colors.sage : fill === colors.paper ? colors.sage : colors.paper }]}>
-          <Icon name="image" size={22} />
+      <Animated.View style={{ transform: [{ scale: press }] }}>
+        <View style={[styles.tab, { backgroundColor: invited ? colors.olive : fill, borderColor: invited ? colors.olive : colors.paper }]}>
+          <MonoMedium size={11} color={invited ? colors.paper : colors.ink}>{invited ? 'invited' : progressLabel(list.id)}</MonoMedium>
         </View>
-        <Hand size={17} style={{ lineHeight: 19 }}>{list.title}</Hand>
-        {invited ? (
-          <>
-            <Mono size={10.5}>{inviter ? `${inviter.name} invited you` : 'you were invited'}</Mono>
-            <View style={{ flexDirection: 'row', gap: 6, marginTop: 2 }}>
-              <Pill label="join" height={34} onPress={() => respondInvite(list.id, true)} accessibilityLabel={`Join ${list.title}`} />
-              <Pill label="no" on height={34} onPress={() => respondInvite(list.id, false)} accessibilityLabel={`Say no to ${list.title}`} />
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <ProgressBar done={done} total={total} />
-              {own ? null : <Mono size={10}>{pct}%</Mono>}
-            </View>
-            {own ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <AvatarStack people={listPeople(list.id)} size={22} max={3} />
-                <Mono size={10}>{visibilityLabel(list)}</Mono>
+        <Pressable
+          onPress={open}
+          onLongPress={canPeek ? peek : undefined}
+          delayLongPress={350}
+          onPressIn={canPeek ? () => sink(0.94) : undefined}
+          onPressOut={canPeek ? () => sink(1) : undefined}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${list.title}`}
+          accessibilityHint={canPeek ? 'Press and hold for a closer look and to delete' : undefined}
+          style={[styles.body, { backgroundColor: fill, borderColor: invited ? colors.olive : colors.paper, borderWidth: invited ? 2 : 1.6 }]}
+        >
+          {/* placeholder until lists get their own cover images */}
+          <View style={[styles.cover, { backgroundColor: invited ? colors.sage : fill === colors.paper ? colors.sage : colors.paper }]}>
+            <Icon name="image" size={22} />
+          </View>
+          <Hand size={17} style={{ lineHeight: 19 }}>{list.title}</Hand>
+          {invited ? (
+            <>
+              <Mono size={10.5}>{inviter ? `${inviter.name} invited you` : 'you were invited'}</Mono>
+              <View style={{ flexDirection: 'row', gap: 6, marginTop: 2 }}>
+                <Pill label="join" height={34} onPress={() => respondInvite(list.id, true)} accessibilityLabel={`Join ${list.title}`} />
+                <Pill label="no" on height={34} onPress={() => respondInvite(list.id, false)} accessibilityLabel={`Say no to ${list.title}`} />
               </View>
-            ) : invites ? (
-              <View style={styles.chip}>
-                <Mono size={10} color={colors.paper}>{invites} open invite{invites > 1 ? 's' : ''}</Mono>
+            </>
+          ) : (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <ProgressBar done={done} total={total} />
+                {own ? null : <Mono size={10}>{pct}%</Mono>}
               </View>
-            ) : null}
-          </>
-        )}
-      </Pressable>
+              {own ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <AvatarStack people={listPeople(list.id)} size={22} max={3} />
+                  <Mono size={10}>{visibilityLabel(list)}</Mono>
+                </View>
+              ) : invites ? (
+                <View style={styles.chip}>
+                  <Mono size={10} color={colors.paper}>{invites} open invite{invites > 1 ? 's' : ''}</Mono>
+                </View>
+              ) : null}
+            </>
+          )}
+        </Pressable>
+      </Animated.View>
+      {peeking ? <ListPeek list={list} onOpen={() => { setPeeking(false); open(); }} onClose={() => setPeeking(false)} /> : null}
     </View>
   );
 }
