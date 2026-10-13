@@ -14,6 +14,12 @@ function format(digits: string) {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
+// autofill hands over the full number ("+1 (347) 555-0182"); the +1 lives in its own box,
+// and no US area code starts with 1, so a leading 1 is always the country code
+function parse(text: string) {
+  return text.replace(/\D/g, '').replace(/^1/, '').slice(0, 10);
+}
+
 export default function Phone() {
   const { change } = useLocalSearchParams<{ change?: string }>();
   const [digits, setDigits] = useState('');
@@ -21,6 +27,7 @@ export default function Phone() {
   return (
     <AuthStep
       step={1}
+      back={!!change}
       title={change ? 'new number?' : "what's your\nnumber?"}
       body={change ? "we'll text a code to the new number." : "we'll text you a code. no passwords."}
       footer={
@@ -40,7 +47,7 @@ export default function Phone() {
         <Paper fill={colors.paper} shape={5} style={{ flex: 1, height: 58, paddingHorizontal: 14, justifyContent: 'center' }}>
           <TextInput
             value={format(digits)}
-            onChangeText={(t) => setDigits(t.replace(/\D/g, '').slice(0, 10))}
+            onChangeText={(t) => setDigits(parse(t))}
             keyboardType="phone-pad"
             textContentType="telephoneNumber"
             autoComplete="tel"
