@@ -178,10 +178,9 @@ export default function ListScreen() {
         {/* yours: hold a row and drag it to put the list in order */}
         {open.length ? (
           <Reorderable items={open} gap={member ? 6 : 8} onReorder={member ? (ids) => reorderItems(id, ids) : undefined} onDragging={setDragging}>
-            {(item, i) => (
+            {(item) => (
               <OpenRow
                 item={item}
-                index={i}
                 member={member}
                 onDone={() => crossOff(item.id)}
                 onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}

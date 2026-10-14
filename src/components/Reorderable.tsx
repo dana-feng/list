@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useLayoutEffect, useRef, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { Animated, Platform, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -28,8 +28,16 @@ const tick = () => {
 
 /** A column of rows you can rearrange: hold one until it lifts, then drag it up or down. */
 export function Reorderable<T extends { id: string }>({ items, gap, onReorder, onDragging, children }: Props<T>) {
-  const ids = items.map((i) => i.id);
+  // where a row was just dropped, shown until the new order comes back down through `items`
+  const [landed, setLanded] = useState<string[] | null>(null);
+  // (or the list changed underneath it, and `items` is the better guess)
+  if (landed && (landed.length !== items.length || landed.every((id, i) => id === items[i].id))) setLanded(null);
+  const rows = landed ? [...items].sort((a, b) => landed.indexOf(a.id) - landed.indexOf(b.id)) : items;
+  const ids = rows.map((i) => i.id);
   const [active, setActive] = useState<string | null>(null);
+  // nothing's being dragged, so the rows sit where they're laid out. The offsets are only hooked up during a drag:
+  // a render that read them at the moment of a drop would put each moved row at its new place *plus* its old offset
+  const [resting, setResting] = useState(true);
   // how far each row is from where it's laid out
   const [offsets] = useState(() => new Map<string, Animated.Value>());
   const [lift] = useState(() => new Animated.Value(0));
@@ -37,8 +45,6 @@ export function Reorderable<T extends { id: string }>({ items, gap, onReorder, o
   const drag = useRef<Drag | null>(null);
   // where the finger was when the drag took the touch
   const startY = useRef(0);
-  // a row just landed: clear the offsets once the new order has rendered
-  const settled = useRef(false);
 
   const offset = (id: string) => {
     let v = offsets.get(id);
@@ -50,6 +56,9 @@ export function Reorderable<T extends { id: string }>({ items, gap, onReorder, o
     const from = ids.indexOf(id);
     if (drag.current || from < 0 || ids.length < 2) return;
     drag.current = { id, from, to: from };
+    // still unhooked from the rows, so this doesn't move anything on screen
+    offsets.forEach((v) => v.setValue(0));
+    setResting(false);
     if (Platform.OS === 'android') Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press);
     else if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Animated.spring(lift, { toValue: 1, useNativeDriver: false, friction: 7 }).start();
@@ -99,23 +108,23 @@ export function Reorderable<T extends { id: string }>({ items, gap, onReorder, o
     }
     Animated.spring(lift, { toValue: 0, useNativeDriver: false, friction: 7 }).start();
     Animated.timing(offset(d.id), { toValue: slot, duration: 120, useNativeDriver: false }).start(() => {
-      settled.current = true;
+      // one render: every row laid out in its new place, with no offsets
       if (d.to !== d.from) {
         const next = [...order];
         next.splice(d.to, 0, next.splice(d.from, 1)[0]);
-        onReorder?.(next);
+        setLanded(next);
       }
+      setResting(true);
       setActive(null);
       onDragging?.(false);
     });
   };
 
-  // the rows are now laid out in their new places, so nothing is offset any more
-  useLayoutEffect(() => {
-    if (!settled.current) return;
-    settled.current = false;
-    offsets.forEach((v) => v.setValue(0));
-  });
+  // only then hand the order up. Saving it re-renders straight away, ahead of the render above, so doing it
+  // in the drop would draw the new order with the drag's offsets still on for a frame
+  useEffect(() => {
+    if (landed) onReorder?.(landed);
+  }, [landed]); // eslint-disable-line react-hooks/exhaustive-deps -- once per drop, not whenever the parent re-renders
 
   const moveBy = (id: string, by: -1 | 1) => {
     const from = ids.indexOf(id);
@@ -143,7 +152,7 @@ export function Reorderable<T extends { id: string }>({ items, gap, onReorder, o
       onTouchEnd={drop}
       onTouchCancel={drop}
     >
-      {items.map((item, i) => (
+      {rows.map((item, i) => (
         <Animated.View
           key={item.id}
           onLayout={(e) => {
@@ -151,10 +160,14 @@ export function Reorderable<T extends { id: string }>({ items, gap, onReorder, o
           }}
           style={{
             zIndex: active === item.id ? 1 : 0,
-            transform: [
-              { translateY: offset(item.id) },
-              { scale: active === item.id ? lift.interpolate({ inputRange: [0, 1], outputRange: [1, 1.03] }) : 1 },
-            ],
+            // one plain entry rather than the drag's two, so it never looks unchanged and always reaches the native view.
+            // (Not `undefined`: taking the transform away sends a null that React Native's transform check trips over.)
+            transform: resting
+              ? [{ translateY: 0 }]
+              : [
+                  { translateY: offset(item.id) },
+                  { scale: active === item.id ? lift.interpolate({ inputRange: [0, 1], outputRange: [1, 1.03] }) : 1 },
+                ],
           }}
         >
           <HandleContext.Provider value={onReorder ? { hold: () => hold(item.id), move: (by) => moveBy(item.id, by) } : undefined}>
