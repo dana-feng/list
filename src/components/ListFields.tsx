@@ -75,7 +75,7 @@ export function ListFields({ title, onTitle, owners, lockedOwners = [], onOwners
   };
   return (
     <View>
-      <TitleInput value={title} onChange={onTitle} placeholder="name your list" autoFocus={autoFocus} />
+      <TitleInput value={title} onChange={onTitle} placeholder="untitled list" autoFocus={autoFocus} />
       <View style={{ gap: 6, marginTop: 14 }}>
         <FieldRow label="owners">
           <PersonChip person={me()} you />

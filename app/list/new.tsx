@@ -35,7 +35,7 @@ export default function NewList() {
         viewers={draft.viewers}
         onVisibility={(choice, viewers) => updateDraft({ visibility: choice, viewers })}
       />
-      <Button label="start the list" disabled={!name} onPress={create} style={{ marginTop: 26 }} />
+      <Button label="save" disabled={!name} onPress={create} style={{ marginTop: 26 }} />
     </FolderScreen>
   );
 }

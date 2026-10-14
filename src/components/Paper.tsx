@@ -2,13 +2,13 @@ import { ReactNode } from 'react';
 import { AccessibilityActionEvent, AccessibilityActionInfo, Pressable, StyleProp, View, ViewStyle } from 'react-native';
 import { colors, corners, tilt } from '@/theme';
 
-type Edge = 'ink' | 'light' | 'dash' | 'dashLight' | 'none';
+type Edge = 'ink' | 'light' | 'olive' | 'dash' | 'dashLight' | 'none';
 
 type Props = {
   children?: ReactNode;
   /** Fill color; leave out for a see-through box (an outline only). */
   fill?: string;
-  /** ink: dark line · light: cream line · dash / dashLight: dashed. */
+  /** ink: dark line · light: cream line · olive: green line · dash / dashLight: dashed. */
   edge?: Edge;
   edgeWidth?: number;
   /** Which hand-cut corner shape to use. */
@@ -30,6 +30,7 @@ type Props = {
 const EDGE: Record<Edge, { color: string; style: 'solid' | 'dashed' } | null> = {
   ink: { color: colors.ink, style: 'solid' },
   light: { color: colors.paper, style: 'solid' },
+  olive: { color: colors.olive, style: 'solid' },
   dash: { color: colors.ink, style: 'dashed' },
   dashLight: { color: colors.paper, style: 'dashed' },
   none: null,

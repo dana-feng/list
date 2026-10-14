@@ -25,7 +25,7 @@ type Props = {
   accessibilityLabel?: string;
 };
 
-/** The full-width button: "start the list", "text me a code", "done". */
+/** The full-width button: "save", "send code", "done". */
 export function Button({ label, onPress, tone = 'bark', disabled, icon, style, accessibilityLabel }: Props) {
   const t = TONES[tone];
   return (
@@ -47,16 +47,18 @@ export function Button({ label, onPress, tone = 'bark', disabled, icon, style, a
 }
 
 /**
- * The small toggle button: "i'm down" / "down ✓", "follow" / "following", "join".
+ * The small toggle button: "interested", "follow" / "following", "join".
  * Off is a dark filled pill; on is an outlined one.
  */
-export function Pill({ label, on, onPress, accessibilityLabel, height = 32, light }: { label: string; on?: boolean; onPress: () => void; accessibilityLabel?: string; height?: number; light?: boolean }) {
+export function Pill({ label, on, filled, onPress, accessibilityLabel, height = 32, light }: { label: string; on?: boolean; filled?: boolean; onPress: () => void; accessibilityLabel?: string; height?: number; light?: boolean }) {
   const ink = light ? colors.paper : colors.ink;
+  // "on" is normally the outline; `filled` says outright which look to draw
+  const hollow = filled === undefined ? !!on : !filled;
   return (
     <Paper
       onPress={onPress}
-      fill={on ? undefined : light ? colors.paper : colors.bark}
-      edge={on ? (light ? 'light' : 'ink') : 'none'}
+      fill={hollow ? undefined : light ? colors.paper : colors.bark}
+      edge={hollow ? (light ? 'light' : 'ink') : 'none'}
       edgeWidth={1.3}
       shape={1}
       round={1.2}
@@ -64,17 +66,17 @@ export function Pill({ label, on, onPress, accessibilityLabel, height = 32, ligh
       accessibilityState={{ selected: !!on }}
       style={{ height, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
     >
-      <MonoMedium size={11.5} color={on ? ink : light ? colors.ink : colors.paper} numberOfLines={1}>{label}</MonoMedium>
+      <MonoMedium size={11.5} color={hollow ? ink : light ? colors.ink : colors.paper} numberOfLines={1}>{label}</MonoMedium>
     </Paper>
   );
 }
 
 /** A plain underlined text action: "not now", "undo", "show all 6 done". */
-export function LinkText({ label, onPress, color = colors.ink, size = 12, wavy }: { label: string; onPress: () => void; color?: string; size?: number; wavy?: boolean }) {
+export function LinkText({ label, onPress, color = colors.ink, size = 12 }: { label: string; onPress: () => void; color?: string; size?: number }) {
   return (
     <Paper onPress={onPress} style={{ minHeight: 40, justifyContent: 'center', paddingHorizontal: 4, alignSelf: 'flex-start' }}>
       <View>
-        <MonoMedium size={size} color={color} style={{ textDecorationLine: 'underline', textDecorationStyle: wavy ? 'dashed' : 'solid' }}>{label}</MonoMedium>
+        <MonoMedium size={size} color={color} style={{ textDecorationLine: 'underline' }}>{label}</MonoMedium>
       </View>
     </Paper>
   );

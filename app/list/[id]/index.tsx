@@ -7,7 +7,6 @@ import {
   canViewList, deleteList, getList, inviteMembers, invitedBy, isListDone, isMember, listPeople, listProgress, membership, renameList, respondInvite,
   setViewers, setVisibility, viewerIds,
 } from '@/api/lists';
-import { isFollowing } from '@/api/profiles';
 import { AvatarStack } from '@/components/Avatar';
 import { LinkText, Pill } from '@/components/Button';
 import { DoneSheet } from '@/components/DoneSheet';
@@ -27,7 +26,7 @@ const SHOW_DONE = 3;
 
 /**
  * A list, yours or a friend's. On yours: tap an item's circle to cross it off.
- * On a friend's: open invites get "i'm down". Owners can also edit: rename, owners, who can see it, take items off.
+ * On a friend's: open invites get "interested". Owners can also edit: rename, owners, who can see it, take items off.
  */
 export default function ListScreen() {
   useDb();
@@ -113,22 +112,11 @@ export default function ListScreen() {
     goBack();
   };
 
-  const why =
-    member || invited
-      ? null
-      : !whole
-        ? "you're only seeing what you're invited to on this list"
-      : list.visibility === 'anyone'
-        ? "you can see this list because it's open to anyone"
-        : list.visibility === 'specific'
-          ? 'you can see this list because they picked you'
-          : (() => {
-              const followed = people.find((p) => isFollowing(p.id));
-              return followed ? `you can see this list because you follow ${followed.name}` : null;
-            })();
+  // only here through an open invite: say so, since the rest of the list is hidden
+  const partial = !member && !invited && !whole;
 
   const celeItem = cele ? items.done.find((i) => i.id === cele) ?? items.open.find((i) => i.id === cele) : undefined;
-  const tabLabel = member || invited ? `${list.title} · ${done}/${total}` : `${owner ? `${owner.name}'s · ` : ''}${list.title}`;
+  const tabLabel = member || invited ? `${list.title} · ${done}/${total}` : list.title;
 
   return (
     <FolderScreen
@@ -179,8 +167,9 @@ export default function ListScreen() {
         </Paper>
       ) : null}
 
-      <Label style={{ marginTop: 18, marginBottom: 8, marginHorizontal: 2 }}>{whole ? 'to do' : 'open invites'}</Label>
-      <View style={{ gap: member ? 6 : 8 }}>
+      {/* nothing left to do: no heading, just the done section (and "+ add" if it's yours) */}
+      {open.length ? <Label style={{ marginTop: 18, marginBottom: 8, marginHorizontal: 2 }}>{whole ? 'to do' : 'open invites'}</Label> : null}
+      <View style={{ gap: member ? 6 : 8, marginTop: open.length ? 0 : 18 }}>
         {open.map((item, i) => (
           <OpenRow
             key={item.id}
@@ -193,15 +182,14 @@ export default function ListScreen() {
         ))}
         {member && !editing ? (
           <Paper onPress={() => router.push(`/item/new?list=${id}`)} edge="dash" shape={3} style={{ height: 48, justifyContent: 'center', paddingLeft: 18 }} accessibilityLabel="Add an item to this list">
-            <Hand size={18} color={colors.inkSoft}>+ write another</Hand>
+            <Hand size={18} color={colors.inkSoft}>+ add</Hand>
           </Paper>
         ) : null}
-        {!open.length && !member ? <Mono size={12} color={colors.inkSoft}>nothing left to do here.</Mono> : null}
       </View>
 
       {finished.length ? (
         <>
-          <Label style={{ marginTop: 24, marginBottom: 8, marginHorizontal: 2 }}>done · {finished.length}</Label>
+          <Label style={{ marginTop: open.length || (member && !editing) ? 24 : 0, marginBottom: 8, marginHorizontal: 2 }}>done · {finished.length}</Label>
           <View style={{ gap: 4 }}>
             {shownDone.map((item, i) => (
               <DoneRow
@@ -228,8 +216,8 @@ export default function ListScreen() {
             <View style={{ alignItems: 'center', gap: 2 }}>
               <Mono size={12} center color={colors.inkSoft}>are you sure?</Mono>
               <View style={{ flexDirection: 'row', gap: 18 }}>
-                <LinkText label="delete it" color={colors.bark} onPress={destroy} />
-                <LinkText label="keep it" onPress={() => setConfirmingDelete(false)} />
+                <LinkText label="yes" color={colors.bark} onPress={destroy} />
+                <LinkText label="no" onPress={() => setConfirmingDelete(false)} />
               </View>
             </View>
           ) : (
@@ -237,7 +225,7 @@ export default function ListScreen() {
           )}
         </View>
       ) : null}
-      {why ? <Mono size={10.5} color={colors.inkSoft} style={{ marginTop: 22, marginHorizontal: 4, lineHeight: 16 }}>{why}</Mono> : null}
+      {partial ? <Mono size={10.5} color={colors.inkSoft} style={{ marginTop: 22, marginHorizontal: 4, lineHeight: 16 }}>you’re only seeing what you’re invited to on this list</Mono> : null}
     </FolderScreen>
   );
 }

@@ -10,6 +10,7 @@ import { Hand, Mono } from './Text';
 type Props = {
   value: string;
   onChange?: (v: string) => void;
+  onBlur?: () => void;
   editing?: boolean;
   placeholder?: string;
   /** People on this list come first when you type @. */
@@ -20,7 +21,7 @@ type Props = {
  * Notes on a cream sheet. A dashed sheet you can type on while editing; type @ there to tag someone.
  * Reading, `value` is the saved text (tags as ids). Editing, it's the typed text (tags as @username).
  */
-export function NotesField({ value, onChange, editing, placeholder = 'links, addresses, @who to ask…', listId }: Props) {
+export function NotesField({ value, onChange, onBlur, editing, placeholder, listId }: Props) {
   const [cursor, setCursor] = useState(value.length);
   // where to put the cursor after a tag is dropped in; handed to the field once, then let go
   const [moveTo, setMoveTo] = useState<number | null>(null);
@@ -68,6 +69,7 @@ export function NotesField({ value, onChange, editing, placeholder = 'links, add
           setCursor(e.nativeEvent.selection.end);
           setMoveTo(null);
         }}
+        onBlur={onBlur}
         multiline
         placeholder={placeholder}
         placeholderTextColor={colors.inkFaint}

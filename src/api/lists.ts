@@ -47,13 +47,14 @@ export function isListDone(listId: string) {
   return total > 0 && done === total;
 }
 
+/** "2/5 done" for a folder's tab. Nothing once the list is finished: the tab stays blank. */
 export function progressLabel(listId: string) {
   const { done, total } = listProgress(listId);
-  return total > 0 && done === total ? 'all done' : `${done}/${total} done`;
+  return total > 0 && done === total ? '' : `${done}/${total} done`;
 }
 
 export function visibilityLabel(list: List) {
-  if (list.visibility === 'just_me') return 'just me';
+  if (list.visibility === 'just_me') return 'owners';
   if (list.visibility !== 'specific') return list.visibility;
   const n = db.list_viewers.filter((v) => v.list_id === list.id).length;
   return `${n} ${n === 1 ? 'person' : 'people'}`;

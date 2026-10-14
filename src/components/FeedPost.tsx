@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, FeedEvent, Profile } from '@/api/db';
-import { getItem, itemsForList, photosFor } from '@/api/items';
+import { getItem, photosFor } from '@/api/items';
 import { getList, listPeople, listProgress, progressLabel } from '@/api/lists';
 import { getProfile } from '@/api/profiles';
 import { longDay, names, timeAgo } from '@/lib';
@@ -60,7 +60,7 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
         <Paper fill={colors.gold} shape={index} lean={index} style={[styles.card, { gap: 8 }]} onPress={openItem} accessibilityLabel={`${item.title}, done`}>
           <Who people={people} verb={VERB.item_done} at={event.created_at} joined={people.length > 1} />
           <View style={{ alignSelf: 'flex-start' }}>
-            <Hand size={18}>{item.title}</Hand>
+            <Hand size={22} style={{ lineHeight: 25 }}>{item.title}</Hand>
             <Strike seed={hash(item.id) % 97} />
           </View>
           <Mono size={11}>{list.title} · {done}/{total}</Mono>
@@ -74,7 +74,7 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
         </View>
         <PhotoCarousel photos={photos} height={photos.length > 1 ? 360 : 260} />
         <Pressable onPress={openItem} style={{ paddingHorizontal: 6, gap: 4 }} accessibilityRole="button">
-          <Hand size={20}>{item.title}</Hand>
+          <Hand size={22} style={{ lineHeight: 25 }}>{item.title}</Hand>
           <Mono size={11}>{list.title} · {done}/{total}</Mono>
         </Pressable>
       </Paper>
@@ -84,8 +84,6 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
   if (event.kind === 'list_created' || event.kind === 'list_done') {
     const finished = event.kind === 'list_done';
     const fill = finished ? colors.gold : colors.straw;
-    const open = itemsForList(list.id).open.map((i) => i.title);
-    const preview = open.length > 3 ? `${open.slice(0, 3).join(' · ')} · +${open.length - 3} more` : open.join(' · ');
     const people = finished ? listPeople(list.id) : [actor];
     return (
       <Pressable onPress={openItem} style={[styles.folderPost, { transform: [{ rotate: `${index % 2 ? 0.3 : -0.3}deg` }] }]} accessibilityRole="button" accessibilityLabel={list.title}>
@@ -95,11 +93,7 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
         <Paper fill={fill} edge="ink" edgeWidth={1.2} shape={2} style={[styles.card, { borderTopLeftRadius: 0, gap: 8 }]}>
           <Who people={people} verb={VERB[event.kind]} at={event.created_at} joined />
           <Hand size={20}>{list.title}</Hand>
-          {finished ? (
-            <View style={{ flexDirection: 'row' }}><ProgressBar done={done} total={total} outlined /></View>
-          ) : preview ? (
-            <Mono size={11} style={{ lineHeight: 17 }}>{preview}</Mono>
-          ) : null}
+          {finished ? <View style={{ flexDirection: 'row' }}><ProgressBar done={done} total={total} outlined /></View> : null}
         </Paper>
       </Pressable>
     );
@@ -123,5 +117,5 @@ const styles = StyleSheet.create({
   card: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 14, gap: 10 },
   who: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   folderPost: {},
-  postTab: { alignSelf: 'flex-start', height: 28, paddingHorizontal: 12, justifyContent: 'center', borderTopLeftRadius: 9, borderTopRightRadius: 11, borderWidth: 1.2, borderBottomWidth: 0, borderColor: colors.ink, marginBottom: -1.2, zIndex: 2 },
+  postTab: { alignSelf: 'flex-start', height: 28, minWidth: 64, paddingHorizontal: 12, justifyContent: 'center', borderTopLeftRadius: 9, borderTopRightRadius: 11, borderWidth: 1.2, borderBottomWidth: 0, borderColor: colors.ink, marginBottom: -1.2, zIndex: 2 },
 });
