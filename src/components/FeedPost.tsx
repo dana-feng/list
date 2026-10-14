@@ -13,12 +13,12 @@ import { Hand, Mono, MonoMedium } from './Text';
 
 type Kind = Exclude<FeedEvent['kind'], 'open_invite'>;
 
-/** The round mark at the start of each line: what kind of thing happened. */
-const MARK: Record<Kind, { icon: IconName; fill: string; tint: string }> = {
-  list_created: { icon: 'folder', fill: colors.straw, tint: colors.ink },
-  list_done: { icon: 'folder', fill: colors.olive, tint: colors.paper },
-  item_added: { icon: 'plus', fill: colors.sage, tint: colors.ink },
-  item_done: { icon: 'check', fill: colors.olive, tint: colors.paper },
+/** The icon at the start of each post: what kind of thing happened. */
+const MARK: Record<Kind, { icon: IconName; color: string }> = {
+  list_created: { icon: 'folder', color: colors.ink },
+  list_done: { icon: 'folder', color: colors.olive },
+  item_added: { icon: 'plus', color: colors.ink },
+  item_done: { icon: 'check', color: colors.olive },
 };
 
 /**
@@ -62,8 +62,8 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
   return (
     <View style={[styles.post, index > 0 && styles.rule]}>
       <View style={styles.row}>
-        <View style={[styles.mark, { backgroundColor: mark.fill }]} accessibilityElementsHidden importantForAccessibility="no">
-          <Icon name={mark.icon} size={15} color={mark.tint} strokeWidth={2.2} />
+        <View style={styles.mark} accessibilityElementsHidden importantForAccessibility="no">
+          <Icon name={mark.icon} size={22} color={mark.color} strokeWidth={kind === 'item_done' ? 2.4 : 1.9} />
         </View>
         <View style={styles.text}>
           {/* faces of everyone who did it (up to three), small, with when on the right */}
@@ -108,7 +108,8 @@ const styles = StyleSheet.create({
   post: { paddingVertical: 20, paddingHorizontal: 4, gap: 12 },
   rule: { borderTopWidth: 1, borderTopColor: colors.rule },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  mark: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.3, borderColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  // just the icon, lined up with the faces on the top line; olive when something got done
+  mark: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, gap: 6 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 30 },
   // lined up under the sentence, not under the mark

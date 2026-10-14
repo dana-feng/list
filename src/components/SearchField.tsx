@@ -1,4 +1,4 @@
-import { Pressable, TextInput } from 'react-native';
+import { Platform, Pressable, TextInput, View } from 'react-native';
 import { colors, fonts, noOutline } from '@/theme';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
@@ -15,7 +15,10 @@ export function SearchField({ value, onChange, placeholder, autoFocus, tone = 'd
       shape={paper ? 5 : 4}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: paper ? 48 : 44, paddingLeft: 12, paddingRight: 6 }}
     >
-      <Icon name="search" size={paper ? 17 : 16} strokeWidth={2} />
+      {/* the lens is the part people read as "the icon", and its handle hangs low: lift it a little so the lens lines up with the text */}
+      <View style={{ marginTop: -2 }}>
+        <Icon name="search" size={paper ? 19 : 17} strokeWidth={2} />
+      </View>
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -25,9 +28,9 @@ export function SearchField({ value, onChange, placeholder, autoFocus, tone = 'd
         autoCapitalize="none"
         autoCorrect={false}
         accessibilityLabel={placeholder ?? 'Search'}
-        // The mono font's line box sits low, so lowercase text looks about 2pt below the middle
-        // of the field (and below the icon). The extra bottom padding lifts it back to centre.
-        style={[{ flex: 1, alignSelf: 'stretch', fontFamily: fonts.mono, fontSize: paper ? 15 : 13, color: colors.ink, paddingTop: 0, paddingBottom: 4 }, noOutline]}
+        // In a browser the mono font's line box sits about 2pt low, so lift it there.
+        // iOS already centres it.
+        style={[{ flex: 1, alignSelf: 'stretch', fontFamily: fonts.mono, fontSize: paper ? 15 : 13, color: colors.ink, paddingTop: 0, paddingBottom: Platform.OS === 'web' ? 4 : 0 }, noOutline]}
       />
       {value ? (
         <Pressable onPress={() => onChange('')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel="Clear search">
