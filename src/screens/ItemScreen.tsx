@@ -7,7 +7,7 @@ import {
   toggleInterest, undoDone, updateItem,
 } from '@/api/items';
 import { getList, isMember, listPeople, listProgress, viewerIds } from '@/api/lists';
-import { tagsToIds, tagsToNames } from '@/api/mentions';
+import { tagsToIds, tagsToNames, Unfound } from '@/api/mentions';
 import { AvatarStack } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { DateChip, DateField } from '@/components/DateField';
@@ -31,13 +31,13 @@ import { colors } from '@/theme';
 
 /** Saved notes as the editor holds them. */
 const editableNotes = (saved: string) => {
-  const { text, hidden } = tagsToNames(saved);
-  return { notes: text, hidden };
+  const { text, unfound } = tagsToNames(saved);
+  return { notes: text, unfound };
 };
 
 type Draft = {
-  /** notes are the typed text here: tags as @username, turned into ids on save. hidden: the ids behind any "@(someone)" */
-  listId: string | null; title: string; date: string | null; notes: string; hidden: string[]; photos: string[];
+  /** notes are the typed text here: tags as @username, turned into ids on save. unfound: tagged people who can't be found, to keep their tags */
+  listId: string | null; title: string; date: string | null; notes: string; unfound: Unfound; photos: string[];
   open_invite: boolean; invite_audience: InviteAudience; invitees: string[];
 };
 
@@ -119,7 +119,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     if (isNew) {
       if (!draft.listId) return;
       addItem({
-        list_id: draft.listId, title: draft.title, date: draft.date, notes: tagsToIds(draft.notes, draft.hidden), photos: draft.photos,
+        list_id: draft.listId, title: draft.title, date: draft.date, notes: tagsToIds(draft.notes, draft.unfound), photos: draft.photos,
         open_invite: draft.open_invite, invite_audience: draft.invite_audience, invitees: draft.invitees,
       });
       // from a list's "+ write another", go back to it; from the + menu, land on the list
@@ -127,7 +127,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       else router.replace(`/list/${draft.listId}`);
       return;
     }
-    updateItem(item!.id, { title: draft.title.trim() || item!.title, date: draft.date, notes: tagsToIds(draft.notes, draft.hidden) });
+    updateItem(item!.id, { title: draft.title.trim() || item!.title, date: draft.date, notes: tagsToIds(draft.notes, draft.unfound) });
     setInvite(item!.id, { open: draft.open_invite, audience: draft.invite_audience, invitees: draft.invitees });
     setEditing(false);
   };
