@@ -6,14 +6,14 @@ import { getList, listPeople, listProgress } from '@/api/lists';
 import { getProfile } from '@/api/profiles';
 import { longDay, names, timeAgo } from '@/lib';
 import { colors } from '@/theme';
-import { Avatar } from './Avatar';
+import { AvatarStack } from './Avatar';
 import { Icon, IconName } from './Icon';
 import { Photo } from './Photo';
-import { Mono, MonoMedium } from './Text';
+import { Hand, Mono, MonoMedium } from './Text';
 
 type Kind = Exclude<FeedEvent['kind'], 'open_invite'>;
 
-/** The small mark on the corner of the face: what kind of thing happened. */
+/** The round mark at the start of each line: what kind of thing happened. */
 const MARK: Record<Kind, { icon: IconName; fill: string; tint: string }> = {
   list_created: { icon: 'folder', fill: colors.straw, tint: colors.ink },
   list_done: { icon: 'folder', fill: colors.olive, tint: colors.paper },
@@ -22,8 +22,8 @@ const MARK: Record<Kind, { icon: IconName; fill: string; tint: string }> = {
 };
 
 /**
- * One line on Home, read like a notification: a face with a small mark for what happened,
- * a sentence ("irina added rooftop dinner to fall plans"), when, and a photo if there is one.
+ * One post on Home, read like a notification: a mark for what happened, the faces of who did it,
+ * what they did, the item or list in big type, where it lives, and the item's photos underneath.
  * Lines are separated by a rule rather than each sitting in its own box.
  */
 export function FeedPost({ event, index }: { event: FeedEvent; index: number }) {
@@ -42,44 +42,62 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
   const who = names(people.length ? people : [actor]);
   const mark = MARK[kind];
 
-  const sentence = {
-    list_created: { verb: 'started a list', what: list.title, tail: '' },
-    list_done: { verb: 'finished', what: list.title, tail: '' },
-    item_added: { verb: 'added', what: item?.title ?? '', tail: ` to ${list.title}` },
-    item_done: { verb: 'did', what: item?.title ?? '', tail: '' },
-  }[kind];
-  const detail = {
+  // stacked, biggest in the middle: who + what they did (small), the item or list (big), where it lives (small)
+  const verb = { list_created: 'started a list', list_done: 'finished a list', item_added: 'added', item_done: 'did' }[kind];
+  const title = item ? item.title : list.title;
+  const under = {
     list_created: null,
     list_done: `all ${total} done`,
-    item_added: item?.date ? longDay(item.date) : null,
+    item_added: [list.title, item?.date ? longDay(item.date) : null].filter(Boolean).join(' · '),
     item_done: `${list.title} · ${done}/${total}`,
   }[kind];
 
+  // up to three photos in a row under the sentence; one photo gets the full width
+  const shown = photos.slice(0, 3);
+  const extra = photos.length - shown.length;
+
+  const everyone = people.length ? people : [actor];
+  const solo = everyone.length === 1 && everyone[0].id !== db.me ? everyone[0] : null;
+
   return (
-    <View style={[styles.row, index > 0 && styles.rule]}>
-      <Pressable
-        onPress={actor.id === db.me ? undefined : () => router.push(`/user/${actor.username}`)}
-        style={styles.face}
-        accessibilityRole="button"
-        accessibilityLabel={`${actor.name}'s profile`}
-      >
-        <Avatar person={actor} size={36} />
-        <View style={[styles.mark, { backgroundColor: mark.fill }]}>
-          <Icon name={mark.icon} size={11} color={mark.tint} strokeWidth={2.4} />
+    <View style={[styles.post, index > 0 && styles.rule]}>
+      <View style={styles.row}>
+        <View style={[styles.mark, { backgroundColor: mark.fill }]} accessibilityElementsHidden importantForAccessibility="no">
+          <Icon name={mark.icon} size={15} color={mark.tint} strokeWidth={2.2} />
         </View>
-      </Pressable>
-      <Pressable onPress={open} style={styles.text} accessibilityRole="button">
-        <Mono size={12.5} style={{ lineHeight: 18 }}>
-          <MonoMedium size={12.5}>{who}</MonoMedium> {sentence.verb} <MonoMedium size={12.5}>{sentence.what}</MonoMedium>{sentence.tail}
-        </Mono>
-        <Mono size={10.5} color={colors.inkSoft}>{[timeAgo(event.created_at), detail].filter(Boolean).join(' · ')}</Mono>
-      </Pressable>
-      {kind === 'item_done' && photos.length ? (
-        <Pressable onPress={open} accessibilityRole="button" accessibilityLabel={`${photos.length} ${photos.length === 1 ? 'photo' : 'photos'}`}>
-          <Photo photo={photos[0]} style={styles.thumb} />
-          {photos.length > 1 ? (
-            <View style={styles.more}><Mono size={9.5} color={colors.paper}>+{photos.length - 1}</Mono></View>
-          ) : null}
+        <View style={styles.text}>
+          {/* faces of everyone who did it (up to three), small, with when on the right */}
+          <View style={styles.top}>
+            <Pressable
+              onPress={solo ? () => router.push(`/user/${solo.username}`) : undefined}
+              disabled={!solo}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={solo ? `${solo.name}'s profile` : who}
+            >
+              <AvatarStack people={everyone} size={22} max={3} />
+            </Pressable>
+            <Mono size={11.5} numberOfLines={1} style={{ flexShrink: 1 }}>
+              <MonoMedium size={11.5}>{who}</MonoMedium> {verb}
+            </Mono>
+            <Mono size={10.5} color={colors.inkSoft} style={{ marginLeft: 'auto' }}>{timeAgo(event.created_at)}</Mono>
+          </View>
+          <Pressable onPress={open} style={{ gap: 3 }} accessibilityRole="button" accessibilityLabel={`${who} ${verb} ${title}`}>
+            <Hand size={21} style={{ lineHeight: 25 }}>{title}</Hand>
+            {under ? <Mono size={11} color={colors.inkSoft}>{under}</Mono> : null}
+          </Pressable>
+        </View>
+      </View>
+      {shown.length ? (
+        <Pressable onPress={open} style={styles.photos} accessibilityRole="button" accessibilityLabel={`${photos.length} ${photos.length === 1 ? 'photo' : 'photos'}`}>
+          {shown.map((photo, i) => (
+            <View key={photo.id} style={{ flex: 1 }}>
+              <Photo photo={photo} shape={index + i} style={{ height: shown.length === 1 ? 170 : 104 }} />
+              {extra > 0 && i === shown.length - 1 ? (
+                <View style={styles.more}><Mono size={10.5} color={colors.paper}>+{extra}</Mono></View>
+              ) : null}
+            </View>
+          ))}
         </Pressable>
       ) : null}
     </View>
@@ -87,14 +105,13 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, paddingHorizontal: 4 },
+  post: { paddingVertical: 20, paddingHorizontal: 4, gap: 12 },
   rule: { borderTopWidth: 1, borderTopColor: colors.rule },
-  face: { width: 40, height: 40, justifyContent: 'center' },
-  mark: {
-    position: 'absolute', right: -2, bottom: -1, width: 19, height: 19, borderRadius: 10,
-    borderWidth: 1.5, borderColor: colors.paper, alignItems: 'center', justifyContent: 'center',
-  },
-  text: { flex: 1, gap: 2 },
-  thumb: { width: 46, height: 46 },
-  more: { position: 'absolute', right: 3, bottom: 3, paddingHorizontal: 4, borderRadius: 6, backgroundColor: 'rgba(58,16,0,0.7)' },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  mark: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.3, borderColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  text: { flex: 1, gap: 6 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 30 },
+  // lined up under the sentence, not under the mark
+  photos: { flexDirection: 'row', gap: 6, marginLeft: 42 },
+  more: { position: 'absolute', right: 5, bottom: 5, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 7, backgroundColor: 'rgba(58,16,0,0.7)' },
 });
