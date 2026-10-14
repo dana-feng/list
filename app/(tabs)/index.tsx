@@ -33,12 +33,12 @@ export default function Home() {
       }
       folderTabs={
         <>
-          <FolderTab tab label="all" on={tab === 'all'} onPress={() => setTab('all')} />
+          <FolderTab tab label="feed" on={tab === 'all'} onPress={() => setTab('all')} />
           <FolderTab tab label={`open invites · ${invites.length}`} on={tab === 'invites'} onPress={() => setTab('invites')} />
         </>
       }
     >
-      <View style={{ gap: 22 }}>
+      <View style={{ gap: tab === 'all' ? 0 : 22 }}>
         {tab === 'all' ? (
           posts.length ? posts.map((e, i) => <FeedPost key={e.id} event={e} index={i} />) : (
             <Empty title="quiet in here" body="follow a few people. what they add, cross off and ask about shows up here." />

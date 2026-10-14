@@ -25,7 +25,9 @@ export function SearchField({ value, onChange, placeholder, autoFocus, tone = 'd
         autoCapitalize="none"
         autoCorrect={false}
         accessibilityLabel={placeholder ?? 'Search'}
-        style={[{ flex: 1, fontFamily: fonts.mono, fontSize: paper ? 15 : 13, color: colors.ink, height: 42 }, noOutline]}
+        // The mono font's line box sits low, so lowercase text looks about 2pt below the middle
+        // of the field (and below the icon). The extra bottom padding lifts it back to centre.
+        style={[{ flex: 1, alignSelf: 'stretch', fontFamily: fonts.mono, fontSize: paper ? 15 : 13, color: colors.ink, paddingTop: 0, paddingBottom: 4 }, noOutline]}
       />
       {value ? (
         <Pressable onPress={() => onChange('')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel="Clear search">

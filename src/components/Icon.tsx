@@ -3,7 +3,7 @@ import { colors } from '@/theme';
 
 export type IconName =
   | 'home' | 'plus' | 'list' | 'back' | 'right' | 'down' | 'search' | 'sliders' | 'image'
-  | 'calendar' | 'people' | 'check' | 'x' | 'pencil';
+  | 'calendar' | 'people' | 'check' | 'x' | 'pencil' | 'folder';
 
 type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number };
 
@@ -25,6 +25,7 @@ export function Icon({ name, size = 22, color = colors.ink, strokeWidth = 1.9 }:
       {name === 'people' && (<><Circle {...s} cx={9} cy={9} r={3.2} /><Path {...s} d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" /><Circle {...s} cx={17} cy={8} r={2.4} /><Path {...s} d="M16 13.2c2.3.1 4 1.6 4.5 4.3" /></>)}
       {name === 'check' && <Path {...s} d="M5 12.5l4.5 4.5L19 7.5" />}
       {name === 'x' && <Path {...s} d="M6 6l12 12M18 6L6 18" />}
+      {name === 'folder' && <Path {...s} d="M3.5 8c0-1.1.9-2 2-2h3.8l2 2.2h7.2c1.1 0 2 .9 2 2V17c0 1.1-.9 2-2 2h-13c-1.1 0-2-.9-2-2z" />}
       {name === 'pencil' && <Path {...s} d="M4 20l1-4L16 5l3 3L8 19z" />}
     </Svg>
   );
