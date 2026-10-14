@@ -46,7 +46,7 @@ Eleven tables. The feed is its own `events` table written by database triggers, 
 | lists | id, title, visibility (anyone / followers / specific), completed_at, created_at | No owner column. completed_at set when the last thing is done, cleared if one is unchecked |
 | list_members | list_id, user_id, status (invited / joined), invited_by | The join table: who's on a list. Everyone joined is an equal owner; creating a list adds you as joined. An invite is a row with status invited (the yellow folder) |
 | list_viewers | list_id, user_id | Only used when visibility = specific |
-| items | id, list_id, title, notes, date, open_invite, caption, done_at, done_by, created_at | open_invite = the paper plane; caption = the "you did it" words. Open things show newest first |
+| items | id, list_id, title, notes, date, open_invite, caption, done_at, done_by, created_at | open_invite = the paper plane; caption = the "you did it" words. A tag in notes is saved as `<@user id>` and shown as @username (`src/api/mentions.ts`), so it survives a username change. Open things show newest first |
 | item_photos | id, item_id, path, position, added_by | Files in the photos bucket at `<list>/<item>/<photo>.jpg`; position 0 is the big one |
 | interests | item_id, user_id, created_at | A star, one per person per item; only on open invites |
 | events | id, actor_id, kind, list_id, item_id, created_at | kind: list_created, item_added, open_invite, item_done, list_done. Unchecking deletes the item_done (and list_done) post |

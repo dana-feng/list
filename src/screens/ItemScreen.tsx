@@ -7,6 +7,7 @@ import {
   toggleInterest, undoDone, updateItem,
 } from '@/api/items';
 import { getList, isMember, listPeople, listProgress, viewerIds } from '@/api/lists';
+import { tagsToIds, tagsToNames } from '@/api/mentions';
 import { AvatarStack } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { DateChip, DateField } from '@/components/DateField';
@@ -29,6 +30,7 @@ import { pickPhotos } from '@/pickPhotos';
 import { colors } from '@/theme';
 
 type Draft = {
+  /** notes are the typed text here: tags as @username, turned into ids on save */
   listId: string | null; title: string; date: string | null; notes: string; photos: string[];
   open_invite: boolean; invite_audience: InviteAudience; invitees: string[];
 };
@@ -72,7 +74,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const [inviteMenu, setInviteMenu] = useState(false);
   const [pickingInvitees, setPickingInvitees] = useState(false);
   const [draft, setDraft] = useState<Draft>({
-    listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, notes: item?.notes ?? '', photos: [],
+    listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, notes: tagsToNames(item?.notes ?? ''), photos: [],
     open_invite: item?.open_invite ?? false, invite_audience: item?.invite_audience ?? 'followers', invitees: item ? inviteeIds(item.id) : [],
   });
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
@@ -97,7 +99,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const photos = item ? photosFor(item.id) : draft.photos.map((path, i) => ({ id: `new${i}`, path }));
 
   const startEdit = () => {
-    if (item) set({ title: item.title, date: item.date, notes: item.notes, open_invite: item.open_invite, invite_audience: item.invite_audience, invitees: inviteeIds(item.id) });
+    if (item) set({ title: item.title, date: item.date, notes: tagsToNames(item.notes), open_invite: item.open_invite, invite_audience: item.invite_audience, invitees: inviteeIds(item.id) });
     setInviteMenu(false);
     setConfirmingDelete(false);
     setEditing(true);
@@ -111,7 +113,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     if (isNew) {
       if (!draft.listId) return;
       addItem({
-        list_id: draft.listId, title: draft.title, date: draft.date, notes: draft.notes, photos: draft.photos,
+        list_id: draft.listId, title: draft.title, date: draft.date, notes: tagsToIds(draft.notes), photos: draft.photos,
         open_invite: draft.open_invite, invite_audience: draft.invite_audience, invitees: draft.invitees,
       });
       // from a list's "+ write another", go back to it; from the + menu, land on the list
@@ -119,7 +121,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       else router.replace(`/list/${draft.listId}`);
       return;
     }
-    updateItem(item!.id, { title: draft.title.trim() || item!.title, date: draft.date, notes: draft.notes });
+    updateItem(item!.id, { title: draft.title.trim() || item!.title, date: draft.date, notes: tagsToIds(draft.notes) });
     setInvite(item!.id, { open: draft.open_invite, audience: draft.invite_audience, invitees: draft.invitees });
     setEditing(false);
   };
@@ -261,7 +263,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       {editing || item?.notes ? (
         <>
           <Label style={{ marginTop: 24, marginBottom: 8, marginHorizontal: 2 }}>{member ? 'notes' : `${owner?.name ?? 'their'}'s notes`}</Label>
-          <NotesField value={editing ? draft.notes : item!.notes} onChange={(notes) => set({ notes })} editing={editing} />
+          <NotesField value={editing ? draft.notes : item!.notes} onChange={(notes) => set({ notes })} editing={editing} listId={draft.listId} />
         </>
       ) : null}
 
