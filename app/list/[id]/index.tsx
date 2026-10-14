@@ -166,6 +166,12 @@ export default function ListScreen() {
       {/* nothing left to do: no heading, just the done section (and "+ add" if it's yours) */}
       {open.length ? <Label style={{ marginTop: 18, marginBottom: 8, marginHorizontal: 2 }}>{whole ? 'to do' : 'open invites'}</Label> : null}
       <View style={{ gap: member ? 6 : 8, marginTop: open.length ? 0 : 18 }}>
+        {/* first, so it's reachable without scrolling; new items land right under it */}
+        {member && !editing ? (
+          <Paper onPress={() => router.push(`/item/new?list=${id}`)} edge="dash" shape={3} style={{ height: 48, justifyContent: 'center', paddingLeft: 18 }} accessibilityLabel="Add an item to this list">
+            <Hand size={18} color={colors.inkSoft}>+ add</Hand>
+          </Paper>
+        ) : null}
         {open.map((item, i) => (
           <OpenRow
             key={item.id}
@@ -176,11 +182,6 @@ export default function ListScreen() {
             onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}
           />
         ))}
-        {member && !editing ? (
-          <Paper onPress={() => router.push(`/item/new?list=${id}`)} edge="dash" shape={3} style={{ height: 48, justifyContent: 'center', paddingLeft: 18 }} accessibilityLabel="Add an item to this list">
-            <Hand size={18} color={colors.inkSoft}>+ add</Hand>
-          </Paper>
-        ) : null}
       </View>
 
       {finished.length ? (

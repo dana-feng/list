@@ -37,7 +37,7 @@ export function ProfileHeader({ person, action }: { person: Profile; action?: Re
       {action ? <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>{action}</View> : null}
       <Modal visible={viewing} transparent animationType="fade" onRequestClose={() => setViewing(false)}>
         <Pressable style={styles.dim} onPress={() => setViewing(false)} accessibilityRole="button" accessibilityLabel="Close photo">
-          <Image source={{ uri: person.profile_photo ?? undefined }} style={{ width: big, height: big, borderRadius: big / 2 }} contentFit="cover" transition={150} />
+          <Image source={{ uri: person.profile_photo ?? undefined }} style={{ width: big, height: big, borderRadius: Math.round(big * 0.3) }} contentFit="cover" transition={150} />
         </Pressable>
       </Modal>
     </View>

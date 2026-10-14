@@ -1,121 +1,118 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { db, FeedEvent, Profile } from '@/api/db';
+import { db, FeedEvent } from '@/api/db';
 import { getItem, photosFor } from '@/api/items';
-import { getList, listPeople, listProgress, progressLabel } from '@/api/lists';
+import { getList, listPeople, listProgress } from '@/api/lists';
 import { getProfile } from '@/api/profiles';
 import { longDay, names, timeAgo } from '@/lib';
-import { colors, hash } from '@/theme';
+import { colors } from '@/theme';
 import { AvatarStack } from './Avatar';
-import { Paper } from './Paper';
-import { PhotoCarousel } from './Photo';
-import { ProgressBar } from './ProgressBar';
-import { Strike } from './Scribble';
+import { Icon, IconName } from './Icon';
+import { Photo } from './Photo';
 import { Hand, Mono, MonoMedium } from './Text';
 
-const VERB = {
-  open_invite: 'open invite',
-  item_added: 'added an item',
-  item_done: 'done',
-  list_done: 'finished a list',
-  list_created: 'started a list',
-} as const;
+type Kind = Exclude<FeedEvent['kind'], 'open_invite'>;
 
-/** "irina · open invite · 2h", with their face(s). Tapping the name opens their profile. */
-function Who({ people, verb, at, joined }: { people: Profile[]; verb: string; at: string; joined?: boolean }) {
-  const solo = people.length === 1 ? people[0] : null;
-  const label = names(people);
-  return (
-    <View style={styles.who}>
-      <AvatarStack people={people} size={24} />
-      <Mono size={11} color={colors.inkSoft} style={{ flex: 1 }}>
-        {solo && solo.id !== db.me ? (
-          <MonoMedium size={11} onPress={() => router.push(`/user/${solo.username}`)} accessibilityRole="link">{label}</MonoMedium>
-        ) : (
-          <MonoMedium size={11}>{label}</MonoMedium>
-        )}
-        {joined ? ' ' : ' · '}
-        {verb} · {timeAgo(at)}
-      </Mono>
-    </View>
-  );
-}
+/** The icon at the start of each post: what kind of thing happened. */
+const MARK: Record<Kind, { icon: IconName; color: string }> = {
+  list_created: { icon: 'folder', color: colors.ink },
+  list_done: { icon: 'folder', color: colors.olive },
+  item_added: { icon: 'plus', color: colors.ink },
+  item_done: { icon: 'check', color: colors.olive },
+};
 
-/** One post on Home. Each kind has its own card: an added item, a crossed-off item, a new list. */
+/**
+ * One post on Home, read like a notification: a mark for what happened, the faces of who did it,
+ * what they did, the item or list in big type, where it lives, and the item's photos underneath.
+ * Lines are separated by a rule rather than each sitting in its own box.
+ */
 export function FeedPost({ event, index }: { event: FeedEvent; index: number }) {
   const list = getList(event.list_id);
   const item = event.item_id ? getItem(event.item_id) : undefined;
   const actor = getProfile(event.actor_id);
-  if (!list || !actor || (event.item_id && !item)) return null;
+  // open invites never show here: they live under Open Invite
+  if (!list || !actor || (event.item_id && !item) || event.kind === 'open_invite') return null;
 
+  const kind: Kind = event.kind;
   const { done, total } = listProgress(list.id);
   const photos = item ? photosFor(item.id) : [];
-  const openItem = () => router.push(item ? `/item/${item.id}` : `/list/${list.id}`);
-
+  const open = () => router.push(item ? `/item/${item.id}` : `/list/${list.id}`);
   // "done" and "finished" belong to everyone on the list, not just whoever crossed it off
-  if (event.kind === 'item_done' && item) {
-    const people = listPeople(list.id);
-    if (!photos.length) {
-      return (
-        <Paper fill={colors.gold} shape={index} lean={index} style={[styles.card, { gap: 8 }]} onPress={openItem} accessibilityLabel={`${item.title}, done`}>
-          <Who people={people} verb={VERB.item_done} at={event.created_at} joined={people.length > 1} />
-          <View style={{ alignSelf: 'flex-start' }}>
-            <Hand size={22} style={{ lineHeight: 25 }}>{item.title}</Hand>
-            <Strike seed={hash(item.id) % 97} />
-          </View>
-          <Mono size={11}>{list.title} · {done}/{total}</Mono>
-        </Paper>
-      );
-    }
-    return (
-      <Paper fill={colors.cream} edge="ink" shape={index + 1} lean={index} style={[styles.card, { paddingHorizontal: 6, marginHorizontal: -6 }]}>
-        <View style={{ paddingHorizontal: 6 }}>
-          <Who people={people} verb={VERB.item_done} at={event.created_at} joined={people.length > 1} />
-        </View>
-        <PhotoCarousel photos={photos} height={photos.length > 1 ? 360 : 260} />
-        <Pressable onPress={openItem} style={{ paddingHorizontal: 6, gap: 4 }} accessibilityRole="button">
-          <Hand size={22} style={{ lineHeight: 25 }}>{item.title}</Hand>
-          <Mono size={11}>{list.title} · {done}/{total}</Mono>
-        </Pressable>
-      </Paper>
-    );
-  }
+  const people = kind === 'item_done' || kind === 'list_done' ? listPeople(list.id) : [actor];
+  const who = names(people.length ? people : [actor]);
+  const mark = MARK[kind];
 
-  if (event.kind === 'list_created' || event.kind === 'list_done') {
-    const finished = event.kind === 'list_done';
-    const fill = finished ? colors.gold : colors.straw;
-    const people = finished ? listPeople(list.id) : [actor];
-    return (
-      <Pressable onPress={openItem} style={[styles.folderPost, { transform: [{ rotate: `${index % 2 ? 0.3 : -0.3}deg` }] }]} accessibilityRole="button" accessibilityLabel={list.title}>
-        <View style={[styles.postTab, { backgroundColor: fill }]}>
-          <Mono size={10.5}>{progressLabel(list.id)}</Mono>
-        </View>
-        <Paper fill={fill} edge="ink" edgeWidth={1.2} shape={2} style={[styles.card, { borderTopLeftRadius: 0, gap: 8 }]}>
-          <Who people={people} verb={VERB[event.kind]} at={event.created_at} joined />
-          <Hand size={20}>{list.title}</Hand>
-          {finished ? <View style={{ flexDirection: 'row' }}><ProgressBar done={done} total={total} outlined /></View> : null}
-        </Paper>
-      </Pressable>
-    );
-  }
+  // stacked, biggest in the middle: who + what they did (small), the item or list (big), where it lives (small)
+  const verb = { list_created: 'started a list', list_done: 'finished a list', item_added: 'added', item_done: 'did' }[kind];
+  const title = item ? item.title : list.title;
+  const under = {
+    list_created: null,
+    list_done: `all ${total} done`,
+    item_added: [list.title, item?.date ? longDay(item.date) : null].filter(Boolean).join(' · '),
+    item_done: `${list.title} · ${done}/${total}`,
+  }[kind];
 
-  // a plain "added an item". Open invites never reach here: they live under Open Invite.
-  if (!item || event.kind === 'open_invite') return null;
-  const meta = [item.date ? longDay(item.date) : null, list.title].filter(Boolean).join(' · ');
+  // up to three photos in a row under the sentence; one photo gets the full width
+  const shown = photos.slice(0, 3);
+  const extra = photos.length - shown.length;
+
+  const everyone = people.length ? people : [actor];
+  const solo = everyone.length === 1 && everyone[0].id !== db.me ? everyone[0] : null;
+
   return (
-    <Paper fill={colors.cream} edge="ink" shape={index} lean={index} style={styles.card}>
-      <Who people={[actor]} verb={VERB[event.kind]} at={event.created_at} />
-      <Pressable onPress={openItem} style={{ gap: 4 }} accessibilityRole="button">
-        <Hand size={22} style={{ lineHeight: 25 }}>{item.title}</Hand>
-        <Mono size={11}>{meta}</Mono>
-      </Pressable>
-    </Paper>
+    <View style={[styles.post, index > 0 && styles.rule]}>
+      <View style={styles.row}>
+        <View style={styles.mark} accessibilityElementsHidden importantForAccessibility="no">
+          <Icon name={mark.icon} size={22} color={mark.color} strokeWidth={kind === 'item_done' ? 2.4 : 1.9} />
+        </View>
+        <View style={styles.text}>
+          {/* faces of everyone who did it (up to three), small, with when on the right */}
+          <View style={styles.top}>
+            <Pressable
+              onPress={solo ? () => router.push(`/user/${solo.username}`) : undefined}
+              disabled={!solo}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={solo ? `${solo.name}'s profile` : who}
+            >
+              <AvatarStack people={everyone} size={22} max={3} />
+            </Pressable>
+            <Mono size={11.5} numberOfLines={1} style={{ flexShrink: 1 }}>
+              <MonoMedium size={11.5}>{who}</MonoMedium> {verb}
+            </Mono>
+            <Mono size={10.5} color={colors.inkSoft} style={{ marginLeft: 'auto' }}>{timeAgo(event.created_at)}</Mono>
+          </View>
+          <Pressable onPress={open} style={{ gap: 3 }} accessibilityRole="button" accessibilityLabel={`${who} ${verb} ${title}`}>
+            <Hand size={21} style={{ lineHeight: 25 }}>{title}</Hand>
+            {under ? <Mono size={11} color={colors.inkSoft}>{under}</Mono> : null}
+          </Pressable>
+        </View>
+      </View>
+      {shown.length ? (
+        <Pressable onPress={open} style={styles.photos} accessibilityRole="button" accessibilityLabel={`${photos.length} ${photos.length === 1 ? 'photo' : 'photos'}`}>
+          {shown.map((photo, i) => (
+            <View key={photo.id} style={{ flex: 1 }}>
+              <Photo photo={photo} shape={index + i} style={{ height: shown.length === 1 ? 170 : 104 }} />
+              {extra > 0 && i === shown.length - 1 ? (
+                <View style={styles.more}><Mono size={10.5} color={colors.paper}>+{extra}</Mono></View>
+              ) : null}
+            </View>
+          ))}
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 14, gap: 10 },
-  who: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  folderPost: {},
-  postTab: { alignSelf: 'flex-start', height: 28, minWidth: 64, paddingHorizontal: 12, justifyContent: 'center', borderTopLeftRadius: 9, borderTopRightRadius: 11, borderWidth: 1.2, borderBottomWidth: 0, borderColor: colors.ink, marginBottom: -1.2, zIndex: 2 },
+  post: { paddingVertical: 20, paddingHorizontal: 4, gap: 12 },
+  rule: { borderTopWidth: 1, borderTopColor: colors.rule },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  // just the icon, lined up with the faces on the top line; olive when something got done
+  mark: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  text: { flex: 1, gap: 6 },
+  top: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 30 },
+  // lined up under the sentence, not under the mark
+  photos: { flexDirection: 'row', gap: 6, marginLeft: 42 },
+  more: { position: 'absolute', right: 5, bottom: 5, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 7, backgroundColor: 'rgba(58,16,0,0.7)' },
 });
