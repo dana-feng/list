@@ -29,9 +29,15 @@ import { monthDay, toDay } from '@/lib';
 import { pickPhotos } from '@/pickPhotos';
 import { colors } from '@/theme';
 
+/** Saved notes as the editor holds them. */
+const editableNotes = (saved: string) => {
+  const { text, hidden } = tagsToNames(saved);
+  return { notes: text, hidden };
+};
+
 type Draft = {
-  /** notes are the typed text here: tags as @username, turned into ids on save */
-  listId: string | null; title: string; date: string | null; notes: string; photos: string[];
+  /** notes are the typed text here: tags as @username, turned into ids on save. hidden: the ids behind any "@(someone)" */
+  listId: string | null; title: string; date: string | null; notes: string; hidden: string[]; photos: string[];
   open_invite: boolean; invite_audience: InviteAudience; invitees: string[];
 };
 
@@ -73,10 +79,10 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const [deleted, setDeleted] = useState(false);
   const [inviteMenu, setInviteMenu] = useState(false);
   const [pickingInvitees, setPickingInvitees] = useState(false);
-  const [draft, setDraft] = useState<Draft>({
-    listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, notes: tagsToNames(item?.notes ?? ''), photos: [],
+  const [draft, setDraft] = useState<Draft>(() => ({
+    listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, ...editableNotes(item?.notes ?? ''), photos: [],
     open_invite: item?.open_invite ?? false, invite_audience: item?.invite_audience ?? 'followers', invitees: item ? inviteeIds(item.id) : [],
-  });
+  }));
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const list = draft.listId ? getList(draft.listId) : undefined;
 
@@ -99,7 +105,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const photos = item ? photosFor(item.id) : draft.photos.map((path, i) => ({ id: `new${i}`, path }));
 
   const startEdit = () => {
-    if (item) set({ title: item.title, date: item.date, notes: tagsToNames(item.notes), open_invite: item.open_invite, invite_audience: item.invite_audience, invitees: inviteeIds(item.id) });
+    if (item) set({ title: item.title, date: item.date, ...editableNotes(item.notes), open_invite: item.open_invite, invite_audience: item.invite_audience, invitees: inviteeIds(item.id) });
     setInviteMenu(false);
     setConfirmingDelete(false);
     setEditing(true);
@@ -113,7 +119,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     if (isNew) {
       if (!draft.listId) return;
       addItem({
-        list_id: draft.listId, title: draft.title, date: draft.date, notes: tagsToIds(draft.notes), photos: draft.photos,
+        list_id: draft.listId, title: draft.title, date: draft.date, notes: tagsToIds(draft.notes, draft.hidden), photos: draft.photos,
         open_invite: draft.open_invite, invite_audience: draft.invite_audience, invitees: draft.invitees,
       });
       // from a list's "+ write another", go back to it; from the + menu, land on the list
@@ -121,7 +127,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       else router.replace(`/list/${draft.listId}`);
       return;
     }
-    updateItem(item!.id, { title: draft.title.trim() || item!.title, date: draft.date, notes: tagsToIds(draft.notes) });
+    updateItem(item!.id, { title: draft.title.trim() || item!.title, date: draft.date, notes: tagsToIds(draft.notes, draft.hidden) });
     setInvite(item!.id, { open: draft.open_invite, audience: draft.invite_audience, invitees: draft.invitees });
     setEditing(false);
   };

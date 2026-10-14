@@ -20,20 +20,37 @@ function whoIs(handle: string) {
   }
 }
 
-/** Typed text to saved text: every @username that is someone becomes <@their id>. */
-export const tagsToIds = (text: string) =>
-  text.replace(TYPED, (whole, before: string, handle: string) => {
-    const person = whoIs(handle);
-    return person ? `${before}<@${person.id}>${handle.slice(person.username.length)}` : whole;
-  });
+// A tag on someone you can't see (a block, a deleted account) reads "@(someone)" while editing, or
+// "@(someone 2)" for a second such person. The brackets can't be in a username, so it never turns
+// into someone else's tag; on save it goes back to the id it stood for. The raw id is never shown.
+const someone = (n: number) => (n === 0 ? '@(someone)' : `@(someone ${n + 1})`);
+const SOMEONE = /@\(someone(?: (\d+))?\)/g;
 
-/** Saved text to something you can edit: <@id> becomes @ and their username as it is today. */
-export const tagsToNames = (text: string) =>
-  text.replace(SAVED, (whole, id: string) => {
+/** Saved text to something you can edit: <@id> becomes @ and their username as it is today.
+ *  `hidden` is the ids behind any "@(someone)", to hand back to tagsToIds. */
+export function tagsToNames(text: string) {
+  const hidden: string[] = [];
+  const names = text.replace(SAVED, (_, id: string) => {
     const person = getProfile(id.toLowerCase());
-    // someone you can't see (a block, a deleted account): keep the id so saving doesn't lose the tag
-    return person ? `@${person.username}` : whole;
+    if (person) return `@${person.username}`;
+    if (!hidden.includes(id)) hidden.push(id);
+    return someone(hidden.indexOf(id));
   });
+  return { text: names, hidden };
+}
+
+/** Typed text to saved text: every @username that is someone becomes <@their id>, and every
+ *  "@(someone)" left in goes back to the id it stood for. */
+export const tagsToIds = (text: string, hidden: string[] = []) =>
+  text
+    .replace(SOMEONE, (whole, n?: string) => {
+      const id = hidden[n ? Number(n) - 1 : 0];
+      return id ? `<@${id}>` : whole;
+    })
+    .replace(TYPED, (whole, before: string, handle: string) => {
+      const person = whoIs(handle);
+      return person ? `${before}<@${person.id}>${handle.slice(person.username.length)}` : whole;
+    });
 
 export type TextPart = { text: string; person?: Profile };
 
