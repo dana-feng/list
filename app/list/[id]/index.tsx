@@ -22,8 +22,6 @@ import { Choice } from '@/components/VisibilityPicker';
 import { names } from '@/lib';
 import { colors } from '@/theme';
 
-const SHOW_DONE = 3;
-
 /**
  * A list, yours or a friend's. On yours: tap an item's circle to cross it off.
  * On a friend's: open invites get "interested". Owners can also edit: rename, owners, who can see it, take items off.
@@ -34,7 +32,6 @@ export default function ListScreen() {
   const list = getList(id);
 
   const [cele, setCele] = useState<string | null>(null);
-  const [allDone, setAllDone] = useState(false);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState('');
   const [invites, setInvites] = useState<string[]>([]);
@@ -64,7 +61,6 @@ export default function ListScreen() {
   const items = itemsForList(id);
   const open = items.open.filter((i) => !removed.includes(i.id));
   const finished = items.done.filter((i) => !removed.includes(i.id));
-  const shownDone = allDone || editing ? finished : finished.slice(0, SHOW_DONE);
   const others = people.filter((p) => p.id !== db.me);
   const owner = others[0] ?? people[0];
 
@@ -191,7 +187,7 @@ export default function ListScreen() {
         <>
           <Label style={{ marginTop: open.length || (member && !editing) ? 24 : 0, marginBottom: 8, marginHorizontal: 2 }}>done · {finished.length}</Label>
           <View style={{ gap: 4 }}>
-            {shownDone.map((item, i) => (
+            {finished.map((item, i) => (
               <DoneRow
                 key={item.id}
                 item={item}
@@ -200,9 +196,6 @@ export default function ListScreen() {
                 onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}
               />
             ))}
-            {!allDone && !editing && finished.length > SHOW_DONE ? (
-              <LinkText label={`show all ${finished.length} done`} onPress={() => setAllDone(true)} />
-            ) : null}
           </View>
         </>
       ) : null}
