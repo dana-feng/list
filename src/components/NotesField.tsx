@@ -35,6 +35,8 @@ export function NotesField({ value, onChange, editing, placeholder = 'links, add
                 <Text key={i} onPress={() => openProfile(part.person!)} accessibilityRole="link" accessibilityLabel={`${part.person.name}, ${part.text}`} style={{ textDecorationLine: 'underline' }}>
                   {part.text}
                 </Text>
+              ) : part.gone ? (
+                <Text key={i} style={{ color: colors.inkFaint }}>{part.text}</Text>
               ) : (
                 part.text
               ),

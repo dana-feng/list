@@ -49,16 +49,18 @@ export const tagsToIds = (text: string, unfound: Unfound = {}) =>
     return person ? `${before}<@${person.id}|${person.username}>${handle.slice(person.username.length)}` : whole;
   });
 
-export type TextPart = { text: string; person?: Profile };
+/** person: a tag to open. gone: a tag on someone who can't be found, drawn faded so it doesn't
+ *  read as whoever has that username now. */
+export type TextPart = { text: string; person?: Profile; gone?: boolean };
 
 /** Saved text cut up for display: plain stretches, and tags carrying the person to open. Someone
- *  who can't be found shows as their saved @username, as plain text you can't tap. */
+ *  who can't be found shows as their saved @username, faded, and you can't tap it. */
 export function textParts(text: string): TextPart[] {
   const parts: TextPart[] = [];
   let at = 0;
   for (const m of text.matchAll(SAVED)) {
     const person = getProfile(m[1].toLowerCase());
-    parts.push({ text: text.slice(at, m.index) }, person ? { text: `@${person.username}`, person } : { text: `@${m[2] ?? 'someone'}` });
+    parts.push({ text: text.slice(at, m.index) }, person ? { text: `@${person.username}`, person } : { text: `@${m[2] ?? 'someone'}`, gone: true });
     at = m.index + m[0].length;
   }
   parts.push({ text: text.slice(at) });
