@@ -66,14 +66,16 @@ export function Reorderable<T extends { id: string }>({ items, gap, onReorder, o
     // stay inside the column
     const y = Math.max(first.y - me.y, Math.min(last.y + last.h - me.h - me.y, dy));
     offset(d.id).setValue(y);
-    // it takes a row's place once its middle passes that row's middle
-    const middle = me.y + me.h / 2 + y;
+    // it takes a row's place once its leading edge passes that row's middle. (Its own middle
+    // can't be the test: held inside the column, it never gets past the top or bottom row's.)
+    const top = me.y + y;
+    const bottom = top + me.h;
     let to = d.from;
     ids.forEach((id, i) => {
       const l = layouts.current.get(id);
       if (!l) return;
-      if (i > d.from && middle > l.y + l.h / 2) to = Math.max(to, i);
-      if (i < d.from && middle < l.y + l.h / 2) to = Math.min(to, i);
+      if (i > d.from && bottom > l.y + l.h / 2) to = Math.max(to, i);
+      if (i < d.from && top < l.y + l.h / 2) to = Math.min(to, i);
     });
     if (to === d.to) return;
     d.to = to;
