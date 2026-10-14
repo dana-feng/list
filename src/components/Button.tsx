@@ -71,7 +71,7 @@ export function Pill({ label, on, filled, onPress, accessibilityLabel, height = 
   );
 }
 
-/** A plain underlined text action: "not now", "undo", "show all 6 done". */
+/** A plain underlined text action: "not now", "undo", "keep it". */
 export function LinkText({ label, onPress, color = colors.ink, size = 12 }: { label: string; onPress: () => void; color?: string; size?: number }) {
   return (
     <Paper onPress={onPress} style={{ minHeight: 40, justifyContent: 'center', paddingHorizontal: 4, alignSelf: 'flex-start' }}>
