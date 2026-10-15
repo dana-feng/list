@@ -1,11 +1,11 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, EventComment, FeedEvent } from '@/api/db';
 import { peopleToTag, tagBeingTyped, textParts } from '@/api/mentions';
 import { getProfile, me } from '@/api/profiles';
 import { addComment, canDeleteComment, deleteComment, likers, threadsFor } from '@/api/reactions';
+import { hold, tap } from '@/haptics';
 import { timeAgo } from '@/lib';
 import { colors, fonts, noOutline } from '@/theme';
 import { Avatar } from './Avatar';
@@ -155,8 +155,7 @@ function Comment({ comment, go, onReply }: {
   // it sinks while you hold it, then a tap from the phone as it comes up
   const sink = (to: number) => Animated.spring(press, { toValue: to, useNativeDriver: true, friction: 8, tension: to < 1 ? 40 : 120 }).start();
   const peek = () => {
-    if (Platform.OS === 'android') Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press);
-    else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    hold();
     sink(1);
     setPeeking(true);
   };
@@ -306,6 +305,7 @@ function Composer({ eventId, listId, replyTo, onCancelReply, onPosted }: {
   const sent = useRef<string | null>(null);
   const send = () => {
     if (!addComment(eventId, text, replyTo)) return;
+    tap();
     sent.current = text;
     input.current?.clear();
     setText('');

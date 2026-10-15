@@ -22,6 +22,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { Reorderable } from '@/components/Reorderable';
 import { FolderScreen } from '@/components/Screen';
 import { Hand, Label, Mono } from '@/components/Text';
+import { success, tap, toggle } from '@/haptics';
 import { names } from '@/lib';
 import { colors } from '@/theme';
 
@@ -65,6 +66,7 @@ export default function ListScreen() {
 
   // ---- crossing things off ----
   const crossOff = (itemId: string) => {
+    success();
     markDone(itemId);
     setCele(itemId);
   };
@@ -134,8 +136,8 @@ export default function ListScreen() {
         <Paper fill={colors.cream} edge="ink" shape={2} style={{ padding: 14, marginTop: 16, gap: 10 }}>
           <Mono size={12}>{invitedBy(id)?.name ?? 'someone'} invited you to this list.</Mono>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Pill label="join" height={36} onPress={() => respondInvite(id, true)} />
-            <Pill label="no thanks" on height={36} onPress={() => { respondInvite(id, false); router.back(); }} />
+            <Pill label="join" height={36} onPress={() => { toggle(true); respondInvite(id, true); }} />
+            <Pill label="no thanks" on height={36} onPress={() => { toggle(false); respondInvite(id, false); router.back(); }} />
           </View>
         </Paper>
       ) : null}
@@ -173,7 +175,7 @@ export default function ListScreen() {
                 key={item.id}
                 item={item}
                 index={i}
-                onUndo={member ? () => undoDone(item.id) : undefined}
+                onUndo={member ? () => { tap(); undoDone(item.id); } : undefined}
                 onDelete={member ? () => deleteItem(item.id) : undefined}
               />
             ))}

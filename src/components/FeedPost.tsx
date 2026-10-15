@@ -6,6 +6,7 @@ import { getItem, photosFor } from '@/api/items';
 import { getList, listPeople } from '@/api/lists';
 import { getProfile } from '@/api/profiles';
 import { commentCount, likedByMe, likesFor, toggleLike } from '@/api/reactions';
+import { tap } from '@/haptics';
 import { longDay, names, timeAgo } from '@/lib';
 import { colors } from '@/theme';
 import { AvatarStack } from './Avatar';
@@ -153,7 +154,10 @@ function Reactions({ event, onComments }: { event: FeedEvent; onComments: () => 
   return (
     <View style={styles.reactions}>
       <Pressable
-        onPress={() => toggleLike(event.id)}
+        onPress={() => {
+          tap();
+          toggleLike(event.id);
+        }}
         hitSlop={8}
         style={styles.reaction}
         accessibilityRole="button"

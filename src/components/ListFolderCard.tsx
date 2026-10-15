@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, List } from '@/api/db';
 import { isInvitedTo } from '@/api/items';
 import { invitedBy, listPeople, listProgress, progressLabel, respondInvite, visibilityLabel } from '@/api/lists';
+import { hold, toggle } from '@/haptics';
 import { colors, folderFills, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { Icon } from './Icon';
@@ -34,8 +34,7 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
   // the folder sinks while you hold it, then a tap from the phone as it comes up
   const sink = (to: number) => Animated.spring(press, { toValue: to, useNativeDriver: true, friction: 8, tension: to < 1 ? 40 : 120 }).start();
   const peek = () => {
-    if (Platform.OS === 'android') Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press);
-    else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    hold();
     sink(1);
     setPeeking(true);
   };
@@ -66,8 +65,8 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
             <>
               <Mono size={10.5}>{inviter ? `${inviter.name} invited you` : 'you were invited'}</Mono>
               <View style={{ flexDirection: 'row', gap: 6, marginTop: 2 }}>
-                <Pill label="join" height={34} onPress={() => respondInvite(list.id, true)} accessibilityLabel={`Join ${list.title}`} />
-                <Pill label="no" on height={34} onPress={() => respondInvite(list.id, false)} accessibilityLabel={`Say no to ${list.title}`} />
+                <Pill label="join" height={34} onPress={() => { toggle(true); respondInvite(list.id, true); }} accessibilityLabel={`Join ${list.title}`} />
+                <Pill label="no" on height={34} onPress={() => { toggle(false); respondInvite(list.id, false); }} accessibilityLabel={`Say no to ${list.title}`} />
               </View>
             </>
           ) : (
