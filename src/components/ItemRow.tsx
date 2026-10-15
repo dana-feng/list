@@ -1,23 +1,19 @@
-import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import type { InviteAudience, Item } from '@/api/db';
-import { interestedPeople, inviteeIds, isInvitedTo, setInvite, toggleOpenInvite } from '@/api/items';
+import type { Item } from '@/api/db';
+import { interestedPeople, isInvitedTo } from '@/api/items';
 import { monthDay, shortDay } from '@/lib';
 import { colors, corners, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { DownButton, downText } from './Down';
 import { Icon } from './Icon';
-import { PersonPicker } from './PersonPicker';
 import { useReorderHandle } from './Reorderable';
 import { Circle, Strike } from './Scribble';
-import { Switch } from './Switch';
 import { Hand, HandMedium, Mono } from './Text';
-import { INVITE_OPTIONS, VisibilityButton, VisibilityMenu } from './VisibilityPicker';
 
 type OpenProps = {
   item: Item;
-  /** On the list: you get the circle and the invite switch. Otherwise "interested". */
+  /** On the list: you get the circle. Otherwise "interested". */
   member: boolean;
   /** Tapping the circle. */
   onDone?: () => void;
@@ -33,22 +29,8 @@ export function OpenRow({ item, member, onDone, onRemove }: OpenProps) {
   const handle = useReorderHandle();
   const onHold = handle?.hold;
   const onMove = handle?.move;
-  const [inviteMenu, setInviteMenu] = useState(false);
-  const [pickingInvitees, setPickingInvitees] = useState(false);
   const open = () => router.push(`/item/${item.id}`);
   const down = item.open_invite ? interestedPeople(item.id) : [];
-  const invitees = member ? inviteeIds(item.id) : [];
-  const audienceLabel = item.invite_audience === 'specific' ? `${invitees.length} ${invitees.length === 1 ? 'person' : 'people'}` : item.invite_audience;
-  // turning it on opens the "who's invited" menu straight away; turning it off closes it
-  const flipInvite = () => {
-    setInviteMenu(!item.open_invite);
-    toggleOpenInvite(item.id);
-  };
-  const pickAudience = (audience: InviteAudience) => {
-    setInviteMenu(false);
-    if (audience === 'specific') setPickingInvitees(true);
-    else setInvite(item.id, { open: true, audience, invitees: [] });
-  };
   // on someone else's list, it's only an open invite for you if you're in its audience
   const invited = !member && isInvitedTo(item.id);
 
@@ -77,10 +59,6 @@ export function OpenRow({ item, member, onDone, onRemove }: OpenProps) {
           onAccessibilityAction={onMove ? (e) => onMove(e.nativeEvent.actionName === 'up' ? -1 : 1) : undefined}
         >
           <Hand size={18}>{item.title}</Hand>
-          {/* yours, invite on: who it goes to, tap to change */}
-          {member && !onRemove && item.open_invite ? (
-            <VisibilityButton what="Who’s invited" label={audienceLabel} open={inviteMenu} onPress={() => setInviteMenu(!inviteMenu)} />
-          ) : null}
           {sub ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               {(member || invited) && down.length ? <AvatarStack people={down} size={19} max={3} /> : null}
@@ -93,12 +71,9 @@ export function OpenRow({ item, member, onDone, onRemove }: OpenProps) {
             <View style={styles.removeDot}><Icon name="x" size={14} color={colors.paper} strokeWidth={2.6} /></View>
           </Pressable>
         ) : member ? (
-          <>
-            <Switch on={item.open_invite} onPress={flipInvite} label={item.open_invite ? 'Open invite is on. Turn off' : 'Post as an open invite'} text="invite" stacked />
-            <Pressable onPress={open} onLongPress={onHold} delayLongPress={350} style={styles.chevron} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
-              <Icon name="right" size={16} strokeWidth={2.2} />
-            </Pressable>
-          </>
+          <Pressable onPress={open} onLongPress={onHold} delayLongPress={350} style={styles.chevron} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
+            <Icon name="right" size={16} strokeWidth={2.2} />
+          </Pressable>
         ) : invited ? (
           <DownButton itemId={item.id} />
         ) : (
@@ -107,22 +82,6 @@ export function OpenRow({ item, member, onDone, onRemove }: OpenProps) {
           </Pressable>
         )}
       </View>
-      {member && !onRemove && item.open_invite && inviteMenu ? (
-        <View style={styles.menu}>
-          <VisibilityMenu value={item.invite_audience} options={INVITE_OPTIONS} onPick={pickAudience} />
-        </View>
-      ) : null}
-      {pickingInvitees ? (
-        <PersonPicker
-          title="who’s invited"
-          initial={invitees}
-          onClose={() => setPickingInvitees(false)}
-          onDone={(ids) => {
-            if (ids.length) setInvite(item.id, { open: true, audience: 'specific', invitees: ids });
-            setPickingInvitees(false);
-          }}
-        />
-      ) : null}
     </View>
   );
 }
@@ -157,7 +116,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingLeft: 8, paddingRight: 6, minHeight: 64 },
   circle: { width: 44, height: 46, alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, gap: 4, paddingVertical: 2 },
-  menu: { marginLeft: 50, marginRight: 6, marginBottom: 6 },
   chevron: { width: 32, height: 44, alignItems: 'center', justifyContent: 'center' },
   done: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.gold, paddingVertical: 8, paddingLeft: 6, paddingRight: 14, minHeight: 48 },
   remove: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
