@@ -5,6 +5,7 @@ import type { ItemPhoto } from '@/api/db';
 import { photoUri } from '@/api/items';
 import { colors, corners, swatchFor } from '@/theme';
 import { Icon } from './Icon';
+import { PhotoViewer } from './PhotoViewer';
 import { Mono } from './Text';
 
 type PhotoLike = Pick<ItemPhoto, 'id' | 'path'>;
@@ -31,7 +32,7 @@ export function Photo({ photo, style, shape = 1 }: { photo: PhotoLike | { id: st
 const REMOVE_ROOM = 14;
 
 /**
- * Swipe through photos one at a time, with "2 / 6" and dots. `peek` leaves part of the next one showing.
+ * Swipe through photos one at a time, with "2 / 6" and dots. Tap one to see it big. `peek` leaves part of the next one showing.
  * `last` draws one more tile after the photos, the same size: the "add photos" slot.
  * `onRemove` puts an × on the top corner of each photo, half on it and half off.
  */
@@ -48,6 +49,7 @@ export function PhotoCarousel({ photos, height, peek = 44, gap = 6, dots = true,
 }) {
   const [index, setIndex] = useState(0);
   const [width, setWidth] = useState(0);
+  const [viewing, setViewing] = useState<number | null>(null);
   const tiles = photos.length + (last ? 1 : 0);
   const tile = Math.max(1, tiles > 1 ? width - peek : width);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -68,7 +70,9 @@ export function PhotoCarousel({ photos, height, peek = 44, gap = 6, dots = true,
       >
         {photos.map((p, i) => (
           <View key={p.id}>
-            <Photo photo={p} shape={i} style={{ width: tile, height }} />
+            <Pressable onPress={() => setViewing(i)} accessibilityRole="button" accessibilityLabel={`View photo ${i + 1}`}>
+              <Photo photo={p} shape={i} style={{ width: tile, height }} />
+            </Pressable>
             {onRemove ? (
               <Pressable onPress={() => onRemove(p.id)} style={{ position: 'absolute', top: -22, right: -22, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={`Remove photo ${i + 1}`}>
                 <Icon name="x" size={24} color={colors.olive} strokeWidth={3.2} />
@@ -88,6 +92,7 @@ export function PhotoCarousel({ photos, height, peek = 44, gap = 6, dots = true,
           {Array.from({ length: tiles }, (_, i) => <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: dotColor, opacity: i === index ? 1 : 0.45 }} />)}
         </View>
       ) : null}
+      <PhotoViewer photos={photos} start={viewing} onClose={() => setViewing(null)} />
     </View>
   );
 }
