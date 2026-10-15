@@ -8,6 +8,7 @@ import { dayParts } from '@/lib';
 import { colors, corners, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { DownButton, DownCount } from './Down';
+import { PeoplePress } from './PeopleSheet';
 import { Photo } from './Photo';
 import { Hand, Mono } from './Text';
 
@@ -17,27 +18,21 @@ const STUBS = [colors.sage, colors.moss, colors.sage, colors.straw];
 export function OpenInviteRow({ item, list, index }: { item: Item; list: List; index: number }) {
   const people = listPeople(list.id);
   const hosts = inviteHosts(item);
-  const solo = hosts.length === 1 ? hosts[0] : null;
   const date = item.date ? dayParts(item.date) : null;
   const photo = photosFor(item.id)[0];
   return (
     <View style={[styles.ticket, tilt(index, 0.8)]}>
-      <View style={[styles.stub, { backgroundColor: STUBS[index % STUBS.length] }]} accessibilityLabel={date ? undefined : 'No date yet'}>
-        <Mono size={10} style={{ letterSpacing: 1 }}>{date ? date.weekday.toLowerCase() : 'date'}</Mono>
+      <View style={[styles.stub, { backgroundColor: STUBS[index % STUBS.length] }]} accessibilityLabel={date ? `Due ${date.weekday.toLowerCase()} ${date.day}` : 'No due date'}>
+        <Mono size={9.5} color={colors.inkSoft} style={{ letterSpacing: 1 }}>due</Mono>
+        {date ? <Mono size={10} style={{ letterSpacing: 1 }}>{date.weekday.toLowerCase()}</Mono> : null}
         <Hand size={28} style={{ lineHeight: 30 }}>{date ? date.day : '?'}</Hand>
       </View>
       <View style={[corners(index), styles.body]}>
         {photo ? <Photo photo={photo} style={{ height: 132 }} /> : null}
         <View style={styles.who}>
-          <Pressable
-            onPress={solo ? () => router.push(`/user/${solo.username}`) : undefined}
-            disabled={!solo}
-            hitSlop={8}
-            accessibilityRole={solo ? 'button' : undefined}
-            accessibilityLabel={solo ? `${solo.name}'s profile` : undefined}
-          >
+          <PeoplePress people={hosts} hitSlop={8}>
             <AvatarStack people={hosts} size={22} max={3} />
-          </Pressable>
+          </PeoplePress>
           <Mono size={10.5} color={colors.inkSoft} numberOfLines={1} style={{ flexShrink: 1 }}>{people.map((p) => p.name).join(' + ')} · {list.title}</Mono>
         </View>
         <Pressable onPress={() => router.push(`/item/${item.id}`)} accessibilityRole="button">

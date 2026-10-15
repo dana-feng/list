@@ -4,7 +4,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { db, useDb } from '@/api/db';
 import { deleteItem, itemsForList, markDone, reorderItems, undoDone } from '@/api/items';
 import {
-  canViewList, deleteList, getList, invitedBy, isListDone, isMember, listPeople, listProgress, membership, renameList, respondInvite,
+  canViewList, deleteList, getList, invitedBy, isListDone, isMember, leaveList, listPeople, listProgress, membership,
+  renameList, respondInvite,
 } from '@/api/lists';
 import { AvatarStack } from '@/components/Avatar';
 import { Pill } from '@/components/Button';
@@ -16,6 +17,7 @@ import { EditableTitle } from '@/components/ListFields';
 import { ListSettingsSheet } from '@/components/ListSettingsSheet';
 import { MoreMenu } from '@/components/MoreMenu';
 import { Paper } from '@/components/Paper';
+import { PeoplePress } from '@/components/PeopleSheet';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Reorderable } from '@/components/Reorderable';
 import { FolderScreen } from '@/components/Screen';
@@ -81,6 +83,14 @@ export default function ListScreen() {
     goBack();
   };
 
+  const leave = () => {
+    // blank while sliding away, same as deleting: otherwise it flashes the view for people not on the list
+    setSettings(false);
+    setDeleted(true);
+    leaveList(id);
+    goBack();
+  };
+
   // only here through an open invite: say so, since the rest of the list is hidden
   const partial = !member && !invited && !whole;
 
@@ -108,10 +118,10 @@ export default function ListScreen() {
     >
       <View style={{ paddingHorizontal: 4 }}>
           <EditableTitle value={list.title} onSave={member ? (t) => renameList(id, t) : undefined} size={28} placeholder="untitled list" />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+          <PeoplePress people={people} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, alignSelf: 'flex-start' }}>
             <AvatarStack people={people} size={22} />
             <Mono size={11}>{names(people)}</Mono>
-          </View>
+          </PeoplePress>
           {!member && whole ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }}>
               <ProgressBar done={done} total={total} height={9} outlined />
@@ -173,7 +183,7 @@ export default function ListScreen() {
 
       {partial ? <Mono size={10.5} color={colors.inkSoft} style={{ marginTop: 22, marginHorizontal: 4, lineHeight: 16 }}>you’re only seeing what you’re invited to on this list</Mono> : null}
 
-      {settings ? <ListSettingsSheet listId={id} onClose={() => setSettings(false)} onDelete={destroy} /> : null}
+      {settings ? <ListSettingsSheet listId={id} onClose={() => setSettings(false)} onDelete={destroy} onLeave={leave} /> : null}
     </FolderScreen>
   );
 }

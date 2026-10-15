@@ -5,7 +5,8 @@ import { colors } from '@/theme';
 import { Hand } from './Text';
 
 type Props = {
-  title: string;
+  /** The heading. Leave it out when what's in the sheet speaks for itself. */
+  title?: string;
   /** Tapping outside, the back gesture and the footer's button all end up here. */
   onClose: () => void;
   children: ReactNode;
@@ -25,7 +26,7 @@ export function Sheet({ title, onClose, children, footer }: Props) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.bottom} pointerEvents="box-none">
         <View style={[styles.sheet, { paddingBottom: 14 + insets.bottom }]} accessibilityViewIsModal accessibilityLabel={title}>
           <View style={styles.handle} />
-          <Hand size={24} style={{ marginBottom: 12 }}>{title}</Hand>
+          {title ? <Hand size={24} style={{ marginBottom: 12 }}>{title}</Hand> : null}
           <ScrollView style={{ flexGrow: 0 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {children}
           </ScrollView>

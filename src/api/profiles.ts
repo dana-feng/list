@@ -102,3 +102,18 @@ export function setProfilePhoto(uri: string) {
     return supabase.from('profiles').update({ profile_photo: url }).eq('id', db.me);
   }, 'your photo');
 }
+
+/** Takes your profile photo off, back to your initial, and removes the file. */
+export function removeProfilePhoto() {
+  const person = myRow();
+  if (!person?.profile_photo) return;
+  // the file's path inside the avatars bucket, from its public URL; nothing to remove if it never finished uploading
+  const path = person.profile_photo.split('/avatars/')[1];
+  person.profile_photo = null;
+  commit();
+  return write(async () => {
+    const res = await supabase.from('profiles').update({ profile_photo: null }).eq('id', db.me);
+    if (res.error || !path) return res;
+    return supabase.storage.from('avatars').remove([decodeURIComponent(path)]);
+  }, 'your photo');
+}

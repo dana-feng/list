@@ -3,7 +3,7 @@ import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useDb } from '@/api/db';
-import { BIO_MAX, me, saveProfile, setProfilePhoto } from '@/api/profiles';
+import { BIO_MAX, me, removeProfilePhoto, saveProfile, setProfilePhoto } from '@/api/profiles';
 import { deleteAccount, signOut } from '@/api/sync';
 import { Avatar } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
@@ -11,10 +11,11 @@ import { FolderTab } from '@/components/FolderTab';
 import { Header, SaveAction, TextAction } from '@/components/Header';
 import { Icon } from '@/components/Icon';
 import { Paper } from '@/components/Paper';
+import { Sheet } from '@/components/Sheet';
 import { FolderScreen } from '@/components/Screen';
 import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
 import { usernameStatus } from '@/components/UsernameField';
-import { pickPhotos } from '@/pickPhotos';
+import { pickPhotos, takePhoto } from '@/pickPhotos';
 import { colors, fonts, noOutline } from '@/theme';
 
 /** Settings, and the same screen as "edit profile". */
@@ -26,13 +27,22 @@ export default function Settings() {
   const [username, setUsername] = useState(person.username);
   const [bio, setBio] = useState(person.bio);
   const [confirming, setConfirming] = useState(false);
+  const [photoMenu, setPhotoMenu] = useState(false);
   const masked = db.phone ? `+1 (${db.phone.slice(-10, -7)}) ••• ${db.phone.slice(-4)}` : '';
   const status = usernameStatus(username, person.username);
   const canSave = !!name.trim() && (username === person.username || !!status?.ok);
 
-  const changePhoto = async () => {
-    const [uri] = await pickPhotos(false);
-    if (uri) setProfilePhoto(uri);
+  // the sheet goes first, so the photo picker doesn't open under it
+  const changePhoto = (from: 'library' | 'camera') => {
+    setPhotoMenu(false);
+    setTimeout(async () => {
+      const uri = from === 'camera' ? await takePhoto() : (await pickPhotos(false))[0];
+      if (uri) setProfilePhoto(uri);
+    }, 0);
+  };
+  const deletePhoto = () => {
+    setPhotoMenu(false);
+    removeProfilePhoto();
   };
   const startEdit = () => {
     setName(person.name);
@@ -62,13 +72,13 @@ export default function Settings() {
         header={<Header left={<TextAction label="cancel" onPress={() => setEditing(false)} />} title="edit profile" right={<SaveAction onPress={save} disabled={!canSave} />} />}
         folderTabs={<FolderTab label="you" />}
       >
-        {/* the pencil on the corner says the photo can be changed */}
-        <Pressable onPress={changePhoto} accessibilityRole="button" accessibilityLabel="Change photo" style={{ alignSelf: 'center', marginTop: 6 }}>
+        {/* the photo and the line under it both open the photo sheet */}
+        <Pressable onPress={() => setPhotoMenu(true)} accessibilityRole="button" accessibilityLabel="Edit profile photo" style={{ alignSelf: 'center', marginTop: 6 }}>
           <Avatar person={person} size={104} fill={colors.sage} />
-          <View style={styles.photoBadge}>
-            <Icon name="pencil" size={16} color={colors.paper} strokeWidth={2.1} />
-          </View>
         </Pressable>
+        <View style={{ alignSelf: 'center', marginBottom: 4 }}>
+          <LinkText label="edit photo" size={13} onPress={() => setPhotoMenu(true)} />
+        </View>
         <Field label="name">
           <TextInput value={name} onChangeText={setName} accessibilityLabel="Name" style={[styles.input, noOutline]} />
         </Field>
@@ -99,6 +109,19 @@ export default function Settings() {
           <Mono size={14} style={{ flex: 1 }}>{masked}</Mono>
           <Icon name="right" size={14} strokeWidth={2.2} />
         </Field>
+        {photoMenu ? (
+          <Sheet onClose={() => setPhotoMenu(false)}>
+            <View style={{ gap: 10, paddingBottom: 4 }}>
+              <Button label="choose from library" tone="outline" onPress={() => changePhoto('library')} />
+              <Button label="take photo" tone="outline" onPress={() => changePhoto('camera')} />
+              {person.profile_photo ? (
+                <View style={{ alignSelf: 'center' }}>
+                  <LinkText label="remove photo" color={colors.bark} size={13} onPress={deletePhoto} />
+                </View>
+              ) : null}
+            </View>
+          </Sheet>
+        ) : null}
       </FolderScreen>
     );
   }
@@ -169,10 +192,6 @@ function Row({ label, value, onPress }: { label: string; value?: string; onPress
 }
 
 const styles = StyleSheet.create({
-  photoBadge: {
-    position: 'absolute', right: 0, bottom: 0, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.bark, borderWidth: 2, borderColor: colors.paper,
-  },
   me: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 },
   label: { marginTop: 22, marginBottom: 8, marginHorizontal: 2 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: 4, borderBottomWidth: 1.2, borderStyle: 'dashed', borderColor: colors.rule },

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useDb } from '@/api/db';
 import { listsForProfile } from '@/api/lists';
 import { me } from '@/api/profiles';
@@ -20,6 +20,9 @@ export default function Me() {
   const rows = listsForProfile(person.id);
   const [tab, setTab] = useState<ProfileTab>('lists');
   const tracking = useTabPosition(0);
+  const navigation = useNavigation();
+  // tapping the lists tab always lands back on your lists, the way Home lands back on the feed
+  useEffect(() => navigation.addListener('tabPress' as never, () => setTab('lists')), [navigation]);
   return (
     <Screen
       insideTabs

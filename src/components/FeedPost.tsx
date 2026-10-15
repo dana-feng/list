@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, FeedEvent, Profile } from '@/api/db';
 import { getItem, photosFor } from '@/api/items';
-import { getList, listPeople, listProgress } from '@/api/lists';
+import { getList, listPeople } from '@/api/lists';
 import { getProfile } from '@/api/profiles';
 import { commentCount, likedByMe, likesFor, toggleLike } from '@/api/reactions';
 import { longDay, names, timeAgo } from '@/lib';
@@ -11,6 +11,7 @@ import { colors } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { CommentsSheet } from './CommentsSheet';
 import { Icon, IconName } from './Icon';
+import { PeoplePress } from './PeopleSheet';
 import { openProfile } from './PersonRow';
 import { Photo } from './Photo';
 import { PhotoViewer } from './PhotoViewer';
@@ -35,7 +36,6 @@ export function describePost(event: FeedEvent) {
   if (!list || !actor || (event.item_id && !item) || event.kind === 'open_invite') return null;
 
   const kind: Kind = event.kind;
-  const { done, total } = listProgress(list.id);
   // "done" and "finished" belong to everyone on the list, not just whoever crossed it off
   const crew = kind === 'item_done' || kind === 'list_done' ? listPeople(list.id) : [actor];
   const people = crew.length ? crew : [actor];
@@ -43,9 +43,9 @@ export function describePost(event: FeedEvent) {
   const verb = { list_created: 'started a list', list_done: 'finished a list', item_added: 'added', item_done: 'did' }[kind];
   const under = {
     list_created: null,
-    list_done: `all ${total} done`,
-    item_added: [list.title, item?.date ? longDay(item.date) : null].filter(Boolean).join(' · '),
-    item_done: `${list.title} · ${done}/${total}`,
+    list_done: null,
+    item_added: [list.title, item?.date ? `due ${longDay(item.date)}` : null].filter(Boolean).join(' · '),
+    item_done: list.title,
   }[kind];
   return {
     kind, list, item, people, verb, under,
@@ -85,7 +85,6 @@ export function PostBody({ event, post, index, go = (to) => to() }: { event: Fee
   const { kind, people, verb, title, under, photos, path } = post;
   const mark = MARK[kind];
   const who = names(people);
-  const solo = people.length === 1 && people[0].id !== db.me ? people[0] : null;
   // up to three photos in a row under the sentence; one photo gets the full width
   const shown = photos.slice(0, 3);
   const extra = photos.length - shown.length;
@@ -99,15 +98,9 @@ export function PostBody({ event, post, index, go = (to) => to() }: { event: Fee
         <View style={styles.text}>
           {/* faces of everyone who did it (up to three), small, with when on the right */}
           <View style={styles.top}>
-            <Pressable
-              onPress={solo ? () => go(() => openProfile(solo)) : undefined}
-              disabled={!solo}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel={solo ? `${solo.name}'s profile` : who}
-            >
+            <PeoplePress people={people} go={go} hitSlop={8}>
               <AvatarStack people={people} size={22} max={3} />
-            </Pressable>
+            </PeoplePress>
             <Mono size={11.5} numberOfLines={1} style={{ flexShrink: 1 }}>
               <PeopleNames people={people} go={go} /> {verb}
             </Mono>

@@ -38,7 +38,7 @@ export function OpenRow({ item, member, onDone, onDelete }: OpenProps) {
   // yours: just the title (the invite lives on the item). a friend's: date + open invite in the small line, "interested" on the right
   const sub = member
     ? ''
-    : [item.date ? shortDay(item.date) : 'no date yet', invited ? ['open invite', downText(item.id)].filter(Boolean).join(' · ') : null].filter(Boolean).join(' · ');
+    : [item.date ? `due ${shortDay(item.date)}` : 'no due date', invited ? ['open invite', downText(item.id)].filter(Boolean).join(' · ') : null].filter(Boolean).join(' · ');
 
   return (
     <SwipeToDelete onDelete={member ? onDelete : undefined} label={item.title}>
