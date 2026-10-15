@@ -52,7 +52,8 @@ function Shell({ header, footer, overlay, children }: Pick<Common, 'header' | 'f
 export function Screen({ children, header, footer, refreshable, scroll = true, scrollEnabled, overlay, insideTabs, contentStyle }: Common & { contentStyle?: StyleProp<ViewStyle> }) {
   const bottom = useBottomPad(insideTabs, footer);
   const refresher = useRefresher(refreshable);
-  const pad = [{ paddingHorizontal: 18, paddingBottom: bottom }, contentStyle];
+  // flexGrow lets content (like SwipeTabs) stretch to the bottom of the screen when it's short
+  const pad = [{ flexGrow: 1, paddingHorizontal: 18, paddingBottom: bottom }, contentStyle];
   return (
     <Shell header={header} footer={footer} overlay={overlay}>
       {scroll ? (
@@ -92,7 +93,7 @@ export function FolderScreen({ children, header, footer, refreshable, scroll = t
         {scroll ? (
           <ScrollView
             style={styles.fill}
-            contentContainerStyle={{ padding: 12, paddingTop: 16, paddingBottom: bottom }}
+            contentContainerStyle={{ flexGrow: 1, padding: 12, paddingTop: 16, paddingBottom: bottom }}
             scrollEnabled={scrollEnabled}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}

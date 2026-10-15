@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useDb } from '@/api/db';
@@ -7,15 +8,19 @@ import { Button } from '@/components/Button';
 import { FolderGrid } from '@/components/FolderGrid';
 import { Header } from '@/components/Header';
 import { ProfileHeader } from '@/components/ProfileHeader';
+import { ActivityList, PROFILE_TABS, ProfileTab, ProfileTabs } from '@/components/ProfileTabs';
 import { Screen } from '@/components/Screen';
+import { SwipeTabs, useTabPosition } from '@/components/SwipeTabs';
 import { Hand, Mono, MonoMedium } from '@/components/Text';
 import { colors } from '@/theme';
 
-/** Someone else's lists. */
+/** Someone else's profile: their lists, and a tab with what they've posted. */
 export default function User() {
   const db = useDb();
   const { username } = useLocalSearchParams<{ username: string }>();
   const person = getProfileByUsername(username);
+  const [tab, setTab] = useState<ProfileTab>('lists');
+  const tracking = useTabPosition(0);
   if (!person) {
     return (
       <Screen header={<Header />}>
@@ -39,14 +44,25 @@ export default function User() {
   return (
     <Screen refreshable header={<Header center={<MonoMedium size={14} color={colors.paper}>@{person.username}</MonoMedium>} />}>
       <ProfileHeader person={person} action={follow} />
-      {rows.length ? <FolderGrid rows={rows} /> : (
-        <View style={{ paddingVertical: 48, alignItems: 'center', gap: 8 }}>
-          <Hand size={22} color={colors.paper}>nothing to see yet</Hand>
-          <Mono size={12} center color={colors.onDarkSoft} style={{ maxWidth: 280, lineHeight: 18 }}>
-            {person.name}’s lists are for followers or specific people. follow to see the ones open to followers.
-          </Mono>
-        </View>
-      )}
+      <ProfileTabs tab={tab} onChange={setTab} position={tracking.position} lists={rows.filter((r) => !r.invited).length} />
+      <SwipeTabs
+        tabs={PROFILE_TABS}
+        tab={tab}
+        onChange={setTab}
+        bleed={18}
+        tracking={tracking}
+        pages={{
+          lists: rows.length ? <FolderGrid rows={rows} /> : (
+            <View style={{ paddingVertical: 48, alignItems: 'center', gap: 8 }}>
+              <Hand size={22} color={colors.paper}>nothing to see yet</Hand>
+              <Mono size={12} center color={colors.onDarkSoft} style={{ maxWidth: 280, lineHeight: 18 }}>
+                {person.name}’s lists are for followers or specific people. follow to see the ones open to followers.
+              </Mono>
+            </View>
+          ),
+          activity: <ActivityList userId={person.id} empty={following || person.id === db.me ? `what ${person.name} adds and crosses off shows up here.` : `follow ${person.name} to see what they add and cross off.`} />,
+        }}
+      />
     </Screen>
   );
 }

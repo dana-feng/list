@@ -9,7 +9,7 @@ import { colors } from '@/theme';
 import { Avatar } from './Avatar';
 import { Hand, Mono } from './Text';
 
-/** Big face, lists / followers / following, name, lists done, then an optional action (follow). */
+/** Big face, lists / followers / following, name, bio, lists done, then an optional action (follow). */
 export function ProfileHeader({ person, action }: { person: Profile; action?: ReactNode }) {
   const lists = listsForProfile(person.id).filter((r) => !r.invited).length;
   const { followers, following } = followCounts(person.id);
@@ -32,6 +32,9 @@ export function ProfileHeader({ person, action }: { person: Profile; action?: Re
       </View>
       <View style={{ marginTop: 14, gap: 2 }}>
         <Hand size={30} color={colors.paper} style={{ lineHeight: 33 }}>{person.name}</Hand>
+        {person.bio ? (
+          <Mono size={13} color={colors.paper} numberOfLines={3} style={{ lineHeight: 19, marginTop: 4, marginBottom: 2, maxWidth: 340 }}>{person.bio}</Mono>
+        ) : null}
         <Mono size={12} color={colors.onDarkSoft}>{done} {done === 1 ? 'list' : 'lists'} done</Mono>
       </View>
       {action ? <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>{action}</View> : null}
