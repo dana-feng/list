@@ -3,11 +3,11 @@ import { View } from 'react-native';
 import { useDb } from '@/api/db';
 import { searchPeople } from '@/api/profiles';
 import { FolderTab } from '@/components/FolderTab';
-import { BackButton } from '@/components/Header';
+import { Header } from '@/components/Header';
 import { PeopleList } from '@/components/PeopleList';
 import { FolderScreen } from '@/components/Screen';
 import { SearchField } from '@/components/SearchField';
-import { Hand } from '@/components/Text';
+import { Mono } from '@/components/Text';
 import { colors } from '@/theme';
 
 /** People by name or @username. */
@@ -18,19 +18,15 @@ export default function Search() {
   const people = searchPeople(q);
   return (
     <FolderScreen
-      header={
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 8, paddingRight: 18 }}>
-          <BackButton />
-          <View style={{ flex: 1 }}>
-            <SearchField tone="paper" value={q} onChange={setQ} placeholder="find people" autoFocus />
-          </View>
-        </View>
-      }
+      header={<Header />}
       folderTabs={<FolderTab label={term ? `people · “${term}”` : 'people'} />}
     >
+      <View style={{ marginBottom: 14 }}>
+        <SearchField value={q} onChange={setQ} placeholder="find people" autoFocus />
+      </View>
       <PeopleList people={people} notes />
       {term && !people.length ? (
-        <Hand size={20} center color={colors.inkSoft} style={{ marginTop: 30, lineHeight: 26 }}>no one by that name yet</Hand>
+        <Mono size={12} center color={colors.inkSoft} style={{ marginTop: 24 }}>no results</Mono>
       ) : null}
     </FolderScreen>
   );

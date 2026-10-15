@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Animated, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Dimensions, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, EventComment, FeedEvent } from '@/api/db';
@@ -34,6 +34,28 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
     onClose();
     setTimeout(to, 0);
   };
+  // Drag the bar at the top down to put the sheet away: past a third of the way, or a flick, and it
+  // goes; otherwise it springs back up. The dim fades as it goes.
+  const [drop] = useState(() => new Animated.Value(0));
+  const [gone, setGone] = useState(false);
+  useEffect(() => {
+    if (gone) onClose();
+  }, [gone, onClose]);
+  const [handle] = useState(() => {
+    const away = () =>
+      Animated.timing(drop, { toValue: Dimensions.get('window').height, duration: 200, useNativeDriver: true }).start(() => setGone(true));
+    const back = () => Animated.spring(drop, { toValue: 0, useNativeDriver: true, friction: 9, tension: 90 }).start();
+    return {
+      away,
+      pan: PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 4,
+        onPanResponderMove: (_, g) => drop.setValue(Math.max(0, g.dy)),
+        onPanResponderRelease: (_, g) => (g.dy > Dimensions.get('window').height / 3 || (g.dy > 30 && g.vy > 0.8) ? away() : back()),
+        onPanResponderTerminate: back,
+      }),
+    };
+  });
   // A new comment lands at the bottom; a reply lands in its thread, which is already on screen.
   const posted = (reply: boolean) => {
     setReplyTo(null);
@@ -42,39 +64,44 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.dim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close comments" />
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: drop.interpolate({ inputRange: [0, 500], outputRange: [1, 0], extrapolate: 'clamp' }) }]}>
+        <Pressable style={styles.dim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close comments" />
+      </Animated.View>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.bottom} pointerEvents="box-none">
-        <View style={[styles.sheet, { paddingBottom: 10 + insets.bottom }]} accessibilityViewIsModal accessibilityLabel="Comments">
-          <View style={styles.bar}>
+        <Animated.View style={[styles.sheet, { paddingBottom: 10 + insets.bottom, transform: [{ translateY: drop }] }]} accessibilityViewIsModal accessibilityLabel="Comments">
+          <View style={styles.bar} {...handle.pan.panHandlers}>
             <View style={styles.handle} />
             <Pressable onPress={onClose} hitSlop={8} style={styles.close} accessibilityRole="button" accessibilityLabel="Close comments">
               <Icon name="x" size={18} strokeWidth={2} />
             </Pressable>
           </View>
-          <ScrollView ref={scroller} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 12 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <ScrollView
+            ref={scroller}
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 12 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            // on iOS you can also pull the post down past the top to put the sheet away
+            onScrollEndDrag={(e) => {
+              if (e.nativeEvent.contentOffset.y < -80) handle.away();
+            }}
+          >
             <View style={{ gap: 12 }}>
               <PostBody event={event} post={post} index={index} go={go} />
               <LikedBy eventId={event.id} go={go} />
             </View>
             <View style={styles.rule} />
-            {threads.length ? (
-              threads.map(({ comment, replies }) => (
-                <Fragment key={comment.id}>
-                  <Comment comment={comment} event={event} go={go} onReply={setReplyTo} />
-                  {replies.map((r) => (
-                    <Comment key={r.id} comment={r} event={event} go={go} onReply={setReplyTo} />
-                  ))}
-                </Fragment>
-              ))
-            ) : (
-              <View style={{ paddingVertical: 32, alignItems: 'center', gap: 6 }}>
-                <Hand size={20}>no comments yet</Hand>
-                <Mono size={11.5} color={colors.inkSoft}>say something nice.</Mono>
-              </View>
-            )}
+            {threads.map(({ comment, replies }) => (
+              <Fragment key={comment.id}>
+                <Comment comment={comment} event={event} go={go} onReply={setReplyTo} />
+                {replies.map((r) => (
+                  <Comment key={r.id} comment={r} event={event} go={go} onReply={setReplyTo} />
+                ))}
+              </Fragment>
+            ))}
           </ScrollView>
           <Composer eventId={event.id} listId={event.list_id} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPosted={posted} />
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -267,11 +294,26 @@ function Composer({ eventId, listId, replyTo, onCancelReply, onPosted }: {
     setCursor(before.length);
     setMoveTo(before.length);
   };
+  // what was just posted, so the keyboard can't put it back (see `typed`)
+  const sent = useRef<string | null>(null);
   const send = () => {
     if (!addComment(eventId, text, replyTo)) return;
+    sent.current = text;
+    input.current?.clear();
     setText('');
     setCursor(0);
+    setMoveTo(null);
     onPosted(!!replyTo);
+  };
+  // A keyboard still holding a word in progress (autocorrect, or composing on Android) can hand the
+  // whole comment back just after it's cleared. Anything else typed counts as typing again.
+  const typed = (value: string) => {
+    if (value && value === sent.current) {
+      input.current?.clear();
+      return;
+    }
+    sent.current = null;
+    setText(value);
   };
   const ready = !!text.trim();
 
@@ -303,7 +345,7 @@ function Composer({ eventId, listId, replyTo, onCancelReply, onPosted }: {
         <TextInput
           ref={input}
           value={text}
-          onChangeText={setText}
+          onChangeText={typed}
           selection={moveTo === null ? undefined : { start: moveTo, end: moveTo }}
           onSelectionChange={(e) => {
             setCursor(e.nativeEvent.selection.end);
@@ -311,9 +353,9 @@ function Composer({ eventId, listId, replyTo, onCancelReply, onPosted }: {
           }}
           multiline
           maxLength={1000}
-          placeholder={replyTo ? 'add a reply…' : 'add a comment…'}
+          placeholder={replyTo ? 'write a reply…' : 'write a comment…'}
           placeholderTextColor={colors.inkFaint}
-          accessibilityLabel={replyTo ? 'Add a reply' : 'Add a comment'}
+          accessibilityLabel={replyTo ? 'Write a reply' : 'Write a comment'}
           style={[styles.input, noOutline]}
         />
         <Pressable
@@ -338,7 +380,8 @@ const styles = StyleSheet.create({
     height: '90%', backgroundColor: colors.paper, borderTopWidth: 1.5, borderLeftWidth: 1.5, borderRightWidth: 1.5, borderColor: colors.ink,
     borderTopLeftRadius: 22, borderTopRightRadius: 18, paddingHorizontal: 16,
   },
-  bar: { height: 34, alignItems: 'center', justifyContent: 'center' },
+  // tall enough to grab: it's what you drag to put the sheet away
+  bar: { height: 40, alignItems: 'center', justifyContent: 'center' },
   handle: { width: 40, height: 5, borderRadius: 3, backgroundColor: colors.rule },
   close: { position: 'absolute', right: 0, top: 4, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   likedBy: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 42, minHeight: 28 },

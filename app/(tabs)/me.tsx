@@ -7,8 +7,9 @@ import { me } from '@/api/profiles';
 import { FolderGrid } from '@/components/FolderGrid';
 import { Icon } from '@/components/Icon';
 import { ProfileHeader } from '@/components/ProfileHeader';
-import { ActivityList, ProfileTab, ProfileTabs } from '@/components/ProfileTabs';
+import { ActivityList, PROFILE_TABS, ProfileTab, ProfileTabs } from '@/components/ProfileTabs';
 import { Screen } from '@/components/Screen';
+import { SwipeTabs, useTabPosition } from '@/components/SwipeTabs';
 import { Hand, Mono, MonoMedium } from '@/components/Text';
 import { colors } from '@/theme';
 
@@ -18,6 +19,7 @@ export default function Me() {
   const person = me();
   const rows = listsForProfile(person.id);
   const [tab, setTab] = useState<ProfileTab>('lists');
+  const tracking = useTabPosition(0);
   return (
     <Screen
       insideTabs
@@ -37,15 +39,23 @@ export default function Me() {
       }
     >
       <ProfileHeader person={person} />
-      <ProfileTabs tab={tab} onChange={setTab} lists={rows.filter((r) => !r.invited).length} />
-      {tab === 'activity' ? (
-        <ActivityList userId={person.id} empty="what you add and cross off shows up here." />
-      ) : rows.length ? <FolderGrid rows={rows} own /> : (
-        <View style={{ paddingVertical: 56, alignItems: 'center', gap: 8 }}>
-          <Hand size={24} color={colors.paper}>no lists yet</Hand>
-          <Mono size={12} color={colors.onDarkSoft}>tap + to start your first one.</Mono>
-        </View>
-      )}
+      <ProfileTabs tab={tab} onChange={setTab} position={tracking.position} lists={rows.filter((r) => !r.invited).length} />
+      <SwipeTabs
+        tabs={PROFILE_TABS}
+        tab={tab}
+        onChange={setTab}
+        bleed={18}
+        tracking={tracking}
+        pages={{
+          lists: rows.length ? <FolderGrid rows={rows} own /> : (
+            <View style={{ paddingVertical: 56, alignItems: 'center', gap: 8 }}>
+              <Hand size={24} color={colors.paper}>no lists yet</Hand>
+              <Mono size={12} color={colors.onDarkSoft}>tap + to start your first one.</Mono>
+            </View>
+          ),
+          activity: <ActivityList userId={person.id} empty="what you add and cross off shows up here." />,
+        }}
+      />
     </Screen>
   );
 }
