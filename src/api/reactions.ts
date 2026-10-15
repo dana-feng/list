@@ -1,5 +1,5 @@
 // Likes and comments on posts. A post is an events row; anyone who can see it can react.
-import { commit, db, EventComment, FeedEvent, now, Profile } from './db';
+import { commit, db, EventComment, now, Profile } from './db';
 import { Unfound, tagsToIds } from './mentions';
 import { getProfile } from './profiles';
 import { supabase } from './supabase';
@@ -40,7 +40,8 @@ export function threadsFor(eventId: string): Thread[] {
   return all.filter((c) => !c.reply_to).map((comment) => ({ comment, replies: all.filter((r) => r.reply_to === comment.id) }));
 }
 
-export const commentCount = (eventId: string) => db.event_comments.filter((c) => c.event_id === eventId).length;
+/** Deleted ones kept as placeholders don't count. */
+export const commentCount = (eventId: string) => db.event_comments.filter((c) => c.event_id === eventId && !c.deleted_at).length;
 
 /**
  * `typed` has tags as @username; they're saved as ids. `replyTo` is the comment being answered;
@@ -50,19 +51,32 @@ export function addComment(eventId: string, typed: string, replyTo?: EventCommen
   const body = tagsToIds(typed.trim(), unfound);
   if (!body) return false;
   const reply_to = replyTo ? (replyTo.reply_to ?? replyTo.id) : null;
-  const row: EventComment = { id: newId(), event_id: eventId, author_id: db.me, body, created_at: now(), reply_to };
+  const row: EventComment = { id: newId(), event_id: eventId, author_id: db.me, body, created_at: now(), reply_to, deleted_at: null };
   db.event_comments.push(row);
   commit();
   write(() => supabase.from('event_comments').insert({ id: row.id, event_id: eventId, author_id: db.me, body, reply_to }), 'your comment');
   return true;
 }
 
-/** Your own comments, and anyone's on your own post. */
-export const canDeleteComment = (comment: EventComment, event: FeedEvent) => comment.author_id === db.me || event.actor_id === db.me;
+/** Only your own, and only once. */
+export const canDeleteComment = (comment: EventComment) => comment.author_id === db.me && !comment.deleted_at;
 
-/** Its replies go with it, as they do on the server. */
+/**
+ * The same as delete_comment does on the server: a comment with replies stays as a blank
+ * "comment deleted" so they keep their place; one without just goes. When the last reply under
+ * a deleted comment goes, so does the placeholder.
+ */
 export function deleteComment(commentId: string) {
-  db.event_comments = db.event_comments.filter((c) => c.id !== commentId && c.reply_to !== commentId);
+  const comment = db.event_comments.find((c) => c.id === commentId);
+  if (!comment) return;
+  const hasReplies = (id: string) => db.event_comments.some((c) => c.reply_to === id);
+  if (hasReplies(comment.id)) {
+    db.event_comments = db.event_comments.map((c) => (c.id === comment.id ? { ...c, body: '', deleted_at: now() } : c));
+  } else {
+    db.event_comments = db.event_comments.filter((c) => c.id !== comment.id);
+    const parent = comment.reply_to ? db.event_comments.find((c) => c.id === comment.reply_to) : undefined;
+    if (parent?.deleted_at && !hasReplies(parent.id)) db.event_comments = db.event_comments.filter((c) => c.id !== parent.id);
+  }
   commit();
-  write(() => supabase.from('event_comments').delete().eq('id', commentId), 'that delete');
+  write(() => supabase.rpc('delete_comment', { p_comment: commentId }), 'that delete');
 }
