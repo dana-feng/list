@@ -6,16 +6,17 @@ import {
   addItem, addPhoto, deleteItem, getItem, interestedPeople, inviteeIds, isInterested, isInvitedTo, markDone, photosFor, removePhoto, setInvite,
   toggleInterest, undoDone, updateItem,
 } from '@/api/items';
+import { inviteHosts } from '@/api/feed';
 import { getList, isMember, listPeople, listProgress } from '@/api/lists';
 import { tagsToIds, tagsToNames, Unfound } from '@/api/mentions';
 import { AvatarStack } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { DateChip, DateField } from '@/components/DateField';
-import { canSayDown, downText } from '@/components/Down';
+import { canSayDown } from '@/components/Down';
 import { FolderTab } from '@/components/FolderTab';
 import { goBack, Header, TextAction } from '@/components/Header';
 import { Invite, InviteChip, InviteSheet } from '@/components/InviteSheet';
-import { EditableTitle, TitleInput } from '@/components/ListFields';
+import { EditableTitle, FieldRow, TitleInput } from '@/components/ListFields';
 import { ListPicker, ListPickerTab } from '@/components/ListPicker';
 import { MoreMenu } from '@/components/MoreMenu';
 import { NotesField } from '@/components/NotesField';
@@ -24,7 +25,7 @@ import { PhotoStrip } from '@/components/PhotoGrid';
 import { Circle } from '@/components/Scribble';
 import { FolderScreen } from '@/components/Screen';
 import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
-import { monthDay, toDay } from '@/lib';
+import { monthDay, names, toDay } from '@/lib';
 import { pickPhotos } from '@/pickPhotos';
 import { colors } from '@/theme';
 
@@ -145,13 +146,27 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const invitedHere = !!item && !member && isInvitedTo(item.id);
   // an invite is for something still to do
   const inviteChip = member && !done ? <InviteChip invite={invite} down={down.length} onPress={() => setInviting(true)} /> : null;
+  // a friend's invite: whose it is, so you know who you'd be joining
+  const hosts = invitedHere ? inviteHosts(item!) : [];
+  const host = hosts.length === 1 ? hosts[0] : null;
 
   const card = (
     <Paper fill={done ? colors.gold : colors.sage} edge="ink" edgeWidth={1.5} shape={4} lean={0} style={styles.card}>
       {isNew ? (
         <TitleInput value={draft.title} onChange={(title) => set({ title })} placeholder="untitled item" size={28} autoFocus={!picking} />
       ) : (
-        <EditableTitle value={item!.title} onSave={member ? (title) => updateItem(item!.id, { title }) : undefined} size={28} color={done ? colors.inkSoft : colors.ink} placeholder="untitled item" />
+        <View style={styles.titleRow}>
+          <View style={{ flex: 1 }}>
+            <EditableTitle value={item!.title} onSave={member ? (title) => updateItem(item!.id, { title }) : undefined} size={28} color={done ? colors.inkSoft : colors.ink} placeholder="untitled item" />
+          </View>
+          {/* crossing it off (yours) */}
+          {member && !done ? (
+            <Pressable onPress={finish} hitSlop={8} style={styles.close} accessibilityRole="button" accessibilityLabel={`Mark ${item!.title} done`}>
+              <Circle size={30} />
+              <Mono size={10.5}>done</Mono>
+            </Pressable>
+          ) : null}
+        </View>
       )}
 
       {member ? (
@@ -160,12 +175,26 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
         <DateChip value={item!.date} />
       ) : null}
 
-      {/* a friend's open invite that includes you, and who's down so far */}
+      {/* a friend's open invite that includes you: whose it is, and who's interested so far */}
       {invitedHere ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <MonoMedium size={12}>open invite</MonoMedium>
-          {down.length ? <AvatarStack people={down} size={22} /> : null}
-          {down.length ? <Mono size={11.5}>{downText(item!.id)}</Mono> : null}
+        <View style={{ gap: 4 }}>
+          <FieldRow label="from">
+            <Pressable
+              onPress={host ? () => router.push(`/user/${host.username}`) : undefined}
+              disabled={!host}
+              hitSlop={6}
+              style={styles.from}
+              accessibilityRole={host ? 'button' : undefined}
+              accessibilityLabel={host ? `${host.name}'s profile` : undefined}
+            >
+              <AvatarStack people={hosts} size={22} max={3} />
+              <MonoMedium size={11.5} numberOfLines={1} style={{ flexShrink: 1 }}>{hosts.map((p) => p.name).join(' + ')}</MonoMedium>
+            </Pressable>
+          </FieldRow>
+          <FieldRow label="interested">
+            {down.length ? <AvatarStack people={down} size={22} max={3} /> : null}
+            <Mono size={11.5} numberOfLines={2} style={{ flexShrink: 1 }}>{down.length ? names(down) : 'no one yet'}</Mono>
+          </FieldRow>
         </View>
       ) : null}
 
@@ -181,13 +210,6 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     <FolderScreen header={header} folderTabs={tab}>
       {card}
 
-      {/* crossing it off (yours) */}
-      {member && item && !done ? (
-        <Paper onPress={finish} edge="ink" edgeWidth={1.4} shape={4} accessibilityLabel={`Mark ${item.title} done`} style={styles.arm}>
-          <Circle size={24} />
-          <MonoMedium size={13} style={{ flex: 1 }}>mark done</MonoMedium>
-        </Paper>
-      ) : null}
       {member && item && done ? (
         <View style={styles.doneRow}>
           <View style={styles.doneChip}><MonoMedium size={11.5} color={colors.paper}>done · {dayOf(item.done_at!)}</MonoMedium></View>
@@ -243,7 +265,9 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
 
 const styles = StyleSheet.create({
   card: { paddingTop: 18, paddingHorizontal: 16, paddingBottom: 16, gap: 12 },
-  arm: { marginTop: 16, height: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 12, paddingRight: 14 },
+  from: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  close: { alignItems: 'center', gap: 2, paddingTop: 2 },
   doneRow: { marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   doneChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 11, backgroundColor: colors.bark },
 });
