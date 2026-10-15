@@ -9,6 +9,7 @@ import { DownButton, downText } from './Down';
 import { Icon } from './Icon';
 import { useReorderHandle } from './Reorderable';
 import { Circle, Strike } from './Scribble';
+import { SwipeToDelete } from './SwipeToDelete';
 import { Hand, HandMedium, Mono } from './Text';
 
 type OpenProps = {
@@ -17,12 +18,12 @@ type OpenProps = {
   member: boolean;
   /** Tapping the circle. */
   onDone?: () => void;
-  /** Editing the list: an × to take it off instead of everything else. */
-  onRemove?: () => void;
+  /** Yours: slide the row left to delete it. */
+  onDelete?: () => void;
 };
 
 /** Something still to do. Tap the circle to cross it off. */
-export function OpenRow({ item, member, onDone, onRemove }: OpenProps) {
+export function OpenRow({ item, member, onDone, onDelete }: OpenProps) {
   // its tilt and corners come with it when it's dragged somewhere else, rather than from the spot it lands in
   const shape = hash(item.id);
   // inside a Reorderable: holding the row picks it up to drag somewhere else on the list
@@ -30,19 +31,20 @@ export function OpenRow({ item, member, onDone, onRemove }: OpenProps) {
   const onHold = handle?.hold;
   const onMove = handle?.move;
   const open = () => router.push(`/item/${item.id}`);
-  const down = item.open_invite ? interestedPeople(item.id) : [];
   // on someone else's list, it's only an open invite for you if you're in its audience
   const invited = !member && isInvitedTo(item.id);
+  const down = invited && item.open_invite ? interestedPeople(item.id) : [];
 
-  // a friend's list: date + open invite in the small line, "interested" on the right
+  // yours: just the title (the invite lives on the item). a friend's: date + open invite in the small line, "interested" on the right
   const sub = member
-    ? item.open_invite ? downText(item.id) : ''
+    ? ''
     : [item.date ? shortDay(item.date) : 'no date yet', invited ? ['open invite', downText(item.id)].filter(Boolean).join(' · ') : null].filter(Boolean).join(' · ');
 
   return (
+    <SwipeToDelete onDelete={member ? onDelete : undefined} label={item.title}>
     <View style={tilt(shape)}>
       <View style={[styles.row, corners(shape), { backgroundColor: colors.sage, borderColor: colors.ink, borderWidth: 1.5 }]}>
-        {member && !onRemove ? (
+        {member ? (
           <Pressable onPress={onDone} onLongPress={onHold} delayLongPress={350} style={styles.circle} accessibilityRole="checkbox" accessibilityState={{ checked: false }} accessibilityLabel={`Mark ${item.title} done`}>
             <Circle />
           </Pressable>
@@ -61,16 +63,12 @@ export function OpenRow({ item, member, onDone, onRemove }: OpenProps) {
           <Hand size={18}>{item.title}</Hand>
           {sub ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              {(member || invited) && down.length ? <AvatarStack people={down} size={19} max={3} /> : null}
+              {down.length ? <AvatarStack people={down} size={19} max={3} /> : null}
               <Mono size={11} color={colors.inkSoft}>{sub}</Mono>
             </View>
           ) : null}
         </Pressable>
-        {onRemove ? (
-          <Pressable onPress={onRemove} style={styles.remove} accessibilityRole="button" accessibilityLabel={`Delete ${item.title}`}>
-            <View style={styles.removeDot}><Icon name="x" size={14} color={colors.paper} strokeWidth={2.6} /></View>
-          </Pressable>
-        ) : member ? (
+        {member ? (
           <Pressable onPress={open} onLongPress={onHold} delayLongPress={350} style={styles.chevron} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
             <Icon name="right" size={16} strokeWidth={2.2} />
           </Pressable>
@@ -83,14 +81,16 @@ export function OpenRow({ item, member, onDone, onRemove }: OpenProps) {
         )}
       </View>
     </View>
+    </SwipeToDelete>
   );
 }
 
 /** Something crossed off: gold, struck through, when. Tap the circle to un-cross (if it's yours). */
-export function DoneRow({ item, index, onUndo, onRemove }: { item: Item; index: number; onUndo?: () => void; onRemove?: () => void }) {
+export function DoneRow({ item, index, onUndo, onDelete }: { item: Item; index: number; onUndo?: () => void; onDelete?: () => void }) {
   return (
+    <SwipeToDelete onDelete={onDelete} label={item.title}>
     <View style={[styles.done, corners(index + 1), tilt(index + 2)]}>
-      {onUndo && !onRemove ? (
+      {onUndo ? (
         <Pressable onPress={onUndo} style={styles.circle} accessibilityRole="button" accessibilityLabel={`Done: ${item.title}. Tap to un-cross`}>
           <Circle filled />
         </Pressable>
@@ -101,14 +101,9 @@ export function DoneRow({ item, index, onUndo, onRemove }: { item: Item; index: 
           <Strike seed={hash(item.id) % 97} />
         </View>
       </Pressable>
-      {onRemove ? (
-        <Pressable onPress={onRemove} style={styles.remove} accessibilityRole="button" accessibilityLabel={`Delete ${item.title}`}>
-          <View style={styles.removeDot}><Icon name="x" size={14} color={colors.paper} strokeWidth={2.6} /></View>
-        </Pressable>
-      ) : (
-        <Mono size={11} color={colors.inkSoft}>{monthDay(item.done_at!)}</Mono>
-      )}
+      <Mono size={11} color={colors.inkSoft}>{monthDay(item.done_at!)}</Mono>
     </View>
+    </SwipeToDelete>
   );
 }
 
@@ -118,6 +113,4 @@ const styles = StyleSheet.create({
   text: { flex: 1, gap: 4, paddingVertical: 2 },
   chevron: { width: 32, height: 44, alignItems: 'center', justifyContent: 'center' },
   done: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.gold, paddingVertical: 8, paddingLeft: 6, paddingRight: 14, minHeight: 48 },
-  remove: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  removeDot: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.bark, alignItems: 'center', justifyContent: 'center' },
 });

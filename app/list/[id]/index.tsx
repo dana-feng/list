@@ -4,28 +4,29 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { db, useDb } from '@/api/db';
 import { deleteItem, itemsForList, markDone, reorderItems, undoDone } from '@/api/items';
 import {
-  canViewList, deleteList, getList, inviteMembers, invitedBy, isListDone, isMember, listPeople, listProgress, membership, renameList, respondInvite,
-  setViewers, setVisibility, viewerIds,
+  canViewList, deleteList, getList, invitedBy, isListDone, isMember, listPeople, listProgress, membership, renameList, respondInvite,
 } from '@/api/lists';
 import { AvatarStack } from '@/components/Avatar';
-import { LinkText, Pill } from '@/components/Button';
+import { Pill } from '@/components/Button';
 import { DoneSheet } from '@/components/DoneSheet';
 import { FolderTab } from '@/components/FolderTab';
-import { goBack, Header, SaveAction, TextAction } from '@/components/Header';
+import { goBack, Header } from '@/components/Header';
 import { DoneRow, OpenRow } from '@/components/ItemRow';
-import { ListFields } from '@/components/ListFields';
+import { EditableTitle } from '@/components/ListFields';
+import { ListSettingsSheet } from '@/components/ListSettingsSheet';
+import { MoreMenu } from '@/components/MoreMenu';
 import { Paper } from '@/components/Paper';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Reorderable } from '@/components/Reorderable';
 import { FolderScreen } from '@/components/Screen';
 import { Hand, Label, Mono } from '@/components/Text';
-import { Choice } from '@/components/VisibilityPicker';
 import { names } from '@/lib';
 import { colors } from '@/theme';
 
 /**
- * A list, yours or a friend's. On yours: tap an item's circle to cross it off.
- * On a friend's: open invites get "interested". Owners can also edit: rename, owners, who can see it, take items off.
+ * A list, yours or a friend's. On yours: tap an item's circle to cross it off, tap the title to rename it,
+ * slide a row left to delete it, and find owners and who can see it under ⋯. There's no edit mode.
+ * On a friend's: open invites get "interested".
  */
 export default function ListScreen() {
   useDb();
@@ -33,13 +34,7 @@ export default function ListScreen() {
   const list = getList(id);
 
   const [cele, setCele] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [invites, setInvites] = useState<string[]>([]);
-  const [choice, setChoice] = useState<Choice>('followers');
-  const [viewers, setViewerDraft] = useState<string[]>([]);
-  const [removed, setRemoved] = useState<string[]>([]);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [settings, setSettings] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [dragging, setDragging] = useState(false);
 
@@ -61,8 +56,8 @@ export default function ListScreen() {
   const people = listPeople(id);
   const { done, total } = listProgress(id);
   const items = itemsForList(id);
-  const open = items.open.filter((i) => !removed.includes(i.id));
-  const finished = items.done.filter((i) => !removed.includes(i.id));
+  const open = items.open;
+  const finished = items.done;
   const others = people.filter((p) => p.id !== db.me);
   const owner = others[0] ?? people[0];
 
@@ -79,32 +74,8 @@ export default function ListScreen() {
     else if (isListDone(id)) router.push(`/done/${id}?kind=list`);
   };
 
-  // ---- editing ----
-  const startEdit = () => {
-    setTitle(list.title);
-    setInvites([]);
-    setChoice(list.visibility);
-    setViewerDraft(viewerIds(id));
-    setRemoved([]);
-    setConfirmingDelete(false);
-    setEditing(true);
-  };
-  const stopEdit = () => {
-    setRemoved([]);
-    setEditing(false);
-  };
-  const save = () => {
-    renameList(id, title);
-    if (invites.length) inviteMembers(id, invites);
-    if (choice === 'specific') {
-      const was = viewerIds(id);
-      if (viewers.length !== was.length || viewers.some((v) => !was.includes(v))) setViewers(id, viewers);
-    }
-    if (choice !== list.visibility) setVisibility(id, choice);
-    removed.forEach(deleteItem);
-    stopEdit();
-  };
   const destroy = () => {
+    setSettings(false);
     setDeleted(true);
     deleteList(id);
     goBack();
@@ -119,30 +90,24 @@ export default function ListScreen() {
   return (
     <FolderScreen
       header={
-        editing ? (
-          <Header left={<TextAction label="cancel" onPress={stopEdit} />} title="edit" right={<SaveAction onPress={save} disabled={!title.trim()} />} />
-        ) : (
-          <Header right={member ? <TextAction label="edit" onPress={startEdit} /> : undefined} />
-        )
+        <Header
+          right={member ? (
+            <MoreMenu
+              label="More: list settings, delete list"
+              actions={[
+                { label: 'list settings', onPress: () => setSettings(true) },
+                { label: 'delete list', confirm: true, onPress: destroy },
+              ]}
+            />
+          ) : undefined}
+        />
       }
       scrollEnabled={!dragging}
       folderTabs={<FolderTab label={tabLabel} onPress={!member && owner ? () => router.push(`/user/${owner.username}`) : undefined} />}
       overlay={celeItem ? <DoneSheet title={celeItem.title} count={`${listProgress(id).done} of ${listProgress(id).total} done`} onCard={() => afterCele(true)} onLater={() => afterCele(false)} /> : null}
     >
-      {editing ? (
-        <ListFields
-          title={title}
-          onTitle={setTitle}
-          owners={invites}
-          lockedOwners={db.list_members.filter((m) => m.list_id === id && m.user_id !== db.me).map((m) => m.user_id)}
-          onOwners={setInvites}
-          choice={choice}
-          viewers={viewers}
-          onVisibility={(c, v) => { setChoice(c); setViewerDraft(v); }}
-        />
-      ) : (
-        <View style={{ paddingHorizontal: 4 }}>
-          <Hand size={28} style={{ lineHeight: 30 }}>{list.title}</Hand>
+      <View style={{ paddingHorizontal: 4 }}>
+          <EditableTitle value={list.title} onSave={member ? (t) => renameList(id, t) : undefined} size={28} placeholder="untitled list" />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
             <AvatarStack people={people} size={22} />
             <Mono size={11}>{names(people)}</Mono>
@@ -153,8 +118,7 @@ export default function ListScreen() {
               <Mono size={10.5}>{done} of {total}</Mono>
             </View>
           ) : null}
-        </View>
-      )}
+      </View>
 
       {invited ? (
         <Paper fill={colors.cream} edge="ink" shape={2} style={{ padding: 14, marginTop: 16, gap: 10 }}>
@@ -170,7 +134,7 @@ export default function ListScreen() {
       {open.length ? <Label style={{ marginTop: 18, marginBottom: 8, marginHorizontal: 2 }}>{whole ? 'to do' : 'open invites'}</Label> : null}
       <View style={{ gap: member ? 6 : 8, marginTop: open.length ? 0 : 18 }}>
         {/* first, so it's reachable without scrolling; new items land right under it */}
-        {member && !editing ? (
+        {member ? (
           <Paper onPress={() => router.push(`/item/new?list=${id}`)} edge="dash" shape={3} style={{ height: 48, justifyContent: 'center', paddingLeft: 18 }} accessibilityLabel="Add an item to this list">
             <Hand size={18} color={colors.inkSoft}>+ add</Hand>
           </Paper>
@@ -183,7 +147,7 @@ export default function ListScreen() {
                 item={item}
                 member={member}
                 onDone={() => crossOff(item.id)}
-                onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}
+                onDelete={() => deleteItem(item.id)}
               />
             )}
           </Reorderable>
@@ -192,7 +156,7 @@ export default function ListScreen() {
 
       {finished.length ? (
         <>
-          <Label style={{ marginTop: open.length || (member && !editing) ? 24 : 0, marginBottom: 8, marginHorizontal: 2 }}>done · {finished.length}</Label>
+          <Label style={{ marginTop: open.length || member ? 24 : 0, marginBottom: 8, marginHorizontal: 2 }}>done · {finished.length}</Label>
           <View style={{ gap: 4 }}>
             {finished.map((item, i) => (
               <DoneRow
@@ -200,32 +164,16 @@ export default function ListScreen() {
                 item={item}
                 index={i}
                 onUndo={member ? () => undoDone(item.id) : undefined}
-                onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}
+                onDelete={member ? () => deleteItem(item.id) : undefined}
               />
             ))}
           </View>
         </>
       ) : null}
 
-      {editing && removed.length ? (
-        <Mono size={11} color={colors.inkSoft} style={{ marginTop: 12 }}>{removed.length} to delete · tap save to confirm</Mono>
-      ) : null}
-      {editing ? (
-        <View style={{ alignItems: 'center', marginTop: 22 }}>
-          {confirmingDelete ? (
-            <View style={{ alignItems: 'center', gap: 2 }}>
-              <Mono size={12} center color={colors.inkSoft}>are you sure?</Mono>
-              <View style={{ flexDirection: 'row', gap: 18 }}>
-                <LinkText label="yes" color={colors.bark} onPress={destroy} />
-                <LinkText label="no" onPress={() => setConfirmingDelete(false)} />
-              </View>
-            </View>
-          ) : (
-            <LinkText label="delete this list" color={colors.bark} onPress={() => setConfirmingDelete(true)} />
-          )}
-        </View>
-      ) : null}
       {partial ? <Mono size={10.5} color={colors.inkSoft} style={{ marginTop: 22, marginHorizontal: 4, lineHeight: 16 }}>you’re only seeing what you’re invited to on this list</Mono> : null}
+
+      {settings ? <ListSettingsSheet listId={id} onClose={() => setSettings(false)} onDelete={destroy} /> : null}
     </FolderScreen>
   );
 }

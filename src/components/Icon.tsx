@@ -3,7 +3,7 @@ import { colors } from '@/theme';
 
 export type IconName =
   | 'home' | 'plus' | 'list' | 'back' | 'right' | 'down' | 'search' | 'sliders' | 'image'
-  | 'calendar' | 'people' | 'check' | 'x' | 'pencil' | 'folder';
+  | 'calendar' | 'people' | 'check' | 'x' | 'pencil' | 'folder' | 'more' | 'invite';
 
 type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number };
 
@@ -26,6 +26,8 @@ export function Icon({ name, size = 22, color = colors.ink, strokeWidth = 1.9 }:
       {name === 'check' && <Path {...s} d="M5 12.5l4.5 4.5L19 7.5" />}
       {name === 'x' && <Path {...s} d="M6 6l12 12M18 6L6 18" />}
       {name === 'folder' && <Path {...s} d="M3.5 8c0-1.1.9-2 2-2h3.8l2 2.2h7.2c1.1 0 2 .9 2 2V17c0 1.1-.9 2-2 2h-13c-1.1 0-2-.9-2-2z" />}
+      {name === 'more' && (<><Circle cx={5} cy={12} r={1.9} fill={color} /><Circle cx={12} cy={12} r={1.9} fill={color} /><Circle cx={19} cy={12} r={1.9} fill={color} /></>)}
+      {name === 'invite' && (<><Circle {...s} cx={9} cy={8} r={3.6} /><Path {...s} d="M2.5 20c.5-4.5 3.5-6.5 6.5-6.5s6 2 6.5 6.5M19 8v6M16 11h6" /></>)}
       {name === 'pencil' && <Path {...s} d="M4 20l1-4L16 5l3 3L8 19z" />}
     </Svg>
   );
