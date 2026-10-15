@@ -8,7 +8,7 @@ export type Visibility = 'anyone' | 'followers' | 'specific' | 'just_me';
 export type InviteAudience = 'followers' | 'specific' | 'anyone';
 export type EventKind = 'list_created' | 'item_added' | 'open_invite' | 'item_done' | 'list_done';
 
-export type Profile = { id: string; username: string; name: string; profile_photo: string | null; created_at: string };
+export type Profile = { id: string; username: string; name: string; profile_photo: string | null; bio: string; created_at: string };
 export type Follow = { follower_id: string; followee_id: string; created_at: string };
 export type List = { id: string; title: string; visibility: Visibility; completed_at: string | null; created_at: string };
 export type ListMember = { list_id: string; user_id: string; status: 'invited' | 'joined'; invited_by: string | null; created_at: string };
@@ -33,6 +33,10 @@ export type ItemPhoto = { id: string; item_id: string; path: string; position: n
 export type ItemInvitee = { item_id: string; user_id: string };
 export type Interest = { item_id: string; user_id: string; created_at: string };
 export type FeedEvent = { id: string; actor_id: string; kind: EventKind; list_id: string; item_id: string | null; created_at: string };
+/** A like on a post (an events row). */
+export type EventLike = { event_id: string; user_id: string; created_at: string };
+/** A comment on a post. `body` keeps tags as <@id|username>, like item notes. */
+export type EventComment = { id: string; event_id: string; author_id: string; body: string; created_at: string };
 
 /** loading: checking for a saved sign-in · signedOut · needsProfile: signed in, no profile row yet · ready */
 export type Status = 'loading' | 'signedOut' | 'needsProfile' | 'ready';
@@ -51,6 +55,8 @@ export type Db = {
   item_invitees: ItemInvitee[];
   interests: Interest[];
   events: FeedEvent[];
+  event_likes: EventLike[];
+  event_comments: EventComment[];
   /** storage path -> signed url for photos in the private bucket */
   photoUrls: Record<string, string>;
 };
@@ -66,6 +72,8 @@ export const emptyTables = () => ({
   item_invitees: [] as ItemInvitee[],
   interests: [] as Interest[],
   events: [] as FeedEvent[],
+  event_likes: [] as EventLike[],
+  event_comments: [] as EventComment[],
   photoUrls: {} as Record<string, string>,
 });
 

@@ -51,7 +51,7 @@ export function refresh(): Promise<void> {
 async function load() {
   const seen = changes;
   const who = db.me;
-  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events] = await Promise.all([
+  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events, likes, comments] = await Promise.all([
     supabase.from('profiles').select('*'),
     supabase.from('follows').select('*'),
     supabase.from('lists').select('*'),
@@ -62,8 +62,11 @@ async function load() {
     supabase.from('item_invitees').select('*'),
     supabase.from('interests').select('*'),
     supabase.from('events').select('*').order('created_at', { ascending: false }).limit(FEED_LIMIT),
+    // Only rows on posts you can see come back; trimmed to the loaded posts below.
+    supabase.from('event_likes').select('*'),
+    supabase.from('event_comments').select('*').order('created_at', { ascending: true }),
   ]);
-  const failed = [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events].find((r) => r.error);
+  const failed = [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events, likes, comments].find((r) => r.error);
   if (failed?.error) {
     console.warn('refresh failed', failed.error.message);
     return;
@@ -87,6 +90,9 @@ async function load() {
   db.item_invitees = invitees.data ?? [];
   db.interests = interests.data ?? [];
   db.events = events.data ?? [];
+  const loaded = new Set(db.events.map((e) => e.id));
+  db.event_likes = (likes.data ?? []).filter((l) => loaded.has(l.event_id));
+  db.event_comments = (comments.data ?? []).filter((c) => loaded.has(c.event_id));
 
   await signPhotoUrls();
   if (db.me !== who) return;

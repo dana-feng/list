@@ -3,7 +3,10 @@ import { colors } from '@/theme';
 
 export type IconName =
   | 'home' | 'plus' | 'list' | 'back' | 'right' | 'down' | 'search' | 'sliders' | 'image'
-  | 'calendar' | 'people' | 'person' | 'globe' | 'lock' | 'check' | 'x' | 'pencil' | 'folder' | 'more' | 'invite';
+  | 'calendar' | 'people' | 'person' | 'globe' | 'lock' | 'check' | 'x' | 'pencil' | 'folder' | 'more' | 'invite'
+  | 'heart' | 'heartFilled' | 'comment' | 'send';
+
+const HEART = 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z';
 
 type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number };
 
@@ -32,6 +35,10 @@ export function Icon({ name, size = 22, color = colors.ink, strokeWidth = 1.9 }:
       {name === 'more' && (<><Circle cx={5} cy={12} r={1.9} fill={color} /><Circle cx={12} cy={12} r={1.9} fill={color} /><Circle cx={19} cy={12} r={1.9} fill={color} /></>)}
       {name === 'invite' && (<><Circle {...s} cx={9} cy={8} r={3.6} /><Path {...s} d="M2.5 20c.5-4.5 3.5-6.5 6.5-6.5s6 2 6.5 6.5M19 8v6M16 11h6" /></>)}
       {name === 'pencil' && <Path {...s} d="M4 20l1-4L16 5l3 3L8 19z" />}
+      {name === 'heart' && <Path {...s} d={HEART} />}
+      {name === 'heartFilled' && <Path {...s} fill={color} d={HEART} />}
+      {name === 'comment' && <Path {...s} d="M5 5h14v10H10l-4 4v-4H5z" />}
+      {name === 'send' && <Path {...s} d="M12 19V5M6 11l6-6 6 6" />}
     </Svg>
   );
 }

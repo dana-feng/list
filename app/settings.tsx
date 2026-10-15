@@ -3,7 +3,7 @@ import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useDb } from '@/api/db';
-import { me, saveProfile, setProfilePhoto } from '@/api/profiles';
+import { BIO_MAX, me, saveProfile, setProfilePhoto } from '@/api/profiles';
 import { deleteAccount, signOut } from '@/api/sync';
 import { Avatar } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
@@ -24,6 +24,7 @@ export default function Settings() {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(person.name);
   const [username, setUsername] = useState(person.username);
+  const [bio, setBio] = useState(person.bio);
   const [confirming, setConfirming] = useState(false);
   const masked = db.phone ? `+1 (${db.phone.slice(-10, -7)}) ••• ${db.phone.slice(-4)}` : '';
   const status = usernameStatus(username, person.username);
@@ -36,10 +37,11 @@ export default function Settings() {
   const startEdit = () => {
     setName(person.name);
     setUsername(person.username);
+    setBio(person.bio);
     setEditing(true);
   };
   const save = () => {
-    saveProfile({ name, username });
+    saveProfile({ name, username, bio });
     setEditing(false);
   };
   const leave = async () => {
@@ -79,6 +81,18 @@ export default function Settings() {
             autoCorrect={false}
             accessibilityLabel="Username"
             style={[styles.input, noOutline]}
+          />
+        </Field>
+        <Field label="bio" help={`${bio.length}/${BIO_MAX}`} tall>
+          <TextInput
+            value={bio}
+            onChangeText={(t) => setBio(t.replace(/\n/g, ' '))}
+            maxLength={BIO_MAX}
+            multiline
+            placeholder="a line or two about you"
+            placeholderTextColor={colors.inkFaint}
+            accessibilityLabel="Bio"
+            style={[styles.input, styles.bio, noOutline]}
           />
         </Field>
         <Field label="phone number" onPress={() => router.push('/phone?change=1')}>
@@ -127,9 +141,9 @@ export default function Settings() {
   );
 }
 
-function Field({ label, help, children, onPress }: { label: string; help?: string; children: ReactNode; onPress?: () => void }) {
+function Field({ label, help, children, onPress, tall }: { label: string; help?: string; children: ReactNode; onPress?: () => void; tall?: boolean }) {
   const box = (
-    <Paper fill={colors.cream} edge="dash" edgeWidth={1.3} shape={0} round={1.3} style={styles.field}>
+    <Paper fill={colors.cream} edge="dash" edgeWidth={1.3} shape={0} round={1.3} style={[styles.field, tall && styles.tall]}>
       {children}
     </Paper>
   );
@@ -164,4 +178,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: 4, borderBottomWidth: 1.2, borderStyle: 'dashed', borderColor: colors.rule },
   field: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 48, paddingHorizontal: 14 },
   input: { flex: 1, fontFamily: fonts.mono, fontSize: 14, color: colors.ink, height: 44 },
+  tall: { height: undefined, minHeight: 48, alignItems: 'flex-start', paddingVertical: 10 },
+  bio: { height: undefined, minHeight: 44, lineHeight: 20, textAlignVertical: 'top', paddingTop: 2 },
 });

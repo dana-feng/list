@@ -5,7 +5,7 @@ import { newId, uploadImage, write } from './sync';
 
 /** Your profile. Blank during sign-up, before the profile step saves it. */
 export const me = (): Profile =>
-  db.profiles.find((p) => p.id === db.me) ?? { id: db.me, username: '', name: '', profile_photo: null, created_at: '' };
+  db.profiles.find((p) => p.id === db.me) ?? { id: db.me, username: '', name: '', profile_photo: null, bio: '', created_at: '' };
 const myRow = () => db.profiles.find((p) => p.id === db.me);
 export const getProfile = (id: string) => db.profiles.find((p) => p.id === id);
 export const getProfileByUsername = (username: string) => db.profiles.find((p) => p.username === username);
@@ -72,12 +72,17 @@ export async function matchContacts(): Promise<Profile[]> {
   return (data ?? []) as Profile[];
 }
 
+/** Longest bio the database takes. */
+export const BIO_MAX = 150;
+
 /** Creates your profile (sign-up) or updates it (settings). */
-export function saveProfile(patch: { name: string; username: string }) {
+export function saveProfile(patch: { name: string; username: string; bio?: string }) {
   const existing = myRow();
-  const row = { id: db.me, name: patch.name.trim(), username: patch.username.trim().toLowerCase() };
+  const row: { id: string; name: string; username: string; bio?: string } = { id: db.me, name: patch.name.trim(), username: patch.username.trim().toLowerCase() };
+  // sign-up doesn't ask for a bio, so leave whatever is saved alone unless one is given
+  if (patch.bio !== undefined) row.bio = patch.bio.replace(/\s+/g, ' ').trim().slice(0, BIO_MAX);
   if (existing) Object.assign(existing, row);
-  else db.profiles.push({ ...row, profile_photo: null, created_at: now() });
+  else db.profiles.push({ bio: '', ...row, profile_photo: null, created_at: now() });
   commit();
   return write(() => supabase.from('profiles').upsert(row), 'your profile');
 }

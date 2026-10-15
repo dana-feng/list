@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useDb } from '@/api/db';
@@ -6,15 +7,17 @@ import { me } from '@/api/profiles';
 import { FolderGrid } from '@/components/FolderGrid';
 import { Icon } from '@/components/Icon';
 import { ProfileHeader } from '@/components/ProfileHeader';
+import { ActivityList, ProfileTab, ProfileTabs } from '@/components/ProfileTabs';
 import { Screen } from '@/components/Screen';
 import { Hand, Mono, MonoMedium } from '@/components/Text';
 import { colors } from '@/theme';
 
-/** Your lists = your profile. */
+/** Your profile: your lists, and a tab with everything you've posted. */
 export default function Me() {
   useDb();
   const person = me();
   const rows = listsForProfile(person.id);
+  const [tab, setTab] = useState<ProfileTab>('lists');
   return (
     <Screen
       insideTabs
@@ -34,7 +37,10 @@ export default function Me() {
       }
     >
       <ProfileHeader person={person} />
-      {rows.length ? <FolderGrid rows={rows} own /> : (
+      <ProfileTabs tab={tab} onChange={setTab} lists={rows.filter((r) => !r.invited).length} />
+      {tab === 'activity' ? (
+        <ActivityList userId={person.id} empty="what you add and cross off shows up here." />
+      ) : rows.length ? <FolderGrid rows={rows} own /> : (
         <View style={{ paddingVertical: 56, alignItems: 'center', gap: 8 }}>
           <Hand size={24} color={colors.paper}>no lists yet</Hand>
           <Mono size={12} color={colors.onDarkSoft}>tap + to start your first one.</Mono>
