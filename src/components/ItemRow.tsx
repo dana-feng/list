@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import type { Item } from '@/api/db';
-import { interestedPeople, isInvitedTo, toggleOpenInvite } from '@/api/items';
+import { interestedPeople, isInvitedTo } from '@/api/items';
 import { monthDay, shortDay } from '@/lib';
 import { colors, corners, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
@@ -9,12 +9,11 @@ import { DownButton, downText } from './Down';
 import { Icon } from './Icon';
 import { useReorderHandle } from './Reorderable';
 import { Circle, Strike } from './Scribble';
-import { Switch } from './Switch';
 import { Hand, HandMedium, Mono } from './Text';
 
 type OpenProps = {
   item: Item;
-  /** On the list: you get the circle and the invite switch. Otherwise "interested". */
+  /** On the list: you get the circle. Otherwise "interested". */
   member: boolean;
   /** Tapping the circle. */
   onDone?: () => void;
@@ -72,12 +71,9 @@ export function OpenRow({ item, member, onDone, onRemove }: OpenProps) {
             <View style={styles.removeDot}><Icon name="x" size={14} color={colors.paper} strokeWidth={2.6} /></View>
           </Pressable>
         ) : member ? (
-          <>
-            <Switch on={item.open_invite} onPress={() => toggleOpenInvite(item.id)} label={item.open_invite ? 'Open invite is on. Turn off' : 'Post as an open invite'} text="invite" stacked />
-            <Pressable onPress={open} onLongPress={onHold} delayLongPress={350} style={styles.chevron} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
-              <Icon name="right" size={16} strokeWidth={2.2} />
-            </Pressable>
-          </>
+          <Pressable onPress={open} onLongPress={onHold} delayLongPress={350} style={styles.chevron} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
+            <Icon name="right" size={16} strokeWidth={2.2} />
+          </Pressable>
         ) : invited ? (
           <DownButton itemId={item.id} />
         ) : (
