@@ -32,24 +32,37 @@ export function toggleLike(eventId: string) {
 export const commentsFor = (eventId: string) =>
   db.event_comments.filter((c) => c.event_id === eventId).sort((a, b) => a.created_at.localeCompare(b.created_at));
 
+export type Thread = { comment: EventComment; replies: EventComment[] };
+
+/** Top-level comments oldest first, each with its replies under it, also oldest first. */
+export function threadsFor(eventId: string): Thread[] {
+  const all = commentsFor(eventId);
+  return all.filter((c) => !c.reply_to).map((comment) => ({ comment, replies: all.filter((r) => r.reply_to === comment.id) }));
+}
+
 export const commentCount = (eventId: string) => db.event_comments.filter((c) => c.event_id === eventId).length;
 
-/** `typed` has tags as @username; they're saved as ids. Returns false when there's nothing to post. */
-export function addComment(eventId: string, typed: string, unfound: Unfound = {}) {
+/**
+ * `typed` has tags as @username; they're saved as ids. `replyTo` is the comment being answered;
+ * a reply to a reply joins its parent's thread. Returns false when there's nothing to post.
+ */
+export function addComment(eventId: string, typed: string, replyTo?: EventComment | null, unfound: Unfound = {}) {
   const body = tagsToIds(typed.trim(), unfound);
   if (!body) return false;
-  const row: EventComment = { id: newId(), event_id: eventId, author_id: db.me, body, created_at: now() };
+  const reply_to = replyTo ? (replyTo.reply_to ?? replyTo.id) : null;
+  const row: EventComment = { id: newId(), event_id: eventId, author_id: db.me, body, created_at: now(), reply_to };
   db.event_comments.push(row);
   commit();
-  write(() => supabase.from('event_comments').insert({ id: row.id, event_id: eventId, author_id: db.me, body }), 'your comment');
+  write(() => supabase.from('event_comments').insert({ id: row.id, event_id: eventId, author_id: db.me, body, reply_to }), 'your comment');
   return true;
 }
 
 /** Your own comments, and anyone's on your own post. */
 export const canDeleteComment = (comment: EventComment, event: FeedEvent) => comment.author_id === db.me || event.actor_id === db.me;
 
+/** Its replies go with it, as they do on the server. */
 export function deleteComment(commentId: string) {
-  db.event_comments = db.event_comments.filter((c) => c.id !== commentId);
+  db.event_comments = db.event_comments.filter((c) => c.id !== commentId && c.reply_to !== commentId);
   commit();
   write(() => supabase.from('event_comments').delete().eq('id', commentId), 'that delete');
 }

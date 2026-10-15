@@ -35,8 +35,11 @@ export type Interest = { item_id: string; user_id: string; created_at: string };
 export type FeedEvent = { id: string; actor_id: string; kind: EventKind; list_id: string; item_id: string | null; created_at: string };
 /** A like on a post (an events row). */
 export type EventLike = { event_id: string; user_id: string; created_at: string };
-/** A comment on a post. `body` keeps tags as <@id|username>, like item notes. */
-export type EventComment = { id: string; event_id: string; author_id: string; body: string; created_at: string };
+/**
+ * A comment on a post. `body` keeps tags as <@id|username>, like item notes. `reply_to` is the
+ * top-level comment it answers; threads are one level deep.
+ */
+export type EventComment = { id: string; event_id: string; author_id: string; body: string; created_at: string; reply_to: string | null };
 
 /** loading: checking for a saved sign-in · signedOut · needsProfile: signed in, no profile row yet · ready */
 export type Status = 'loading' | 'signedOut' | 'needsProfile' | 'ready';

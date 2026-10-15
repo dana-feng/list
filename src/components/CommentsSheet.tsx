@@ -1,15 +1,18 @@
-import { Fragment, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { Animated, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, EventComment, FeedEvent } from '@/api/db';
 import { peopleToTag, tagBeingTyped, textParts } from '@/api/mentions';
 import { getProfile, me } from '@/api/profiles';
-import { addComment, canDeleteComment, commentsFor, deleteComment, likers } from '@/api/reactions';
+import { addComment, canDeleteComment, deleteComment, likers, threadsFor } from '@/api/reactions';
 import { timeAgo } from '@/lib';
 import { colors, fonts, noOutline } from '@/theme';
 import { Avatar } from './Avatar';
+import { LinkText } from './Button';
 import { PostBody, type describePost } from './FeedPost';
 import { Icon } from './Icon';
+import { Paper } from './Paper';
 import { openProfile } from './PersonRow';
 import { Hand, Mono, MonoMedium } from './Text';
 
@@ -18,18 +21,24 @@ type Post = NonNullable<ReturnType<typeof describePost>>;
 /**
  * A post's comments, in a tall sheet over the feed. The post (photos full size) scrolls away with
  * the thread; only the comment box stays pinned. Every face, name and @tag opens that profile.
- * Render it only while it's open.
+ * Replies sit indented under the comment they answer; press and hold one to delete it. Render it only
+ * while it's open.
  */
 export function CommentsSheet({ event, post, index, onClose }: { event: FeedEvent; post: Post; index: number; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const scroller = useRef<ScrollView>(null);
-  const comments = commentsFor(event.id);
+  const threads = threadsFor(event.id);
+  const [replyTo, setReplyTo] = useState<EventComment | null>(null);
   // Following a link closes the sheet first, then goes, so the new screen isn't under the sheet.
   const go = (to: () => void) => {
     onClose();
     setTimeout(to, 0);
   };
-  const posted = () => setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 50);
+  // A new comment lands at the bottom; a reply lands in its thread, which is already on screen.
+  const posted = (reply: boolean) => {
+    setReplyTo(null);
+    if (!reply) setTimeout(() => scroller.current?.scrollToEnd({ animated: true }), 50);
+  };
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -48,8 +57,15 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
               <LikedBy eventId={event.id} go={go} />
             </View>
             <View style={styles.rule} />
-            {comments.length ? (
-              comments.map((c) => <Comment key={c.id} comment={c} event={event} go={go} />)
+            {threads.length ? (
+              threads.map(({ comment, replies }) => (
+                <Fragment key={comment.id}>
+                  <Comment comment={comment} event={event} go={go} onReply={setReplyTo} />
+                  {replies.map((r) => (
+                    <Comment key={r.id} comment={r} event={event} go={go} onReply={setReplyTo} />
+                  ))}
+                </Fragment>
+              ))
             ) : (
               <View style={{ paddingVertical: 32, alignItems: 'center', gap: 6 }}>
                 <Hand size={20}>no comments yet</Hand>
@@ -57,7 +73,7 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
               </View>
             )}
           </ScrollView>
-          <Composer eventId={event.id} listId={event.list_id} onPosted={posted} />
+          <Composer eventId={event.id} listId={event.list_id} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPosted={posted} />
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -89,53 +105,159 @@ function LikedBy({ eventId, go }: { eventId: string; go: (to: () => void) => voi
   );
 }
 
-function Comment({ comment, event, go }: { comment: EventComment; event: FeedEvent; go: (to: () => void) => void }) {
+function Comment({ comment, event, go, onReply }: {
+  comment: EventComment;
+  event: FeedEvent;
+  go: (to: () => void) => void;
+  onReply: (c: EventComment) => void;
+}) {
+  // press and hold a comment you can delete to bring it up close, with delete underneath
+  const [peeking, setPeeking] = useState(false);
+  const [press] = useState(() => new Animated.Value(1));
   const author = getProfile(comment.author_id);
   if (!author) return null;
-  const confirmDelete = () =>
-    Alert.alert('Delete this comment?', undefined, [
-      { text: 'Keep it', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteComment(comment.id) },
-    ]);
+  const canPeek = canDeleteComment(comment, event);
+  // it sinks while you hold it, then a tap from the phone as it comes up
+  const sink = (to: number) => Animated.spring(press, { toValue: to, useNativeDriver: true, friction: 8, tension: to < 1 ? 40 : 120 }).start();
+  const peek = () => {
+    if (Platform.OS === 'android') Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press);
+    else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    sink(1);
+    setPeeking(true);
+  };
   const name = author.id === db.me ? 'you' : author.name;
+  const reply = !!comment.reply_to;
   return (
-    <View style={styles.comment}>
-      <Pressable onPress={() => go(() => openProfile(author))} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${author.name}'s profile`}>
-        <Avatar person={author} size={30} />
-      </Pressable>
-      <View style={{ flex: 1, gap: 3 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+    <>
+      <Animated.View style={{ transform: [{ scale: press }] }}>
+        <Pressable
+          onLongPress={canPeek ? peek : undefined}
+          delayLongPress={350}
+          onPressIn={canPeek ? () => sink(0.97) : undefined}
+          onPressOut={canPeek ? () => sink(1) : undefined}
+          style={[styles.comment, reply && styles.reply]}
+          accessible={false}
+        >
           <Pressable onPress={() => go(() => openProfile(author))} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${author.name}'s profile`}>
-            <MonoMedium size={11.5}>{name}</MonoMedium>
+            <Avatar person={author} size={reply ? 24 : 30} />
           </Pressable>
-          <Mono size={10.5} color={colors.inkSoft}>{timeAgo(comment.created_at)}</Mono>
-          {canDeleteComment(comment, event) ? (
-            <Pressable onPress={confirmDelete} hitSlop={8} style={{ marginLeft: 'auto' }} accessibilityRole="button" accessibilityLabel="Delete comment">
-              <Mono size={10.5} color={colors.inkSoft}>delete</Mono>
-            </Pressable>
-          ) : null}
-        </View>
-        <Mono size={13} style={{ lineHeight: 19 }}>
-          {textParts(comment.body).map((part, i) =>
-            part.person ? (
-              <Text key={i} onPress={() => go(() => openProfile(part.person!))} accessibilityRole="link" accessibilityLabel={`${part.person.name}, ${part.text}`} style={{ fontFamily: fonts.monoMedium }}>
-                {part.text}
-              </Text>
-            ) : (
-              part.text
-            ),
-          )}
-        </Mono>
-      </View>
-    </View>
+          <View style={{ flex: 1, gap: 3 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+              <Pressable onPress={() => go(() => openProfile(author))} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${author.name}'s profile`}>
+                <MonoMedium size={11.5}>{name}</MonoMedium>
+              </Pressable>
+              <Mono size={10.5} color={colors.inkSoft}>{timeAgo(comment.created_at)}</Mono>
+              <Pressable onPress={() => onReply(comment)} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Reply to ${author.name}`}>
+                <MonoMedium size={10.5} color={colors.inkSoft}>reply</MonoMedium>
+              </Pressable>
+            </View>
+            {/* holding can't be done with a screen reader, so the words carry a "delete" action instead */}
+            <View
+              accessible={canPeek}
+              accessibilityActions={canPeek ? [{ name: 'delete', label: 'Delete' }] : undefined}
+              onAccessibilityAction={(e) => e.nativeEvent.actionName === 'delete' && setPeeking(true)}
+            >
+              <CommentText body={comment.body} go={go} />
+            </View>
+          </View>
+        </Pressable>
+      </Animated.View>
+      {peeking ? <CommentPeek comment={comment} onClose={() => setPeeking(false)} /> : null}
+    </>
   );
 }
 
-/** The comment box. Type @ to tag someone, the same as notes: people on the list come first. */
-function Composer({ eventId, listId, onPosted }: { eventId: string; listId: string; onPosted: () => void }) {
+/** A comment's words, with each @tag in medium weight. With `go`, tapping a tag opens that profile. */
+function CommentText({ body, go }: { body: string; go?: (to: () => void) => void }) {
+  return (
+    <Mono size={13} style={{ lineHeight: 19 }}>
+      {textParts(body).map((part, i) =>
+        part.person ? (
+          <Text
+            key={i}
+            onPress={go ? () => go(() => openProfile(part.person!)) : undefined}
+            accessibilityRole={go ? 'link' : undefined}
+            accessibilityLabel={`${part.person.name}, ${part.text}`}
+            style={{ fontFamily: fonts.monoMedium }}
+          >
+            {part.text}
+          </Text>
+        ) : (
+          part.text
+        ),
+      )}
+    </Mono>
+  );
+}
+
+/**
+ * Press and hold a comment, the same as a list folder on your profile: it comes up close over a
+ * dimmed screen with "delete comment" underneath. Tap anywhere else to put it back.
+ */
+function CommentPeek({ comment, onClose }: { comment: EventComment; onClose: () => void }) {
+  const [pop] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    Animated.spring(pop, { toValue: 1, useNativeDriver: true, friction: 6, tension: 110 }).start();
+  }, [pop]);
+  const author = getProfile(comment.author_id);
+  if (!author) return null;
+  const remove = () => {
+    onClose();
+    deleteComment(comment.id);
+  };
+
+  return (
+    <Modal transparent visible animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      <View style={styles.peekFill} accessibilityViewIsModal>
+        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: colors.dim }]} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
+        <Animated.View style={[styles.peekStack, { transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }] }]}>
+          <View style={styles.peekCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Avatar person={author} size={30} />
+              <MonoMedium size={11.5}>{author.id === db.me ? 'you' : author.name}</MonoMedium>
+              <Mono size={10.5} color={colors.inkSoft}>{timeAgo(comment.created_at)}</Mono>
+            </View>
+            <CommentText body={comment.body} />
+          </View>
+          <Paper fill={colors.cream} shape={4} round={1.2} style={styles.peekMenu}>
+            <LinkText label="delete comment" color={colors.bark} onPress={remove} />
+          </Paper>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+/**
+ * The comment box. Type @ to tag someone, the same as notes: people on the list come first.
+ * Replying starts the box with an @tag for whoever you're answering (unless it's you).
+ */
+function Composer({ eventId, listId, replyTo, onCancelReply, onPosted }: {
+  eventId: string;
+  listId: string;
+  replyTo: EventComment | null;
+  onCancelReply: () => void;
+  onPosted: (reply: boolean) => void;
+}) {
+  const input = useRef<TextInput>(null);
   const [text, setText] = useState('');
   const [cursor, setCursor] = useState(0);
   const [moveTo, setMoveTo] = useState<number | null>(null);
+  const answering = replyTo ? getProfile(replyTo.author_id) : null;
+  // Picking a comment to answer starts the box over with its @tag.
+  const [startedFor, setStartedFor] = useState(replyTo);
+  if (replyTo !== startedFor) {
+    setStartedFor(replyTo);
+    if (replyTo) {
+      const start = answering && answering.id !== db.me ? `@${answering.username} ` : '';
+      setText(start);
+      setCursor(start.length);
+      setMoveTo(start.length);
+    }
+  }
+  useEffect(() => {
+    if (replyTo) input.current?.focus();
+  }, [replyTo]);
   const typing = tagBeingTyped(text, Math.min(cursor, text.length));
   const people = typing ? peopleToTag(typing.query, listId, 4) : [];
   const tag = (username: string) => {
@@ -146,10 +268,10 @@ function Composer({ eventId, listId, onPosted }: { eventId: string; listId: stri
     setMoveTo(before.length);
   };
   const send = () => {
-    if (!addComment(eventId, text)) return;
+    if (!addComment(eventId, text, replyTo)) return;
     setText('');
     setCursor(0);
-    onPosted();
+    onPosted(!!replyTo);
   };
   const ready = !!text.trim();
 
@@ -166,9 +288,20 @@ function Composer({ eventId, listId, onPosted }: { eventId: string; listId: stri
           ))}
         </View>
       ) : null}
+      {replyTo ? (
+        <View style={styles.replying}>
+          <Mono size={11} color={colors.inkSoft} style={{ flex: 1 }} numberOfLines={1}>
+            replying to <MonoMedium size={11} color={colors.inkSoft}>{answering?.id === db.me ? 'yourself' : (answering?.name ?? 'someone')}</MonoMedium>
+          </Mono>
+          <Pressable onPress={onCancelReply} hitSlop={8} accessibilityRole="button" accessibilityLabel="Cancel reply">
+            <Icon name="x" size={14} color={colors.inkSoft} strokeWidth={2} />
+          </Pressable>
+        </View>
+      ) : null}
       <View style={styles.inputRow}>
         <Avatar person={me()} size={32} />
         <TextInput
+          ref={input}
           value={text}
           onChangeText={setText}
           selection={moveTo === null ? undefined : { start: moveTo, end: moveTo }}
@@ -178,9 +311,9 @@ function Composer({ eventId, listId, onPosted }: { eventId: string; listId: stri
           }}
           multiline
           maxLength={1000}
-          placeholder="add a comment…"
+          placeholder={replyTo ? 'add a reply…' : 'add a comment…'}
           placeholderTextColor={colors.inkFaint}
-          accessibilityLabel="Add a comment"
+          accessibilityLabel={replyTo ? 'Add a reply' : 'Add a comment'}
           style={[styles.input, noOutline]}
         />
         <Pressable
@@ -188,7 +321,7 @@ function Composer({ eventId, listId, onPosted }: { eventId: string; listId: stri
           disabled={!ready}
           style={[styles.send, !ready && { opacity: 0.4 }]}
           accessibilityRole="button"
-          accessibilityLabel="Post comment"
+          accessibilityLabel={replyTo ? 'Post reply' : 'Post comment'}
           accessibilityState={{ disabled: !ready }}
         >
           <Icon name="send" size={18} color={colors.paper} strokeWidth={2.2} />
@@ -211,6 +344,15 @@ const styles = StyleSheet.create({
   likedBy: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 42, minHeight: 28 },
   rule: { height: 1, backgroundColor: colors.rule, marginTop: 14, marginBottom: 4 },
   comment: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 12 },
+  reply: { marginLeft: 42, gap: 10, paddingVertical: 8 },
+  peekFill: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
+  peekStack: { width: '100%', maxWidth: 340 },
+  peekCard: {
+    padding: 18, gap: 10, backgroundColor: colors.paper,
+    borderTopLeftRadius: 16, borderTopRightRadius: 18, borderBottomRightRadius: 16, borderBottomLeftRadius: 19,
+  },
+  peekMenu: { alignSelf: 'center', alignItems: 'center', marginTop: 14, paddingHorizontal: 18, paddingVertical: 4, maxWidth: 300 },
+  replying: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 8 },
   composer: { borderTopWidth: 1, borderTopColor: colors.rule, paddingTop: 10 },
   suggestions: { paddingBottom: 6 },
   suggestion: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 40 },
