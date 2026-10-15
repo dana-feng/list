@@ -12,7 +12,7 @@ import { tagsToIds, tagsToNames, Unfound } from '@/api/mentions';
 import { AvatarStack } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { DateChip, DateField } from '@/components/DateField';
-import { canSayDown } from '@/components/Down';
+import { canSayDown, interestLabel } from '@/components/Down';
 import { FolderTab } from '@/components/FolderTab';
 import { goBack, Header, TextAction } from '@/components/Header';
 import { Invite, InviteChip, InviteSheet } from '@/components/InviteSheet';
@@ -226,7 +226,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       {!member && item && canDown ? (
         <>
           <Button
-            label="interested"
+            label={interestLabel(iAmDown)}
             tone={iAmDown ? 'bark' : 'outline'}
             onPress={() => toggleInterest(item.id)}
             style={{ marginTop: 16 }}
