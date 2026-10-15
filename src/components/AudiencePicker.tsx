@@ -4,11 +4,12 @@ import type { Profile } from '@/api/db';
 import { getProfile, myFollowers } from '@/api/profiles';
 import { colors, corners } from '@/theme';
 import { Avatar } from './Avatar';
-import { Icon } from './Icon';
+import { Icon, IconName } from './Icon';
 import { SearchField } from './SearchField';
 import { Hand, Mono, MonoMedium } from './Text';
 
-export type AudienceOption<T> = { value: T; title: string };
+/** `icon`: the small picture beside the choice (people for followers, a globe for anyone…). */
+export type AudienceOption<T> = { value: T; title: string; icon?: IconName };
 
 type Props<T extends string> = {
   /** Every choice, top to bottom. The one whose value is 'specific' opens the people list under it. */
@@ -64,6 +65,7 @@ export function AudiencePicker<T extends string>({ options, value, people, onCha
             accessibilityState={{ checked: on }}
           >
             <Radio on={on} />
+            {o.icon ? <Icon name={o.icon} size={16} strokeWidth={1.7} /> : null}
             {on ? <MonoMedium size={14}>{specific && people.length ? `${o.title} · ${people.length}` : o.title}</MonoMedium> : <Mono size={14}>{o.title}</Mono>}
           </Pressable>
         );
@@ -103,7 +105,7 @@ export function AudiencePicker<T extends string>({ options, value, people, onCha
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1.5, borderColor: colors.ink },
-  option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
+  option: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14 },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.8, borderColor: colors.ink, backgroundColor: colors.cream },
   radioOn: { backgroundColor: colors.olive, borderWidth: 1.8, boxShadow: `inset 0 0 0 3px ${colors.cream}` },
   person: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14 },

@@ -1,7 +1,7 @@
 import { Pressable } from 'react-native';
 import type { InviteAudience, Visibility } from '@/api/db';
 import { colors } from '@/theme';
-import { Icon } from './Icon';
+import { Icon, IconName } from './Icon';
 import { Paper } from './Paper';
 import { Mono, MonoMedium } from './Text';
 
@@ -15,6 +15,11 @@ export function choiceLabel(choice: Choice, viewers: number) {
 }
 
 type Option<T> = { value: T; title: string };
+
+const ICONS: Record<Choice, IconName> = { followers: 'people', specific: 'person', anyone: 'globe', just_me: 'lock' };
+
+/** The small icon for a choice, the same in the button and the menu. */
+export const choiceIcon = (choice: Choice | InviteAudience) => ICONS[choice];
 
 const OPTIONS: Option<Choice>[] = [
   { value: 'followers', title: 'followers' },
@@ -30,8 +35,8 @@ export const INVITE_OPTIONS: Option<InviteAudience>[] = [
   { value: 'anyone', title: 'anyone' },
 ];
 
-/** The dashed "who can see" button: people icon, current choice, chevron. */
-export function VisibilityButton({ label, onPress, open, disabled, what = 'Who can see it' }: { label: string; onPress?: () => void; open?: boolean; disabled?: boolean; what?: string }) {
+/** The dashed "who can see" button: the choice's icon, current choice, chevron. */
+export function VisibilityButton({ label, icon = 'people', onPress, open, disabled, what = 'Who can see it' }: { label: string; icon?: IconName; onPress?: () => void; open?: boolean; disabled?: boolean; what?: string }) {
   return (
     <Paper
       onPress={onPress}
@@ -44,7 +49,7 @@ export function VisibilityButton({ label, onPress, open, disabled, what = 'Who c
       accessibilityState={{ expanded: open }}
       style={{ height: 30, paddingHorizontal: onPress ? 10 : 0, flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}
     >
-      <Icon name="people" size={15} strokeWidth={1.7} />
+      <Icon name={icon} size={15} strokeWidth={1.7} />
       <Mono size={11.5}>{label}</Mono>
       {onPress ? <Icon name="down" size={13} /> : null}
     </Paper>
@@ -65,6 +70,7 @@ export function VisibilityMenu<T extends string = Choice>({ value, onPick, optio
             accessibilityState={{ selected: on }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8, borderRadius: 8, backgroundColor: on ? colors.sage : 'transparent', minHeight: 44 }}
           >
+            <Icon name={choiceIcon(o.value as Choice)} size={15} strokeWidth={1.7} />
             <MonoMedium size={12} style={{ flex: 1 }}>{o.title}</MonoMedium>
             {on ? <Icon name="check" size={16} strokeWidth={2.2} /> : null}
           </Pressable>
