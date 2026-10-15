@@ -11,6 +11,10 @@ export type MoreAction = {
   onPress: () => void;
   /** Deleting and the like: asks "are you sure?" in the menu before doing it. */
   confirm?: boolean;
+  /** Said instead of "are you sure?", for when it's worth spelling out what happens. */
+  confirmText?: string;
+  /** In red, like delete; on by default for anything that asks first. */
+  danger?: boolean;
 };
 
 /** The ⋯ in the header: a small menu of the things you do rarely (settings, delete). */
@@ -38,7 +42,7 @@ export function MoreMenu({ actions, label = 'More' }: { actions: MoreAction[]; l
           <Paper fill={colors.cream} edge="ink" shape={3} style={[styles.menu, { top: insets.top + 50 }]}>
             {confirming ? (
               <View style={{ padding: 8, gap: 4 }}>
-                <Mono size={12} color={colors.inkSoft}>{confirming.label}: are you sure?</Mono>
+                <Mono size={12} color={colors.inkSoft} style={{ maxWidth: 240, lineHeight: 18 }}>{confirming.confirmText ?? `${confirming.label}: are you sure?`}</Mono>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   <Pressable onPress={() => run(confirming)} style={styles.item} accessibilityRole="button">
                     <MonoMedium size={13} color={colors.bark} style={{ textDecorationLine: 'underline' }}>yes</MonoMedium>
@@ -49,11 +53,14 @@ export function MoreMenu({ actions, label = 'More' }: { actions: MoreAction[]; l
                 </View>
               </View>
             ) : (
-              actions.map((a) => (
-                <Pressable key={a.label} onPress={() => run(a)} style={styles.item} accessibilityRole="button">
-                  <MonoMedium size={13} color={a.confirm ? colors.bark : colors.ink}>{a.label}</MonoMedium>
-                </Pressable>
-              ))
+              actions.map((a) => {
+                const tone = (a.danger ?? a.confirm) ? colors.bark : colors.ink;
+                return (
+                  <Pressable key={a.label} onPress={() => run(a)} style={styles.item} accessibilityRole="button">
+                    <MonoMedium size={13} color={tone}>{a.label}</MonoMedium>
+                  </Pressable>
+                );
+              })
             )}
           </Paper>
         </Modal>

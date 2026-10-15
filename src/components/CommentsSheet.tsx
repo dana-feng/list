@@ -14,6 +14,7 @@ import { PostBody, type describePost } from './FeedPost';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
 import { openProfile } from './PersonRow';
+import { ReportSheet } from './ReportSheet';
 import { Hand, Mono, MonoMedium } from './Text';
 
 type Post = NonNullable<ReturnType<typeof describePost>>;
@@ -21,7 +22,8 @@ type Post = NonNullable<ReturnType<typeof describePost>>;
 /**
  * A post's comments, in a tall sheet over the feed. The post (photos full size) scrolls away with
  * the thread; only the comment box stays pinned. Every face, name and @tag opens that profile.
- * Replies sit indented under the comment they answer; press and hold one of yours to delete it.
+ * Replies sit indented under the comment they answer; press and hold one of yours to delete it,
+ * or someone else's to report it.
  * Render it only while it's open.
  */
 export function CommentsSheet({ event, post, index, onClose }: { event: FeedEvent; post: Post; index: number; onClose: () => void }) {
@@ -137,8 +139,9 @@ function Comment({ comment, go, onReply }: {
   go: (to: () => void) => void;
   onReply: (c: EventComment) => void;
 }) {
-  // press and hold a comment you can delete to bring it up close, with delete underneath
+  // press and hold a comment to bring it up close, with delete (yours) or report (anyone else's) underneath
   const [peeking, setPeeking] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [press] = useState(() => new Animated.Value(1));
   // deleted, but kept so its replies stay in place: no name, no words, nothing to do
   if (comment.deleted_at) {
@@ -151,7 +154,8 @@ function Comment({ comment, go, onReply }: {
   }
   const author = getProfile(comment.author_id);
   if (!author) return null;
-  const canPeek = canDeleteComment(comment);
+  const mine = canDeleteComment(comment);
+  const action = mine ? { name: 'delete', label: 'Delete' } : { name: 'report', label: 'Report' };
   // it sinks while you hold it, then a tap from the phone as it comes up
   const sink = (to: number) => Animated.spring(press, { toValue: to, useNativeDriver: true, friction: 8, tension: to < 1 ? 40 : 120 }).start();
   const peek = () => {
@@ -165,10 +169,10 @@ function Comment({ comment, go, onReply }: {
     <>
       <Animated.View style={{ transform: [{ scale: press }] }}>
         <Pressable
-          onLongPress={canPeek ? peek : undefined}
+          onLongPress={peek}
           delayLongPress={350}
-          onPressIn={canPeek ? () => sink(0.97) : undefined}
-          onPressOut={canPeek ? () => sink(1) : undefined}
+          onPressIn={() => sink(0.97)}
+          onPressOut={() => sink(1)}
           style={[styles.comment, reply && styles.reply]}
           accessible={false}
         >
@@ -185,18 +189,21 @@ function Comment({ comment, go, onReply }: {
                 <MonoMedium size={10.5} color={colors.inkSoft}>reply</MonoMedium>
               </Pressable>
             </View>
-            {/* holding can't be done with a screen reader, so the words carry a "delete" action instead */}
+            {/* holding can't be done with a screen reader, so the words carry a "delete" or "report" action instead */}
             <View
-              accessible={canPeek}
-              accessibilityActions={canPeek ? [{ name: 'delete', label: 'Delete' }] : undefined}
-              onAccessibilityAction={(e) => e.nativeEvent.actionName === 'delete' && setPeeking(true)}
+              accessible
+              accessibilityActions={[action]}
+              onAccessibilityAction={(e) => e.nativeEvent.actionName === action.name && (mine ? setPeeking(true) : setReporting(true))}
             >
               <CommentText body={comment.body} go={go} />
             </View>
           </View>
         </Pressable>
       </Animated.View>
-      {peeking ? <CommentPeek comment={comment} onClose={() => setPeeking(false)} /> : null}
+      {peeking ? <CommentPeek comment={comment} onClose={() => setPeeking(false)} onReport={() => setReporting(true)} /> : null}
+      {reporting ? (
+        <ReportSheet what="comment" target={{ profile_id: author.id, comment_id: comment.id, content: comment.body }} person={author} onClose={() => setReporting(false)} />
+      ) : null}
     </>
   );
 }
@@ -226,9 +233,10 @@ function CommentText({ body, go }: { body: string; go?: (to: () => void) => void
 
 /**
  * Press and hold a comment, the same as a list folder on your profile: it comes up close over a
- * dimmed screen with "delete comment" underneath. Tap anywhere else to put it back.
+ * dimmed screen with "delete comment" underneath, or "report comment" if it isn't yours. Tap
+ * anywhere else to put it back.
  */
-function CommentPeek({ comment, onClose }: { comment: EventComment; onClose: () => void }) {
+function CommentPeek({ comment, onClose, onReport }: { comment: EventComment; onClose: () => void; onReport: () => void }) {
   const [pop] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.spring(pop, { toValue: 1, useNativeDriver: true, friction: 6, tension: 110 }).start();
@@ -238,6 +246,10 @@ function CommentPeek({ comment, onClose }: { comment: EventComment; onClose: () 
   const remove = () => {
     onClose();
     deleteComment(comment.id);
+  };
+  const flag = () => {
+    onClose();
+    onReport();
   };
 
   return (
@@ -254,7 +266,11 @@ function CommentPeek({ comment, onClose }: { comment: EventComment; onClose: () 
             <CommentText body={comment.body} />
           </View>
           <Paper fill={colors.cream} shape={4} round={1.2} style={styles.peekMenu}>
-            <LinkText label="delete comment" color={colors.bark} onPress={remove} />
+            {canDeleteComment(comment) ? (
+              <LinkText label="delete comment" color={colors.bark} onPress={remove} />
+            ) : (
+              <LinkText label="report comment" color={colors.bark} onPress={flag} />
+            )}
           </Paper>
         </Animated.View>
       </View>

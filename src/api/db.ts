@@ -69,6 +69,8 @@ export type Db = {
   events: FeedEvent[];
   event_likes: EventLike[];
   event_comments: EventComment[];
+  /** People you've blocked, newest first. Kept apart from `profiles`, so they show up nowhere else. */
+  blocked: Profile[];
   /** storage path -> signed url for photos in the private bucket */
   photoUrls: Record<string, string>;
 };
@@ -86,6 +88,7 @@ export const emptyTables = () => ({
   events: [] as FeedEvent[],
   event_likes: [] as EventLike[],
   event_comments: [] as EventComment[],
+  blocked: [] as Profile[],
   photoUrls: {} as Record<string, string>,
 });
 

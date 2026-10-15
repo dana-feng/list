@@ -9,6 +9,7 @@ import {
 import { inviteHosts } from '@/api/feed';
 import { getList, isMember, listPeople, listProgress } from '@/api/lists';
 import { tagsToIds, tagsToNames, Unfound } from '@/api/mentions';
+import { getProfile } from '@/api/profiles';
 import { AvatarStack } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { DateChip, DateField } from '@/components/DateField';
@@ -23,6 +24,7 @@ import { NotesField } from '@/components/NotesField';
 import { Paper } from '@/components/Paper';
 import { PeoplePress } from '@/components/PeopleSheet';
 import { PhotoStrip } from '@/components/PhotoGrid';
+import { ReportSheet } from '@/components/ReportSheet';
 import { Circle } from '@/components/Scribble';
 import { FolderScreen } from '@/components/Screen';
 import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
@@ -60,6 +62,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const [picking, setPicking] = useState(isNew && !listId);
   const [inviting, setInviting] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [draft, setDraft] = useState<Draft>(() => ({
     listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, ...editableNotes(item?.notes ?? ''), photos: [],
     invite: { open: false, audience: 'followers', invitees: [] },
@@ -84,6 +87,9 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const progress = list ? listProgress(list.id) : null;
   const owner = list ? listPeople(list.id).find((p) => p.id !== db.me) ?? listPeople(list.id)[0] : undefined;
   const photos = item ? photosFor(item.id) : draft.photos.map((path, i) => ({ id: `new${i}`, path }));
+  // who to report it about: whoever added it (left out if that post isn't visible to you)
+  const added = item ? db.events.find((e) => e.item_id === item.id && e.kind === 'item_added') : undefined;
+  const addedBy = added ? getProfile(added.actor_id) : undefined;
   const invite: Invite = item ? { open: item.open_invite, audience: item.invite_audience, invitees: inviteeIds(item.id) } : draft.invite;
 
   // ---- changes: straight to the item, or into the draft for a new one ----
@@ -133,7 +139,15 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     header = <Header left={<TextAction label="cancel" onPress={goBack} />} title="new item" />;
     tab = <FolderTab label={<ListPickerTab list={list} open={picking} onPress={() => setPicking(!picking)} />} />;
   } else {
-    header = <Header right={member ? <MoreMenu label="More: delete" actions={[{ label: 'delete item', confirm: true, onPress: destroy }]} /> : undefined} />;
+    header = (
+      <Header
+        right={member ? (
+          <MoreMenu label="More: delete" actions={[{ label: 'delete item', confirm: true, onPress: destroy }]} />
+        ) : addedBy?.id !== db.me ? (
+          <MoreMenu label="More: report item" actions={[{ label: 'report item', danger: true, onPress: () => setReporting(true) }]} />
+        ) : undefined}
+      />
+    );
     tab = (
       <FolderTab
         label={member ? `${list!.title} · ${progress!.done}/${progress!.total}` : list!.title}
@@ -258,6 +272,14 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
             onPick={(l) => { set({ listId: l.id }); setPicking(false); }}
           />
         </View>
+      ) : null}
+      {reporting && item ? (
+        <ReportSheet
+          what="this item"
+          target={{ profile_id: addedBy?.id, item_id: item.id, content: [item.title, item.notes, item.caption].filter(Boolean).join(' · ') }}
+          person={addedBy}
+          onClose={() => setReporting(false)}
+        />
       ) : null}
     </FolderScreen>
   );
