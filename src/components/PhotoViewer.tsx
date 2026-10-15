@@ -67,6 +67,6 @@ export function PhotoViewer({ photos, start, onClose }: { photos: PhotoLike[]; s
 const styles = StyleSheet.create({
   dim: { flex: 1, backgroundColor: 'rgba(40,10,0,0.96)' },
   count: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
-  close: { position: 'absolute', left: 12, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  close: { position: 'absolute', right: 12, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   closeDot: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.bark, alignItems: 'center', justifyContent: 'center' },
 });
