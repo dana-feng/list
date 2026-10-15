@@ -1,5 +1,6 @@
 import { ReactNode, useRef, useState } from 'react';
 import { Animated, GestureResponderEvent, Pressable, StyleSheet, View } from 'react-native';
+import { tap } from '@/haptics';
 import { colors } from '@/theme';
 import { MonoMedium } from './Text';
 
@@ -14,6 +15,8 @@ export function SwipeToDelete({ children, onDelete, label }: { children: ReactNo
   const [open, setOpen] = useState(false);
   // where the finger came down, and where the row was then
   const start = useRef({ x: 0, y: 0, from: 0 });
+  // which side of halfway the row is on, so crossing it can tap
+  const past = useRef(false);
   const settle = (to: boolean) => {
     setOpen(to);
     Animated.spring(x, { toValue: to ? -REVEAL : 0, useNativeDriver: false, friction: 8 }).start();
@@ -22,6 +25,7 @@ export function SwipeToDelete({ children, onDelete, label }: { children: ReactNo
   const gesture = {
     onTouchStart: (e: GestureResponderEvent) => {
       start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, from: open ? -REVEAL : 0 };
+      past.current = open;
     },
     // only a clearly sideways drag: up and down is for scrolling, and holding still is for reordering
     onMoveShouldSetResponder: (e: GestureResponderEvent) => {
@@ -29,7 +33,14 @@ export function SwipeToDelete({ children, onDelete, label }: { children: ReactNo
       return Math.abs(dx(e)) > 12 && Math.abs(dx(e)) > Math.abs(dy) * 1.5;
     },
     onResponderTerminationRequest: () => false,
-    onResponderMove: (e: GestureResponderEvent) => x.setValue(Math.max(-REVEAL * 1.25, Math.min(0, start.current.from + dx(e)))),
+    onResponderMove: (e: GestureResponderEvent) => {
+      const to = start.current.from + dx(e);
+      if (to < -REVEAL / 2 !== past.current) {
+        past.current = !past.current;
+        tap();
+      }
+      x.setValue(Math.max(-REVEAL * 1.25, Math.min(0, to)));
+    },
     onResponderRelease: (e: GestureResponderEvent) => settle(start.current.from + dx(e) < -REVEAL / 2),
     onResponderTerminate: () => settle(open),
   };

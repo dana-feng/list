@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, Platform, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { Animated, View } from 'react-native';
+import * as haptics from '@/haptics';
 
 /** What a row gets so it can be moved: `hold` goes on its long press, `move` is the same thing for screen readers. */
 export type Handle = { hold: () => void; move: (by: -1 | 1) => void };
@@ -21,10 +21,6 @@ type Props<T> = {
 };
 
 type Drag = { id: string; from: number; to: number };
-
-const tick = () => {
-  if (Platform.OS !== 'web') Haptics.selectionAsync();
-};
 
 /** A column of rows you can rearrange: hold one until it lifts, then drag it up or down. */
 export function Reorderable<T extends { id: string }>({ items, gap, onReorder, onDragging, children }: Props<T>) {
@@ -59,8 +55,7 @@ export function Reorderable<T extends { id: string }>({ items, gap, onReorder, o
     // still unhooked from the rows, so this doesn't move anything on screen
     offsets.forEach((v) => v.setValue(0));
     setResting(false);
-    if (Platform.OS === 'android') Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Long_Press);
-    else if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    haptics.hold();
     Animated.spring(lift, { toValue: 1, useNativeDriver: false, friction: 7 }).start();
     setActive(id);
     onDragging?.(true);
@@ -88,7 +83,7 @@ export function Reorderable<T extends { id: string }>({ items, gap, onReorder, o
     });
     if (to === d.to) return;
     d.to = to;
-    tick();
+    haptics.tick();
     ids.forEach((id, i) => {
       if (id === d.id) return;
       const shift = i > d.from && i <= to ? -(me.h + gap) : i < d.from && i >= to ? me.h + gap : 0;
@@ -106,6 +101,7 @@ export function Reorderable<T extends { id: string }>({ items, gap, onReorder, o
     for (let i = Math.min(d.from, d.to); i <= Math.max(d.from, d.to); i++) {
       if (i !== d.from) slot += ((layouts.current.get(order[i])?.h ?? 0) + gap) * Math.sign(d.to - d.from);
     }
+    if (d.to !== d.from) haptics.tick();
     Animated.spring(lift, { toValue: 0, useNativeDriver: false, friction: 7 }).start();
     Animated.timing(offset(d.id), { toValue: slot, duration: 120, useNativeDriver: false }).start(() => {
       // one render: every row laid out in its new place, with no offsets

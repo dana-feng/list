@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { useDb } from '@/api/db';
 import { getItem, interestedPeople, isInterested, isInvitedTo, toggleInterest } from '@/api/items';
 import { isMember } from '@/api/lists';
+import { toggle } from '@/haptics';
 import { colors } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { Pill } from './Button';
@@ -24,7 +25,10 @@ export function DownButton({ itemId }: { itemId: string }) {
       label={interestLabel(on)}
       on={on}
       filled={on}
-      onPress={() => toggleInterest(itemId)}
+      onPress={() => {
+        toggle(!on);
+        toggleInterest(itemId);
+      }}
       accessibilityLabel={on ? `You're interested in ${title}. Tap to take it back` : `I'm interested in ${title}`}
     />
   );

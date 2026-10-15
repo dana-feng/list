@@ -26,6 +26,7 @@ import { PhotoStrip } from '@/components/PhotoGrid';
 import { Circle } from '@/components/Scribble';
 import { FolderScreen } from '@/components/Screen';
 import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
+import { success, tap, toggle } from '@/haptics';
 import { monthDay, names, toDay } from '@/lib';
 import { pickPhotos } from '@/pickPhotos';
 import { colors } from '@/theme';
@@ -120,6 +121,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     goBack();
   };
   const finish = () => {
+    success();
     const finishedList = markDone(item!.id);
     if (finishedList) router.push(`/done/${list!.id}?kind=list`);
   };
@@ -212,7 +214,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
             <MonoMedium size={12}>add photos →</MonoMedium>
           </Pressable>
           <View style={{ marginLeft: 'auto' }}>
-            <LinkText label="undo" onPress={() => undoDone(item.id)} />
+            <LinkText label="undo" onPress={() => { tap(); undoDone(item.id); }} />
           </View>
         </View>
       ) : null}
@@ -223,7 +225,10 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
           <Button
             label={interestLabel(iAmDown)}
             tone={iAmDown ? 'bark' : 'outline'}
-            onPress={() => toggleInterest(item.id)}
+            onPress={() => {
+              toggle(!iAmDown);
+              toggleInterest(item.id);
+            }}
             style={{ marginTop: 16 }}
           />
           {iAmDown ? (
