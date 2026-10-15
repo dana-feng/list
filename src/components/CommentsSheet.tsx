@@ -21,8 +21,8 @@ type Post = NonNullable<ReturnType<typeof describePost>>;
 /**
  * A post's comments, in a tall sheet over the feed. The post (photos full size) scrolls away with
  * the thread; only the comment box stays pinned. Every face, name and @tag opens that profile.
- * Replies sit indented under the comment they answer; press and hold one to delete it. Render it only
- * while it's open.
+ * Replies sit indented under the comment they answer; press and hold one of yours to delete it.
+ * Render it only while it's open.
  */
 export function CommentsSheet({ event, post, index, onClose }: { event: FeedEvent; post: Post; index: number; onClose: () => void }) {
   const insets = useSafeAreaInsets();
@@ -93,9 +93,9 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
             <View style={styles.rule} />
             {threads.map(({ comment, replies }) => (
               <Fragment key={comment.id}>
-                <Comment comment={comment} event={event} go={go} onReply={setReplyTo} />
+                <Comment comment={comment} go={go} onReply={setReplyTo} />
                 {replies.map((r) => (
-                  <Comment key={r.id} comment={r} event={event} go={go} onReply={setReplyTo} />
+                  <Comment key={r.id} comment={r} go={go} onReply={setReplyTo} />
                 ))}
               </Fragment>
             ))}
@@ -132,18 +132,26 @@ function LikedBy({ eventId, go }: { eventId: string; go: (to: () => void) => voi
   );
 }
 
-function Comment({ comment, event, go, onReply }: {
+function Comment({ comment, go, onReply }: {
   comment: EventComment;
-  event: FeedEvent;
   go: (to: () => void) => void;
   onReply: (c: EventComment) => void;
 }) {
   // press and hold a comment you can delete to bring it up close, with delete underneath
   const [peeking, setPeeking] = useState(false);
   const [press] = useState(() => new Animated.Value(1));
+  // deleted, but kept so its replies stay in place: no name, no words, nothing to do
+  if (comment.deleted_at) {
+    return (
+      <View style={styles.comment}>
+        <View style={styles.gone} />
+        <Mono size={12} color={colors.inkFaint} style={{ flex: 1 }}>comment deleted</Mono>
+      </View>
+    );
+  }
   const author = getProfile(comment.author_id);
   if (!author) return null;
-  const canPeek = canDeleteComment(comment, event);
+  const canPeek = canDeleteComment(comment);
   // it sinks while you hold it, then a tap from the phone as it comes up
   const sink = (to: number) => Animated.spring(press, { toValue: to, useNativeDriver: true, friction: 8, tension: to < 1 ? 40 : 120 }).start();
   const peek = () => {
@@ -388,6 +396,8 @@ const styles = StyleSheet.create({
   rule: { height: 1, backgroundColor: colors.rule, marginTop: 14, marginBottom: 4 },
   comment: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 12 },
   reply: { marginLeft: 42, gap: 10, paddingVertical: 8 },
+  // where a deleted comment's face would be
+  gone: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.inkFaint },
   peekFill: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 },
   peekStack: { width: '100%', maxWidth: 340 },
   peekCard: {

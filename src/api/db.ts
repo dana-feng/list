@@ -37,9 +37,18 @@ export type FeedEvent = { id: string; actor_id: string; kind: EventKind; list_id
 export type EventLike = { event_id: string; user_id: string; created_at: string };
 /**
  * A comment on a post. `body` keeps tags as <@id|username>, like item notes. `reply_to` is the
- * top-level comment it answers; threads are one level deep.
+ * top-level comment it answers; threads are one level deep. `deleted_at` is set (and `body`
+ * emptied) on a deleted comment that's kept as a placeholder because it has replies.
  */
-export type EventComment = { id: string; event_id: string; author_id: string; body: string; created_at: string; reply_to: string | null };
+export type EventComment = {
+  id: string;
+  event_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+  reply_to: string | null;
+  deleted_at: string | null;
+};
 
 /** loading: checking for a saved sign-in · signedOut · needsProfile: signed in, no profile row yet · ready */
 export type Status = 'loading' | 'signedOut' | 'needsProfile' | 'ready';
