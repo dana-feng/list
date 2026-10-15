@@ -3,7 +3,7 @@ import { colors } from '@/theme';
 
 export type IconName =
   | 'home' | 'plus' | 'list' | 'back' | 'right' | 'down' | 'search' | 'sliders' | 'image'
-  | 'calendar' | 'people' | 'check' | 'x' | 'pencil' | 'folder' | 'more' | 'invite';
+  | 'calendar' | 'people' | 'person' | 'globe' | 'lock' | 'check' | 'x' | 'pencil' | 'folder' | 'more' | 'invite';
 
 type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number };
 
@@ -23,6 +23,9 @@ export function Icon({ name, size = 22, color = colors.ink, strokeWidth = 1.9 }:
       {name === 'image' && (<><Rect {...s} x={3.5} y={4.5} width={17} height={15} rx={2} /><Circle {...s} cx={9} cy={10} r={1.8} /><Path {...s} d="M5 18l5-5 4 3 3-2 3 3" /></>)}
       {name === 'calendar' && (<><Rect {...s} x={3.5} y={5} width={17} height={15} rx={2} /><Path {...s} d="M3.5 10h17M8 3v4M16 3v4" /></>)}
       {name === 'people' && (<><Circle {...s} cx={9} cy={9} r={3.2} /><Path {...s} d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" /><Circle {...s} cx={17} cy={8} r={2.4} /><Path {...s} d="M16 13.2c2.3.1 4 1.6 4.5 4.3" /></>)}
+      {name === 'person' && (<><Circle {...s} cx={12} cy={8.5} r={3.5} /><Path {...s} d="M5.5 19.5c.7-3.6 3.3-5.5 6.5-5.5s5.8 1.9 6.5 5.5" /></>)}
+      {name === 'globe' && (<><Circle {...s} cx={12} cy={12} r={8.5} /><Path {...s} d="M3.5 12h17M12 3.5c-2.4 2.4-3.5 5.3-3.5 8.5s1.1 6.1 3.5 8.5M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5s-1.1 6.1-3.5 8.5" /></>)}
+      {name === 'lock' && (<><Rect {...s} x={5} y={10.5} width={14} height={9.5} rx={2} /><Path {...s} d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></>)}
       {name === 'check' && <Path {...s} d="M5 12.5l4.5 4.5L19 7.5" />}
       {name === 'x' && <Path {...s} d="M6 6l12 12M18 6L6 18" />}
       {name === 'folder' && <Path {...s} d="M3.5 8c0-1.1.9-2 2-2h3.8l2 2.2h7.2c1.1 0 2 .9 2 2V17c0 1.1-.9 2-2 2h-13c-1.1 0-2-.9-2-2z" />}

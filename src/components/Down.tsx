@@ -13,7 +13,7 @@ export function canSayDown(itemId: string) {
   return !!item && isInvitedTo(itemId) && !isMember(item.list_id);
 }
 
-/** "interested" on an open invite: an outline until you tap it, filled in once you are. Hidden on your own lists and on anything not asked about. */
+/** On an open invite: "i'm interested" in outline until you tap it, then "you're interested" filled in. Hidden on your own lists and on anything not asked about. */
 export function DownButton({ itemId }: { itemId: string }) {
   useDb();
   if (!canSayDown(itemId)) return null;
@@ -21,7 +21,7 @@ export function DownButton({ itemId }: { itemId: string }) {
   const title = getItem(itemId)?.title ?? '';
   return (
     <Pill
-      label="interested"
+      label={interestLabel(on)}
       on={on}
       filled={on}
       onPress={() => toggleInterest(itemId)}
@@ -29,6 +29,9 @@ export function DownButton({ itemId }: { itemId: string }) {
     />
   );
 }
+
+/** What the interested button says, before and after you've said you are. */
+export const interestLabel = (on: boolean) => (on ? "you're interested" : "i'm interested");
 
 /** "3 interested", or nothing when no one is yet. */
 export function downText(itemId: string) {

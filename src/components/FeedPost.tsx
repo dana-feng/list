@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, FeedEvent } from '@/api/db';
@@ -9,6 +10,7 @@ import { colors } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { Icon, IconName } from './Icon';
 import { Photo } from './Photo';
+import { PhotoViewer } from './PhotoViewer';
 import { Hand, Mono, MonoMedium } from './Text';
 
 type Kind = Exclude<FeedEvent['kind'], 'open_invite'>;
@@ -23,10 +25,11 @@ const MARK: Record<Kind, { icon: IconName; color: string }> = {
 
 /**
  * One post on Home, read like a notification: a mark for what happened, the faces of who did it,
- * what they did, the item or list in big type, where it lives, and the item's photos underneath.
+ * what they did, the item or list in big type, where it lives, and the item's photos underneath (tap one to see it big).
  * Lines are separated by a rule rather than each sitting in its own box.
  */
 export function FeedPost({ event, index }: { event: FeedEvent; index: number }) {
+  const [viewing, setViewing] = useState<number | null>(null);
   const list = getList(event.list_id);
   const item = event.item_id ? getItem(event.item_id) : undefined;
   const actor = getProfile(event.actor_id);
@@ -89,17 +92,18 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
         </View>
       </View>
       {shown.length ? (
-        <Pressable onPress={open} style={styles.photos} accessibilityRole="button" accessibilityLabel={`${photos.length} ${photos.length === 1 ? 'photo' : 'photos'}`}>
+        <View style={styles.photos}>
           {shown.map((photo, i) => (
-            <View key={photo.id} style={{ flex: 1 }}>
+            <Pressable key={photo.id} onPress={() => setViewing(i)} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={`View photo ${i + 1} of ${photos.length}`}>
               <Photo photo={photo} shape={index + i} style={{ height: shown.length === 1 ? 170 : 104 }} />
               {extra > 0 && i === shown.length - 1 ? (
                 <View style={styles.more}><Mono size={10.5} color={colors.paper}>+{extra}</Mono></View>
               ) : null}
-            </View>
+            </Pressable>
           ))}
-        </Pressable>
+        </View>
       ) : null}
+      <PhotoViewer photos={photos} start={viewing} onClose={() => setViewing(null)} />
     </View>
   );
 }

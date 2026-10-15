@@ -7,7 +7,7 @@ import { Avatar } from './Avatar';
 import { Paper } from './Paper';
 import { PersonPicker } from './PersonPicker';
 import { Hand, Label, Mono } from './Text';
-import { Choice, choiceLabel, VisibilityButton, VisibilityMenu } from './VisibilityPicker';
+import { Choice, choiceIcon, choiceLabel, VisibilityButton, VisibilityMenu } from './VisibilityPicker';
 
 /** "label ...stuff" on one line, the label in a fixed column. */
 export function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -109,7 +109,7 @@ export function ListFields({ title, onTitle, owners, lockedOwners = [], onOwners
           </Paper>
         </FieldRow>
         <FieldRow label="who can see">
-          <VisibilityButton label={choiceLabel(choice, viewers.length)} open={menu} onPress={() => setMenu(!menu)} />
+          <VisibilityButton label={choiceLabel(choice, viewers.length)} icon={choiceIcon(choice)} open={menu} onPress={() => setMenu(!menu)} />
         </FieldRow>
       </View>
       {menu ? (

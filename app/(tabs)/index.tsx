@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useDb } from '@/api/db';
 import { feedAll, openInvites } from '@/api/feed';
 import { FeedPost } from '@/components/FeedPost';
@@ -16,6 +16,9 @@ type Tab = 'all' | 'invites';
 export default function Home() {
   useDb();
   const [tab, setTab] = useState<Tab>('all');
+  const navigation = useNavigation();
+  // tapping Home always lands back on the feed
+  useEffect(() => navigation.addListener('tabPress' as never, () => setTab('all')), [navigation]);
   const posts = feedAll();
   const invites = openInvites();
   return (

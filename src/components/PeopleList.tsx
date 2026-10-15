@@ -13,11 +13,11 @@ export function personNote(p: Profile) {
   return bits.join(' · ') || undefined;
 }
 
-/** A stack of people slips, each with a follow button; tapping one opens their profile. */
-export function PeopleList({ people, notes }: { people: Profile[]; notes?: boolean }) {
+/** A stack of people slips, each with a follow button; tapping one opens their profile. `fill`: all one paper instead of alternating. */
+export function PeopleList({ people, notes, fill }: { people: Profile[]; notes?: boolean; fill?: string }) {
   return (
     <View style={{ gap: 8 }}>
-      {people.map((p, i) => <PersonRow key={p.id} person={p} index={i} sub={notes ? personNote(p) : undefined} />)}
+      {people.map((p, i) => <PersonRow key={p.id} person={p} index={i} sub={notes ? personNote(p) : undefined} fill={fill} />)}
     </View>
   );
 }

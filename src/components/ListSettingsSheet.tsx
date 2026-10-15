@@ -13,10 +13,10 @@ import { Sheet } from './Sheet';
 import { Label, Mono } from './Text';
 
 const OPTIONS: AudienceOption<Visibility>[] = [
-  { value: 'just_me', title: 'owners' },
-  { value: 'followers', title: 'followers' },
-  { value: 'anyone', title: 'anyone' },
-  { value: 'specific', title: 'specific people' },
+  { value: 'just_me', title: 'owners', icon: 'lock' },
+  { value: 'followers', title: 'followers', icon: 'people' },
+  { value: 'anyone', title: 'anyone', icon: 'globe' },
+  { value: 'specific', title: 'specific people', icon: 'person' },
 ];
 
 function PersonChip({ person, note }: { person: Profile; note?: string }) {

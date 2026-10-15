@@ -1,7 +1,7 @@
-import { db, FeedEvent, Item, List } from './db';
+import { db, FeedEvent, Item, List, Profile } from './db';
 import { isInvitedTo } from './items';
-import { getList, isMember } from './lists';
-import { isFollowing } from './profiles';
+import { getList, isMember, listPeople } from './lists';
+import { getProfile, isFollowing } from './profiles';
 
 /**
  * All: posts from people you follow, newest first. Never your own, and never open invites:
@@ -20,4 +20,13 @@ export function openInvites(): { item: Item; list: List }[] {
     .filter((i) => isInvitedTo(i.id) && getList(i.list_id) && !isMember(i.list_id))
     .sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999'))
     .map((item) => ({ item, list: getList(item.list_id)! }));
+}
+
+/** Who put an open invite out: whoever last turned it on, or the list's people if that isn't visible to you. */
+export function inviteHosts(item: Item): Profile[] {
+  const latest = db.events
+    .filter((e) => e.kind === 'open_invite' && e.item_id === item.id)
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0];
+  const host = latest ? getProfile(latest.actor_id) : undefined;
+  return host ? [host] : listPeople(item.list_id);
 }

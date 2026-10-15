@@ -9,6 +9,7 @@ import { Button } from './Button';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
 import { Sheet } from './Sheet';
+import { choiceIcon } from './VisibilityPicker';
 import { MonoMedium } from './Text';
 
 /** An item's open invite: whether it's out, who it goes to, and (for "specific") who was picked. */
@@ -17,10 +18,10 @@ export type Invite = { open: boolean; audience: InviteAudience; invitees: string
 type Who = 'none' | InviteAudience;
 
 const OPTIONS: AudienceOption<Who>[] = [
-  { value: 'none', title: 'no one' },
-  { value: 'followers', title: 'followers' },
-  { value: 'anyone', title: 'anyone' },
-  { value: 'specific', title: 'specific people' },
+  { value: 'none', title: 'no one', icon: 'lock' },
+  { value: 'followers', title: 'followers', icon: 'people' },
+  { value: 'anyone', title: 'anyone', icon: 'globe' },
+  { value: 'specific', title: 'specific people', icon: 'person' },
 ];
 
 /**
@@ -60,7 +61,7 @@ export function InviteChip({ invite, down = 0, onPress }: { invite: Invite; down
   const label = down ? `${who} · ${down} down` : who;
   return (
     <Paper onPress={onPress} fill={colors.cream} edge="ink" edgeWidth={1.3} shape={3} round={1.3} style={[chip, picked.length ? { paddingLeft: 5 } : null]} accessibilityLabel={`${label}. Change who's invited`}>
-      {invite.audience === 'specific' && picked.length ? <AvatarStack people={picked} size={24} max={3} /> : <View><Icon name="people" size={15} strokeWidth={1.8} /></View>}
+      {invite.audience === 'specific' && picked.length ? <AvatarStack people={picked} size={24} max={3} /> : <View><Icon name={choiceIcon(invite.audience)} size={15} strokeWidth={1.8} /></View>}
       <MonoMedium size={12}>{label}</MonoMedium>
     </Paper>
   );
