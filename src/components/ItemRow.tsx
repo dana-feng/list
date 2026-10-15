@@ -7,13 +7,13 @@ import { colors, corners, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { DownButton, downText } from './Down';
 import { Icon } from './Icon';
+import { useReorderHandle } from './Reorderable';
 import { Circle, Strike } from './Scribble';
 import { Switch } from './Switch';
 import { Hand, HandMedium, Mono } from './Text';
 
 type OpenProps = {
   item: Item;
-  index: number;
   /** On the list: you get the circle and the invite switch. Otherwise "interested". */
   member: boolean;
   /** Tapping the circle. */
@@ -23,7 +23,13 @@ type OpenProps = {
 };
 
 /** Something still to do. Tap the circle to cross it off. */
-export function OpenRow({ item, index, member, onDone, onRemove }: OpenProps) {
+export function OpenRow({ item, member, onDone, onRemove }: OpenProps) {
+  // its tilt and corners come with it when it's dragged somewhere else, rather than from the spot it lands in
+  const shape = hash(item.id);
+  // inside a Reorderable: holding the row picks it up to drag somewhere else on the list
+  const handle = useReorderHandle();
+  const onHold = handle?.hold;
+  const onMove = handle?.move;
   const open = () => router.push(`/item/${item.id}`);
   const down = item.open_invite ? interestedPeople(item.id) : [];
   // on someone else's list, it's only an open invite for you if you're in its audience
@@ -35,14 +41,24 @@ export function OpenRow({ item, index, member, onDone, onRemove }: OpenProps) {
     : [item.date ? shortDay(item.date) : 'no date yet', invited ? ['open invite', downText(item.id)].filter(Boolean).join(' · ') : null].filter(Boolean).join(' · ');
 
   return (
-    <View style={tilt(index)}>
-      <View style={[styles.row, corners(index), { backgroundColor: colors.sage, borderColor: colors.ink, borderWidth: 1.5 }]}>
+    <View style={tilt(shape)}>
+      <View style={[styles.row, corners(shape), { backgroundColor: colors.sage, borderColor: colors.ink, borderWidth: 1.5 }]}>
         {member && !onRemove ? (
-          <Pressable onPress={onDone} style={styles.circle} accessibilityRole="checkbox" accessibilityState={{ checked: false }} accessibilityLabel={`Mark ${item.title} done`}>
+          <Pressable onPress={onDone} onLongPress={onHold} delayLongPress={350} style={styles.circle} accessibilityRole="checkbox" accessibilityState={{ checked: false }} accessibilityLabel={`Mark ${item.title} done`}>
             <Circle />
           </Pressable>
         ) : null}
-        <Pressable onPress={open} style={[styles.text, !member && { paddingLeft: 6 }]} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
+        <Pressable
+          onPress={open}
+          onLongPress={onHold}
+          delayLongPress={350}
+          style={[styles.text, !member && { paddingLeft: 6 }]}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${item.title}`}
+          accessibilityHint={onHold ? 'Press and hold, then drag to move it up or down the list' : undefined}
+          accessibilityActions={onMove ? [{ name: 'up', label: 'Move up' }, { name: 'down', label: 'Move down' }] : undefined}
+          onAccessibilityAction={onMove ? (e) => onMove(e.nativeEvent.actionName === 'up' ? -1 : 1) : undefined}
+        >
           <Hand size={18}>{item.title}</Hand>
           {sub ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -58,7 +74,7 @@ export function OpenRow({ item, index, member, onDone, onRemove }: OpenProps) {
         ) : member ? (
           <>
             <Switch on={item.open_invite} onPress={() => toggleOpenInvite(item.id)} label={item.open_invite ? 'Open invite is on. Turn off' : 'Post as an open invite'} text="invite" stacked />
-            <Pressable onPress={open} style={styles.chevron} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
+            <Pressable onPress={open} onLongPress={onHold} delayLongPress={350} style={styles.chevron} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
               <Icon name="right" size={16} strokeWidth={2.2} />
             </Pressable>
           </>

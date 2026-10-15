@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { db, useDb } from '@/api/db';
-import { deleteItem, itemsForList, markDone, undoDone } from '@/api/items';
+import { deleteItem, itemsForList, markDone, reorderItems, undoDone } from '@/api/items';
 import {
   canViewList, deleteList, getList, inviteMembers, invitedBy, isListDone, isMember, listPeople, listProgress, membership, renameList, respondInvite,
   setViewers, setVisibility, viewerIds,
@@ -16,6 +16,7 @@ import { DoneRow, OpenRow } from '@/components/ItemRow';
 import { ListFields } from '@/components/ListFields';
 import { Paper } from '@/components/Paper';
 import { ProgressBar } from '@/components/ProgressBar';
+import { Reorderable } from '@/components/Reorderable';
 import { FolderScreen } from '@/components/Screen';
 import { Hand, Label, Mono } from '@/components/Text';
 import { Choice } from '@/components/VisibilityPicker';
@@ -40,6 +41,7 @@ export default function ListScreen() {
   const [removed, setRemoved] = useState<string[]>([]);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   // deleted here: stay blank while the screen slides away
   if (deleted) return <FolderScreen header={<Header />} folderTabs={<FolderTab label=" " />}>{null}</FolderScreen>;
@@ -123,6 +125,7 @@ export default function ListScreen() {
           <Header right={member ? <TextAction label="edit" onPress={startEdit} /> : undefined} />
         )
       }
+      scrollEnabled={!dragging}
       folderTabs={<FolderTab label={tabLabel} onPress={!member && owner ? () => router.push(`/user/${owner.username}`) : undefined} />}
       overlay={celeItem ? <DoneSheet title={celeItem.title} count={`${listProgress(id).done} of ${listProgress(id).total} done`} onCard={() => afterCele(true)} onLater={() => afterCele(false)} /> : null}
     >
@@ -172,16 +175,19 @@ export default function ListScreen() {
             <Hand size={18} color={colors.inkSoft}>+ add</Hand>
           </Paper>
         ) : null}
-        {open.map((item, i) => (
-          <OpenRow
-            key={item.id}
-            item={item}
-            index={i}
-            member={member}
-            onDone={() => crossOff(item.id)}
-            onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}
-          />
-        ))}
+        {/* yours: hold a row and drag it to put the list in order */}
+        {open.length ? (
+          <Reorderable items={open} gap={member ? 6 : 8} onReorder={member ? (ids) => reorderItems(id, ids) : undefined} onDragging={setDragging}>
+            {(item) => (
+              <OpenRow
+                item={item}
+                member={member}
+                onDone={() => crossOff(item.id)}
+                onRemove={editing ? () => setRemoved((r) => [...r, item.id]) : undefined}
+              />
+            )}
+          </Reorderable>
+        ) : null}
       </View>
 
       {finished.length ? (

@@ -6,8 +6,11 @@ import { isLocal, newId, uploadImage, write } from './sync';
 
 export const getItem = (id: string) => db.items.find((i) => i.id === id);
 
+/** To-dos in the order they were dragged into; anything added since then sits on top, newest first. */
 export function itemsForList(listId: string) {
-  const items = db.items.filter((i) => i.list_id === listId).sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const items = db.items
+    .filter((i) => i.list_id === listId)
+    .sort((a, b) => (a.position ?? -1) - (b.position ?? -1) || b.created_at.localeCompare(a.created_at));
   return {
     open: items.filter((i) => !i.done_at),
     done: items.filter((i) => i.done_at).sort((a, b) => (a.done_at! < b.done_at! ? 1 : -1)),
@@ -80,6 +83,17 @@ export function markDone(itemId: string) {
   return finished;
 }
 
+/** Saves the order of a list's to-dos after one is dragged. `ids` is all of them, top to bottom. */
+export function reorderItems(listId: string, ids: string[]) {
+  if (!isMember(listId)) return;
+  ids.forEach((id, position) => {
+    const item = getItem(id);
+    if (item && item.list_id === listId) item.position = position;
+  });
+  commit();
+  write(() => supabase.rpc('reorder_items', { p_list_id: listId, p_ids: ids }), 'the new order');
+}
+
 export function undoDone(itemId: string) {
   const item = getItem(itemId);
   const list = item && getList(item.list_id);
@@ -124,13 +138,13 @@ export function addItem(input: ItemInput) {
   const id = newId();
   const item: Item = {
     id, list_id: input.list_id, title: input.title.trim(), notes: input.notes, date: input.date,
-    open_invite: input.open_invite, invite_audience: input.invite_audience, caption: null, done_at: null, done_by: null, created_at: now(),
+    open_invite: input.open_invite, invite_audience: input.invite_audience, caption: null, done_at: null, done_by: null, position: null, created_at: now(),
   };
   db.items.push(item);
   const list = getList(input.list_id);
   if (list) list.completed_at = null;
   commit();
-  const { caption: _c, done_at: _d, done_by: _b, created_at: _t, ...row } = item;
+  const { caption: _c, done_at: _d, done_by: _b, position: _p, created_at: _t, ...row } = item;
   write(() => supabase.from('items').insert(row), 'your thing');
   if (input.invite_audience === 'specific') setInvitees(id, input.invitees);
   input.photos.forEach((uri) => addPhoto(id, uri));
