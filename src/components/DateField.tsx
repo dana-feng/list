@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { longDay, monthYear, parseDay, toDay } from '@/lib';
 import { colors } from '@/theme';
@@ -20,8 +20,8 @@ export function DateChip({ value }: { value: string }) {
   );
 }
 
-/** Editing: a dashed chip that opens a month calendar under it, with "no date yet" and "done". */
-export function DateField({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+/** A chip that opens a month calendar under it, with "clear" and "done". Dashed until there's a date, then solid. */
+export function DateField({ value, onChange, beside }: { value: string | null; onChange: (v: string | null) => void; beside?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => monthOf(new Date()));
   const today = toDay(new Date());
@@ -44,10 +44,14 @@ export function DateField({ value, onChange }: { value: string | null; onChange:
 
   return (
     <View style={{ gap: 10 }}>
-      <Paper onPress={toggle} fill={colors.cream} edge="dash" edgeWidth={1.3} shape={2} round={1.3} style={[styles.chip, { height: 34 }]} accessibilityState={{ expanded: open }} accessibilityLabel={value ? `Date: ${longDay(value)}. Change` : 'Add a date'}>
-        <Icon name="calendar" size={14} strokeWidth={1.8} />
-        <MonoMedium size={12}>{value ? longDay(value) : 'add a date'}</MonoMedium>
-      </Paper>
+      {/* other chips can sit on the same line (the item's invite); the calendar still opens under them all */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+        <Paper onPress={toggle} fill={colors.cream} edge={value ? 'ink' : 'dash'} edgeWidth={1.3} shape={2} round={1.3} style={[styles.chip, { height: 36 }]} accessibilityState={{ expanded: open }} accessibilityLabel={value ? `Date: ${longDay(value)}. Change` : 'Add a date'}>
+          <Icon name="calendar" size={14} strokeWidth={1.8} />
+          <MonoMedium size={12}>{value ? longDay(value) : 'add a date'}</MonoMedium>
+        </Paper>
+        {beside}
+      </View>
       {open ? (
         <Paper fill={colors.cream} edge="ink" edgeWidth={1.3} shape={4} style={{ paddingHorizontal: 10, paddingTop: 8, paddingBottom: 6, gap: 6 }}>
           <View style={styles.head}>
@@ -81,7 +85,7 @@ export function DateField({ value, onChange }: { value: string | null; onChange:
             </View>
           ))}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <LinkText label="no date yet" size={11.5} onPress={() => { onChange(null); setOpen(false); }} />
+            <LinkText label="clear" size={11.5} onPress={() => { onChange(null); setOpen(false); }} />
             <Pill label="done" onPress={() => setOpen(false)} />
           </View>
         </Paper>
