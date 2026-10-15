@@ -21,6 +21,7 @@ import { ListPicker, ListPickerTab } from '@/components/ListPicker';
 import { MoreMenu } from '@/components/MoreMenu';
 import { NotesField } from '@/components/NotesField';
 import { Paper } from '@/components/Paper';
+import { PeoplePress } from '@/components/PeopleSheet';
 import { PhotoStrip } from '@/components/PhotoGrid';
 import { Circle } from '@/components/Scribble';
 import { FolderScreen } from '@/components/Screen';
@@ -148,7 +149,6 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const inviteChip = member && !done ? <InviteChip invite={invite} down={down.length} onPress={() => setInviting(true)} /> : null;
   // a friend's invite: whose it is, so you know who you'd be joining
   const hosts = invitedHere ? inviteHosts(item!) : [];
-  const host = hosts.length === 1 ? hosts[0] : null;
 
   const card = (
     <Paper fill={done ? colors.gold : colors.sage} edge="ink" edgeWidth={1.5} shape={4} lean={0} style={styles.card}>
@@ -179,21 +179,16 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       {invitedHere ? (
         <View style={{ gap: 4 }}>
           <FieldRow label="from">
-            <Pressable
-              onPress={host ? () => router.push(`/user/${host.username}`) : undefined}
-              disabled={!host}
-              hitSlop={6}
-              style={styles.from}
-              accessibilityRole={host ? 'button' : undefined}
-              accessibilityLabel={host ? `${host.name}'s profile` : undefined}
-            >
+            <PeoplePress people={hosts} hitSlop={6} style={styles.from}>
               <AvatarStack people={hosts} size={22} max={3} />
               <MonoMedium size={11.5} numberOfLines={1} style={{ flexShrink: 1 }}>{hosts.map((p) => p.name).join(' + ')}</MonoMedium>
-            </Pressable>
+            </PeoplePress>
           </FieldRow>
           <FieldRow label="interested">
-            {down.length ? <AvatarStack people={down} size={22} max={3} /> : null}
-            <Mono size={11.5} numberOfLines={2} style={{ flexShrink: 1 }}>{down.length ? names(down) : 'no one yet'}</Mono>
+            <PeoplePress people={down} hitSlop={6} style={styles.from}>
+              {down.length ? <AvatarStack people={down} size={22} max={3} /> : null}
+              <Mono size={11.5} numberOfLines={2} style={{ flexShrink: 1 }}>{down.length ? names(down) : 'no one yet'}</Mono>
+            </PeoplePress>
           </FieldRow>
         </View>
       ) : null}

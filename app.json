@@ -21,9 +21,17 @@
       "expo-font",
       "expo-splash-screen",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "list uses your photos to add pictures to your lists and profile.",
+          "cameraPermission": "list uses your camera to take a profile photo.",
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-contacts",
         {
-          "contactsPermission": "list checks your contacts for friends who are already here. Numbers never leave your phone except to find matches."
+          "contactsPermission": "list uses your contacts to find friends who are already here."
         }
       ]
     ],

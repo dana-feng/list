@@ -10,12 +10,12 @@ import { Hand, Mono, MonoMedium } from './Text';
 const WEEKDAYS = ['s', 'm', 't', 'w', 't', 'f', 's'];
 const monthOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
 
-/** The date as a cream chip with a calendar icon. */
+/** The due date as a cream chip with a calendar icon: "due Fri, Oct 17". */
 export function DateChip({ value }: { value: string }) {
   return (
     <Paper fill={colors.cream} shape={2} round={1.3} style={styles.chip}>
       <Icon name="calendar" size={14} strokeWidth={1.8} />
-      <MonoMedium size={12}>{longDay(value)}</MonoMedium>
+      <MonoMedium size={12}>due {longDay(value)}</MonoMedium>
     </Paper>
   );
 }
@@ -46,9 +46,9 @@ export function DateField({ value, onChange, beside }: { value: string | null; o
     <View style={{ gap: 10 }}>
       {/* other chips can sit on the same line (the item's invite); the calendar still opens under them all */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-        <Paper onPress={toggle} fill={colors.cream} edge={value ? 'ink' : 'dash'} edgeWidth={1.3} shape={2} round={1.3} style={[styles.chip, { height: 36 }]} accessibilityState={{ expanded: open }} accessibilityLabel={value ? `Date: ${longDay(value)}. Change` : 'Add a date'}>
+        <Paper onPress={toggle} fill={colors.cream} edge={value ? 'ink' : 'dash'} edgeWidth={1.3} shape={2} round={1.3} style={[styles.chip, { height: 36 }]} accessibilityState={{ expanded: open }} accessibilityLabel={value ? `Due ${longDay(value)}. Change` : 'Add a due date'}>
           <Icon name="calendar" size={14} strokeWidth={1.8} />
-          <MonoMedium size={12}>{value ? longDay(value) : 'add a date'}</MonoMedium>
+          <MonoMedium size={12}>{value ? `due ${longDay(value)}` : 'due date'}</MonoMedium>
         </Paper>
         {beside}
       </View>

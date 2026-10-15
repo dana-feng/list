@@ -94,6 +94,27 @@ export function respondInvite(listId: string, join: boolean) {
   }
 }
 
+/** Someone else has joined, so you can leave without the list going with you. */
+export const canLeaveList = (listId: string) =>
+  isMember(listId) && db.list_members.some((m) => m.list_id === listId && m.status === 'joined' && m.user_id !== db.me);
+
+/** Takes you off a list's owners. The others keep it. */
+export function leaveList(listId: string) {
+  if (!canLeaveList(listId)) return;
+  db.list_members = db.list_members.filter((m) => !(m.list_id === listId && m.user_id === db.me));
+  commit();
+  write(() => supabase.from('list_members').delete().eq('list_id', listId).eq('user_id', db.me), 'leaving');
+}
+
+/** Takes back an invite that hasn't been accepted yet. Anyone on the list can. */
+export function cancelInvite(listId: string, userId: string) {
+  const m = membership(listId, userId);
+  if (!m || m.status !== 'invited' || !isMember(listId)) return;
+  db.list_members = db.list_members.filter((x) => x !== m);
+  commit();
+  write(() => supabase.from('list_members').delete().eq('list_id', listId).eq('user_id', userId).eq('status', 'invited'), 'that');
+}
+
 export function createList(input: { title: string; visibility: Visibility; viewers: string[]; invites: string[] }) {
   const id = newId();
   const title = input.title.trim();

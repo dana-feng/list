@@ -6,14 +6,14 @@ import { Hand } from './Text';
 
 type Props = { person: Profile; size?: number; edge?: string; fill?: string };
 
-/** A face: their photo, or their first initial, on a rounded square (like the folders) with a pen line around it. */
+/** A face on a rounded square (like the folders): their photo, edge to edge, or their first initial with a pen line around it. */
 export function Avatar({ person, size = 24, edge = colors.ink, fill }: Props) {
   const initial = (person.name || person.username || '?').trim().charAt(0).toLowerCase();
   return (
     <View
       style={{
         width: size, height: size, borderRadius: Math.round(size * 0.3), overflow: 'hidden', alignItems: 'center', justifyContent: 'center',
-        backgroundColor: fill ?? tintFor(person.id), borderWidth: Math.max(1, size / 22), borderColor: edge,
+        backgroundColor: fill ?? tintFor(person.id), borderWidth: person.profile_photo ? 0 : Math.max(1, size / 22), borderColor: edge,
       }}
       accessibilityLabel={person.name}
     >
