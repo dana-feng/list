@@ -19,10 +19,10 @@ export function FollowButton({ userId }: { userId: string }) {
 
 export const openProfile = (p: Profile) => router.push(p.id === db.me ? '/me' : `/user/${p.username}`);
 
-/** A person on a slip of paper: face, name, @username, a short line, and a follow button (or whatever `right` is). */
-export function PersonRow({ person, index, sub, right, onPress }: { person: Profile; index: number; sub?: string; right?: ReactNode; onPress?: () => void }) {
+/** A person on a slip of paper: face, name, @username, a short line, and a follow button (or whatever `right` is). `fill` gives every slip the same paper. */
+export function PersonRow({ person, index, sub, right, onPress, fill }: { person: Profile; index: number; sub?: string; right?: ReactNode; onPress?: () => void; fill?: string }) {
   return (
-    <Paper fill={cardFills[(index + 1) % cardFills.length]} shape={index} lean={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, paddingLeft: 12 }}>
+    <Paper fill={fill ?? cardFills[(index + 1) % cardFills.length]} shape={index} lean={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, paddingLeft: 12 }}>
       <Pressable onPress={onPress ?? (() => openProfile(person))} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }} accessibilityRole="button" accessibilityLabel={`${person.name}, @${person.username}`}>
         <Avatar person={person} size={40} />
         <View style={{ flex: 1, gap: 1 }}>

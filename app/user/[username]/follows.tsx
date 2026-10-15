@@ -48,7 +48,7 @@ export default function Follows() {
       <View style={{ marginBottom: 14 }}>
         <SearchField value={q} onChange={setQ} placeholder="find someone" />
       </View>
-      <PeopleList people={people} />
+      <PeopleList people={people} fill={colors.cream} />
       {!people.length ? <Mono size={12} color={colors.inkSoft} style={{ marginTop: 12 }}>{empty}</Mono> : null}
     </FolderScreen>
   );
