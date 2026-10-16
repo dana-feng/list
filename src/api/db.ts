@@ -6,6 +6,8 @@ import { useSyncExternalStore } from 'react';
 export type Visibility = 'anyone' | 'followers' | 'specific' | 'just_me';
 /** Who an open invite goes to. Separate from who can see the list. */
 export type InviteAudience = 'followers' | 'specific' | 'anyone';
+/** What an item asks for: company (an open invite), a gift, or something to borrow. */
+export type ItemTag = 'invite' | 'gift' | 'borrow';
 export type EventKind = 'list_created' | 'item_added' | 'open_invite' | 'item_done' | 'list_done';
 
 export type Profile = { id: string; username: string; name: string; profile_photo: string | null; bio: string; created_at: string };
@@ -19,8 +21,14 @@ export type Item = {
   title: string;
   notes: string;
   date: string | null; // YYYY-MM-DD
+  /** null: no tag. The database keeps open_invite in step: it's true exactly when tag is 'invite'. */
+  tag: ItemTag | null;
   open_invite: boolean;
   invite_audience: InviteAudience;
+  /** gift: how many are wanted */
+  gift_quantity: number;
+  /** crossed off because its gift was fully claimed, not by a person */
+  auto_done: boolean;
   caption: string | null;
   done_at: string | null;
   done_by: string | null;
@@ -31,6 +39,10 @@ export type Item = {
 /** path is a storage path in the photos bucket, or a local file uri while it's uploading. */
 export type ItemPhoto = { id: string; item_id: string; path: string; position: number; added_by: string | null; created_at: string };
 export type ItemInvitee = { item_id: string; user_id: string };
+/** Someone saying they have the thing a borrow ask is for. Everyone who can see the list sees who. */
+export type BorrowHave = { item_id: string; user_id: string; created_at: string };
+/** A gift's counts, from gift_status(). Who claimed is never sent, only how many, and how many are yours. */
+export type GiftStatus = { item_id: string; quantity: number; claimed: number; mine: number };
 export type Interest = { item_id: string; user_id: string; created_at: string };
 export type FeedEvent = { id: string; actor_id: string; kind: EventKind; list_id: string; item_id: string | null; created_at: string };
 /** A like on a post (an events row). */
@@ -96,6 +108,9 @@ export type Db = {
   item_photos: ItemPhoto[];
   item_invitees: ItemInvitee[];
   interests: Interest[];
+  borrow_haves: BorrowHave[];
+  /** item id -> its gift's counts */
+  gifts: Record<string, GiftStatus>;
   events: FeedEvent[];
   event_likes: EventLike[];
   event_comments: EventComment[];
@@ -117,6 +132,8 @@ export const emptyTables = () => ({
   item_photos: [] as ItemPhoto[],
   item_invitees: [] as ItemInvitee[],
   interests: [] as Interest[],
+  borrow_haves: [] as BorrowHave[],
+  gifts: {} as Record<string, GiftStatus>,
   events: [] as FeedEvent[],
   event_likes: [] as EventLike[],
   event_comments: [] as EventComment[],
