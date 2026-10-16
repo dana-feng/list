@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import type { Profile } from '@/api/db';
 import { getProfile, myFollowers } from '@/api/profiles';
 import { colors, corners } from '@/theme';
@@ -78,6 +78,8 @@ export function AudiencePicker<T extends string>({ options, value, people, onCha
             <View style={{ marginHorizontal: 10, marginBottom: 4 }}>
               <SearchField value={q} onChange={setQ} placeholder="search people" />
             </View>
+            {/* only the people scroll: the choices and the search stay put */}
+            <ScrollView style={{ maxHeight: 272 }} nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator>
             {shown.map((p) => {
               const ticked = people.includes(p.id);
               return (
@@ -91,6 +93,7 @@ export function AudiencePicker<T extends string>({ options, value, people, onCha
                 </Pressable>
               );
             })}
+            </ScrollView>
             {!shown.length ? (
               <Mono size={12} color={colors.inkSoft} style={{ marginHorizontal: 14, marginTop: 8, lineHeight: 18 }}>
                 {s ? 'no one by that name.' : 'once people follow you, you can pick them here.'}
