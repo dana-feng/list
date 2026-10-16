@@ -50,6 +50,36 @@ export type EventComment = {
   deleted_at: string | null;
 };
 
+export type NotificationKind =
+  | 'list_invite' | 'viewer_added' | 'item_invite' | 'invite_accepted' | 'mention' | 'comment' | 'reply'
+  | 'like' | 'interested' | 'item_added' | 'item_done' | 'list_done';
+/**
+ * A row on the notifications screen, written by the database. Several of the same thing on the
+ * same post or list are one row: `actor_ids` is who (newest first), `count` how many times.
+ * Not kept in the local copy: the screen loads its own page of them.
+ */
+export type Notification = {
+  id: string;
+  recipient_id: string;
+  kind: NotificationKind;
+  group_key: string;
+  list_id: string | null;
+  item_id: string | null;
+  event_id: string | null;
+  comment_id: string | null;
+  actor_ids: string[];
+  /** what the row is made of (who liked, which items were added…), one id each */
+  source_ids: string[];
+  /** how many it's made of: the length of source_ids */
+  count: number;
+  /** a comment's words, tags as @username */
+  body: string;
+  created_at: string;
+  updated_at: string;
+  seen_at: string | null;
+  read_at: string | null;
+};
+
 /** loading: checking for a saved sign-in · signedOut · needsProfile: signed in, no profile row yet · ready */
 export type Status = 'loading' | 'signedOut' | 'needsProfile' | 'ready';
 
@@ -73,6 +103,8 @@ export type Db = {
   blocked: Profile[];
   /** storage path -> signed url for photos in the private bucket */
   photoUrls: Record<string, string>;
+  /** Something on the notifications screen you haven't seen yet: the dot on the bell. */
+  unseenNotifications: boolean;
 };
 
 export const emptyTables = () => ({
@@ -90,6 +122,7 @@ export const emptyTables = () => ({
   event_comments: [] as EventComment[],
   blocked: [] as Profile[],
   photoUrls: {} as Record<string, string>,
+  unseenNotifications: false,
 });
 
 export const db: Db = { status: 'loading', me: '', phone: '', ...emptyTables() };
