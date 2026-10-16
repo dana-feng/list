@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, useDb } from '@/api/db';
 import {
-  addItem, addPhoto, deleteItem, getItem, interestedPeople, inviteeIds, isInterested, isInvitedTo, markDone, photosFor, removePhoto, setInvite,
-  toggleInterest, undoDone, updateItem,
+  addItem, addPhoto, canClaimGift, canSayHave, claimGift, deleteItem, getItem, giftOf, havesFor, iHaveIt, interestedPeople, isInterested,
+  isInvitedTo, markDone, noTag, photosFor, removePhoto, setTag, TagChoice, tagChoiceOf, toggleHave, toggleInterest, undoDone, updateItem,
 } from '@/api/items';
 import { inviteHosts } from '@/api/feed';
 import { getList, isMember, listPeople, listProgress } from '@/api/lists';
@@ -16,17 +16,18 @@ import { DateChip, DateField } from '@/components/DateField';
 import { canSayDown, interestLabel } from '@/components/Down';
 import { FolderTab } from '@/components/FolderTab';
 import { goBack, Header, TextAction } from '@/components/Header';
-import { Invite, InviteChip, InviteSheet } from '@/components/InviteSheet';
 import { EditableTitle, FieldRow, TitleInput } from '@/components/ListFields';
 import { ListPicker, ListPickerTab } from '@/components/ListPicker';
 import { MoreMenu } from '@/components/MoreMenu';
 import { NotesField } from '@/components/NotesField';
 import { Paper } from '@/components/Paper';
+import { PeopleList } from '@/components/PeopleList';
 import { PeoplePress } from '@/components/PeopleSheet';
 import { PhotoStrip } from '@/components/PhotoGrid';
 import { ReportSheet } from '@/components/ReportSheet';
 import { Circle } from '@/components/Scribble';
 import { FolderScreen } from '@/components/Screen';
+import { Stepper, TagBadge, TagField } from '@/components/TagField';
 import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
 import { success, tap, toggle } from '@/haptics';
 import { monthDay, names, toDay } from '@/lib';
@@ -45,7 +46,7 @@ const editableNotes = (saved: string) => {
  */
 type Draft = {
   /** notes are the typed text here: tags as @username, turned into ids on save. unfound: tagged people who can't be found, to keep their tags */
-  listId: string | null; title: string; date: string | null; notes: string; unfound: Unfound; photos: string[]; invite: Invite;
+  listId: string | null; title: string; date: string | null; notes: string; unfound: Unfound; photos: string[]; tag: TagChoice;
 };
 
 const dayOf = (iso: string) => (toDay(new Date(iso)) === toDay(new Date()) ? 'today' : monthDay(iso));
@@ -60,13 +61,13 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const item = id ? getItem(id) : undefined;
   const isNew = !id;
   const [picking, setPicking] = useState(isNew && !listId);
-  const [inviting, setInviting] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [draft, setDraft] = useState<Draft>(() => ({
     listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, ...editableNotes(item?.notes ?? ''), photos: [],
-    invite: { open: false, audience: 'followers', invitees: [] },
+    tag: noTag(),
   }));
+  const [howMany, setHowMany] = useState<number | null>(null);
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const list = draft.listId ? getList(draft.listId) : undefined;
 
@@ -90,15 +91,12 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   // who to report it about: whoever added it (left out if that post isn't visible to you)
   const added = item ? db.events.find((e) => e.item_id === item.id && e.kind === 'item_added') : undefined;
   const addedBy = added ? getProfile(added.actor_id) : undefined;
-  const invite: Invite = item ? { open: item.open_invite, audience: item.invite_audience, invitees: inviteeIds(item.id) } : draft.invite;
+  const tagValue: TagChoice = item ? tagChoiceOf(item) : draft.tag;
+  const gift = item ? giftOf(item.id) : { quantity: draft.tag.quantity, claimed: 0, mine: 0, left: draft.tag.quantity };
 
   // ---- changes: straight to the item, or into the draft for a new one ----
   const setDate = (date: string | null) => (item ? updateItem(item.id, { date }) : set({ date }));
-  const changeInvite = (next: Invite) => {
-    setInviting(false);
-    if (item) setInvite(item.id, next);
-    else set({ invite: next });
-  };
+  const changeTag = (next: TagChoice) => (item ? setTag(item.id, next) : set({ tag: next }));
   const addPhotos = async () => {
     const uris = await pickPhotos();
     if (item) uris.forEach((uri) => addPhoto(item.id, uri));
@@ -114,8 +112,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const save = () => {
     if (!draft.listId) return;
     addItem({
-      list_id: draft.listId, title: draft.title, date: draft.date, notes: tagsToIds(draft.notes, draft.unfound), photos: draft.photos,
-      open_invite: draft.invite.open, invite_audience: draft.invite.audience, invitees: draft.invite.invitees,
+      list_id: draft.listId, title: draft.title, date: draft.date, notes: tagsToIds(draft.notes, draft.unfound), photos: draft.photos, tag: draft.tag,
     });
     // from a list's "+ add", go back to it; from the + menu, land on the list
     if (listId) goBack();
@@ -161,8 +158,15 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const iAmDown = !!item && isInterested(item.id);
   // someone else's item: only an open invite for you if you're in its audience
   const invitedHere = !!item && !member && isInvitedTo(item.id);
-  // an invite is for something still to do
-  const inviteChip = member && !done ? <InviteChip invite={invite} down={down.length} onPress={() => setInviting(true)} /> : null;
+  // a tag is for something still to do
+  const tagField = member && !done ? <TagField value={tagValue} onChange={changeTag} claimed={gift.claimed} interested={down.length} /> : null;
+  const isGift = item?.tag === 'gift';
+  const isBorrow = item?.tag === 'borrow';
+  // the list's people, for "from" on a friend's gift or borrow ask
+  const askers = list ? listPeople(list.id) : [];
+  const haves = isBorrow ? havesFor(item!.id) : [];
+  const ownerName = askers.length === 1 ? askers[0].name : 'they';
+  const ownerObject = askers.length === 1 ? askers[0].name : 'them';
   // a friend's invite: whose it is, so you know who you'd be joining
   const hosts = invitedHere ? inviteHosts(item!) : [];
 
@@ -186,9 +190,28 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       )}
 
       {member ? (
-        <DateField value={item ? item.date : draft.date} onChange={setDate} beside={inviteChip} />
-      ) : item!.date ? (
-        <DateChip value={item!.date} />
+        <DateField value={item ? item.date : draft.date} onChange={setDate} beside={tagField} />
+      ) : item!.date || isGift || isBorrow ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {item!.date ? <DateChip value={item!.date} /> : null}
+          {isGift || isBorrow ? <TagBadge tag={item!.tag!} /> : null}
+        </View>
+      ) : null}
+
+      {/* a friend's gift or borrow ask: whose it is, and for gifts how many are left (never who's getting them) */}
+      {!member && (isGift || isBorrow) ? (
+        <View style={{ gap: 4 }}>
+          <FieldRow label="from">
+            <PeoplePress people={askers} hitSlop={6} style={styles.from}>
+              <AvatarStack people={askers} size={22} max={3} />
+              <MonoMedium size={11.5} numberOfLines={1} style={{ flexShrink: 1 }}>{askers.map((p) => p.name).join(' + ')}</MonoMedium>
+            </PeoplePress>
+          </FieldRow>
+          {isGift ? <FieldRow label="available"><MonoMedium size={11.5}>{gift.left} of {gift.quantity}</MonoMedium></FieldRow> : null}
+        </View>
+      ) : null}
+      {member && isGift ? (
+        <FieldRow label="available"><MonoMedium size={11.5}>{gift.left} of {gift.quantity}</MonoMedium></FieldRow>
       ) : null}
 
       {/* a friend's open invite that includes you: whose it is, and who's interested so far */}
@@ -252,7 +275,33 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
           ) : null}
         </>
       ) : null}
-      {!member && done ? <Mono size={12} style={{ marginTop: 14, marginHorizontal: 4 }}>done · {dayOf(item!.done_at!)}</Mono> : null}
+      {!member && done && !(isGift && gift.mine) ? <Mono size={12} style={{ marginTop: 14, marginHorizontal: 4 }}>done · {dayOf(item!.done_at!)}</Mono> : null}
+
+      {/* a friend's gift: "i'll get it" (with how many, when more than one is wanted). Tap again to take it back. */}
+      {!member && item && isGift ? <GiftClaim itemId={item.id} owner={ownerObject} howMany={howMany} setHowMany={setHowMany} /> : null}
+
+      {/* your gift: how many are left shows on the card; who's getting them never does */}
+      {member && item && isGift ? (
+        <Mono size={11} color={colors.inkSoft} style={{ marginTop: 12, marginHorizontal: 4, lineHeight: 17 }}>
+          {item.auto_done && done ? `all ${gift.quantity} are covered, so it's marked done. tap undo to open it back up.` : "you'll see how many are left, never who's getting them."}
+        </Mono>
+      ) : null}
+
+      {/* a friend's borrow ask */}
+      {!member && item && canSayHave(item.id) ? (
+        <>
+          <Button
+            label="i have it"
+            tone={iHaveIt(item.id) ? 'bark' : 'outline'}
+            onPress={() => { toggle(!iHaveIt(item.id)); toggleHave(item.id); }}
+            accessibilityLabel={iHaveIt(item.id) ? `You said you have ${item.title}. Tap to take it back` : `I have ${item.title}`}
+            style={{ marginTop: 16 }}
+          />
+          <Mono size={11} color={colors.inkSoft} style={{ marginTop: 8, marginHorizontal: 4, lineHeight: 17 }}>
+            {iHaveIt(item.id) ? `${ownerName} can see you have it. tap again to take it back.` : `${ownerName} sees who has it and reaches out.`}
+          </Mono>
+        </>
+      ) : null}
 
       {member || item?.notes ? (
         <>
@@ -261,9 +310,20 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
         </>
       ) : null}
 
-      {isNew ? <Button label="save" disabled={!draft.title.trim() || !draft.listId} onPress={save} style={{ marginTop: 22 }} /> : null}
+      {item && isBorrow ? (
+        <>
+          <Label style={{ marginTop: 24, marginBottom: 8, marginHorizontal: 2 }}>who has</Label>
+          {haves.length ? (
+            <PeopleList people={haves} fill={colors.cream} />
+          ) : (
+            <Mono size={12} color={colors.inkSoft} style={{ marginHorizontal: 2, lineHeight: 18 }}>
+              {member ? "no one yet. we'll let you know when someone has it." : 'no one yet.'}
+            </Mono>
+          )}
+        </>
+      ) : null}
 
-      {inviting ? <InviteSheet invite={invite} onDone={changeInvite} /> : null}
+      {isNew ? <Button label="save" disabled={!draft.title.trim() || !draft.listId} onPress={save} style={{ marginTop: 22 }} /> : null}
 
       {isNew && picking ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -285,7 +345,64 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   );
 }
 
+/**
+ * "i'll get it" on a friend's gift. Filled once you've said you will; tap again to take it back.
+ * When more than one is wanted, a stepper beside it picks how many. Nobody sees who's getting
+ * what, only how many are left.
+ */
+function GiftClaim({ itemId, owner, howMany, setHowMany }: { itemId: string; owner: string; howMany: number | null; setHowMany: (n: number) => void }) {
+  const { quantity, mine, left } = giftOf(itemId);
+  if (!canClaimGift(itemId)) {
+    return (
+      <>
+        <View style={styles.taken}><Mono size={13} color={colors.inkSoft}>someone’s getting this</Mono></View>
+        <Mono size={11} color={colors.inkSoft} style={{ marginTop: 8, marginHorizontal: 4, lineHeight: 17 }}>it’s off the asks tab now so no one doubles up.</Mono>
+      </>
+    );
+  }
+  const most = left + mine;
+  const n = Math.min(most, Math.max(1, howMany ?? (mine || 1)));
+  const button = (
+    <Button
+      label="i'll get it"
+      tone={mine ? 'bark' : 'outline'}
+      onPress={() => {
+        toggle(!mine);
+        claimGift(itemId, mine ? 0 : n);
+      }}
+      accessibilityLabel={mine ? `You're getting ${mine}. Tap to take it back` : `I'll get ${quantity > 1 ? n : 'it'}`}
+      style={quantity > 1 ? { flex: 1 } : undefined}
+    />
+  );
+  return (
+    <>
+      {quantity > 1 ? (
+        <View style={{ marginTop: 16, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <Stepper
+            big
+            value={n}
+            min={1}
+            max={most}
+            onChange={(next) => {
+              setHowMany(next);
+              // already getting some: the new number is what you're getting
+              if (mine) claimGift(itemId, next);
+            }}
+          />
+          {button}
+        </View>
+      ) : (
+        <View style={{ marginTop: 16 }}>{button}</View>
+      )}
+      <Mono size={11} color={colors.inkSoft} style={{ marginTop: 8, marginHorizontal: 4, lineHeight: 17 }}>
+        {mine ? `you're getting ${quantity > 1 ? mine : 'it'}. tap again to uncheck.` : `no one sees who's getting it, not even ${owner}. just how many are left.`}
+      </Mono>
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
+  taken: { marginTop: 16, height: 52, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.ink, borderTopLeftRadius: 13, borderTopRightRadius: 11, borderBottomRightRadius: 14, borderBottomLeftRadius: 12 },
   card: { paddingTop: 18, paddingHorizontal: 16, paddingBottom: 16, gap: 12 },
   from: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
