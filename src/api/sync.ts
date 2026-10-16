@@ -51,7 +51,7 @@ export function refresh(): Promise<void> {
 async function load() {
   const seen = changes;
   const who = db.me;
-  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events, likes, comments] = await Promise.all([
+  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events, likes, comments, blocked] = await Promise.all([
     supabase.from('profiles').select('*'),
     supabase.from('follows').select('*'),
     supabase.from('lists').select('*'),
@@ -65,7 +65,9 @@ async function load() {
     // Only rows on posts you can see come back; trimmed to the loaded posts below.
     supabase.from('event_likes').select('*'),
     supabase.from('event_comments').select('*').order('created_at', { ascending: true }),
+    supabase.rpc('blocked_profiles'),
   ]);
+  // blocked accounts are a nice-to-have here: if that lookup fails, load everything else anyway
   const failed = [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events, likes, comments].find((r) => r.error);
   if (failed?.error) {
     console.warn('refresh failed', failed.error.message);
@@ -93,6 +95,8 @@ async function load() {
   const loaded = new Set(db.events.map((e) => e.id));
   db.event_likes = (likes.data ?? []).filter((l) => loaded.has(l.event_id));
   db.event_comments = (comments.data ?? []).filter((c) => loaded.has(c.event_id));
+  if (blocked.error) console.warn('blocked_profiles failed', blocked.error.message);
+  else db.blocked = blocked.data ?? [];
 
   await signPhotoUrls();
   if (db.me !== who) return;

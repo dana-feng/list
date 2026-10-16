@@ -140,6 +140,7 @@ export default function Settings() {
 
       <Label style={styles.label}>account</Label>
       <Row label="phone number" value={masked} onPress={startEdit} />
+      <Row label="blocked profiles" value={db.blocked.length ? String(db.blocked.length) : undefined} onPress={() => router.push('/blocked')} />
 
       <Label style={styles.label}>help</Label>
       <Row label="help + feedback" />

@@ -20,6 +20,7 @@ import { Paper } from '@/components/Paper';
 import { PeoplePress } from '@/components/PeopleSheet';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Reorderable } from '@/components/Reorderable';
+import { ReportSheet } from '@/components/ReportSheet';
 import { FolderScreen } from '@/components/Screen';
 import { Hand, Label, Mono } from '@/components/Text';
 import { success, tap, toggle } from '@/haptics';
@@ -38,6 +39,7 @@ export default function ListScreen() {
 
   const [cele, setCele] = useState<string | null>(null);
   const [settings, setSettings] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [dragging, setDragging] = useState(false);
 
@@ -63,6 +65,10 @@ export default function ListScreen() {
   const finished = items.done;
   const others = people.filter((p) => p.id !== db.me);
   const owner = others[0] ?? people[0];
+  // whoever started it, for reports: a list can have several owners, and only one of them made it
+  // (left out if they've since left it, or that post isn't visible to you)
+  const made = db.events.find((e) => e.list_id === id && e.kind === 'list_created');
+  const maker = made ? people.find((p) => p.id === made.actor_id) : undefined;
 
   // ---- crossing things off ----
   const crossOff = (itemId: string) => {
@@ -111,6 +117,8 @@ export default function ListScreen() {
                 { label: 'delete list', confirm: true, onPress: destroy },
               ]}
             />
+          ) : !member ? (
+            <MoreMenu label="More: report list" actions={[{ label: 'report list', danger: true, onPress: () => setReporting(true) }]} />
           ) : undefined}
         />
       }
@@ -186,6 +194,9 @@ export default function ListScreen() {
       {partial ? <Mono size={10.5} color={colors.inkSoft} style={{ marginTop: 22, marginHorizontal: 4, lineHeight: 16 }}>you’re only seeing what you’re invited to on this list</Mono> : null}
 
       {settings ? <ListSettingsSheet listId={id} onClose={() => setSettings(false)} onDelete={destroy} onLeave={leave} /> : null}
+      {reporting ? (
+        <ReportSheet what="this list" target={{ profile_id: maker?.id, list_id: id, content: list.title }} person={maker} onClose={() => setReporting(false)} />
+      ) : null}
     </FolderScreen>
   );
 }
