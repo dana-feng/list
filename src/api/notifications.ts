@@ -88,6 +88,8 @@ export function describeNotification(n: Notification): NotificationView {
       return many
         ? { people, href: list ? `/list/${list.id}` : href, parts: [...by, p(` crossed off ${n.count} things on `), s(listName)] }
         : { people, href, parts: [...by, p(' crossed off '), s(thing)] };
+    case 'borrow_has':
+      return { people, href, parts: [...by, p(people.length > 1 ? ' have ' : ' has '), s(thing), p(' you can borrow')] };
     case 'list_done':
       return { people, href: list ? `/list/${list.id}` : href, parts: [s(listName), p(' is finished')] };
   }

@@ -6,7 +6,7 @@ import { FeedPost } from './FeedPost';
 import type { TabPosition } from './SwipeTabs';
 import { Hand, Mono, MonoMedium } from './Text';
 
-export const PROFILE_TABS = ['lists', 'activity'] as const;
+export const PROFILE_TABS = ['lists', 'activity', 'asks'] as const;
 export type ProfileTab = (typeof PROFILE_TABS)[number];
 
 type Span = { x: number; width: number };
@@ -15,10 +15,10 @@ type Span = { x: number; width: number };
 const LINE = 100;
 
 /**
- * "lists 3 · activity" under the bio: small mono words with an underline under the open one.
+ * "lists 3 · activity · asks 2" under the bio: small mono words with an underline under the open one.
  * The underline slides along with `position` (SwipeTabs' drag), stretching from one word to the next.
  */
-export function ProfileTabs({ tab, onChange, lists, position }: { tab: ProfileTab; onChange: (tab: ProfileTab) => void; lists: number; position: TabPosition['position'] }) {
+export function ProfileTabs({ tab, onChange, lists, asks, position }: { tab: ProfileTab; onChange: (tab: ProfileTab) => void; lists: number; asks: number; position: TabPosition['position'] }) {
   const [spans, setSpans] = useState<Partial<Record<ProfileTab, Span>>>({});
   const measure = (t: ProfileTab) => ({ nativeEvent: { layout } }: { nativeEvent: { layout: Span } }) =>
     setSpans((was) => (was[t]?.x === layout.x && was[t]?.width === layout.width ? was : { ...was, [t]: { x: layout.x, width: layout.width } }));
@@ -29,6 +29,7 @@ export function ProfileTabs({ tab, onChange, lists, position }: { tab: ProfileTa
     <View style={styles.tabs} accessibilityRole="tablist">
       <Word label="lists" count={lists} on={tab === 'lists'} onPress={() => onChange('lists')} onLayout={measure('lists')} />
       <Word label="activity" on={tab === 'activity'} onPress={() => onChange('activity')} onLayout={measure('activity')} />
+      <Word label="asks" count={asks} on={tab === 'asks'} onPress={() => onChange('asks')} onLayout={measure('asks')} />
       {measured ? (
         <Animated.View
           pointerEvents="none"
