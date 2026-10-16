@@ -2,18 +2,18 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useNavigation } from 'expo-router';
 import { useDb } from '@/api/db';
-import { feedAll, openInvites } from '@/api/feed';
+import { asks, feedAll } from '@/api/feed';
+import { AskList } from '@/components/AskList';
 import { Bell } from '@/components/Bell';
 import { FeedPost } from '@/components/FeedPost';
 import { FolderTab } from '@/components/FolderTab';
 import { Icon } from '@/components/Icon';
-import { OpenInviteRow } from '@/components/OpenInviteRow';
 import { FolderScreen } from '@/components/Screen';
 import { SwipeTabs, useTabPosition } from '@/components/SwipeTabs';
 import { Hand, Mono } from '@/components/Text';
 import { colors } from '@/theme';
 
-const TABS = ['all', 'invites'] as const;
+const TABS = ['all', 'asks'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function Home() {
@@ -24,12 +24,11 @@ export default function Home() {
   // tapping Home always lands back on the feed
   useEffect(() => navigation.addListener('tabPress' as never, () => setTab('all')), [navigation]);
   const posts = feedAll();
-  const invites = openInvites();
   return (
     <FolderScreen
       insideTabs
       refreshable
-      roundCorner={tab === 'invites'}
+      roundCorner={tab === 'asks'}
       header={
         <View style={styles.top}>
           <Hand size={40} color={colors.paper} style={{ lineHeight: 44 }}>list</Hand>
@@ -44,7 +43,7 @@ export default function Home() {
       folderTabs={
         <>
           <FolderTab tab label="feed" on={tab === 'all'} onPress={() => setTab('all')} open={tracking.position.interpolate({ inputRange: [0, 1], outputRange: [1, 0], extrapolate: 'clamp' })} />
-          <FolderTab tab label={`open invites · ${invites.length}`} on={tab === 'invites'} onPress={() => setTab('invites')} open={tracking.position.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' })} />
+          <FolderTab tab label="asks" on={tab === 'asks'} onPress={() => setTab('asks')} open={tracking.position.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' })} />
         </>
       }
     >
@@ -58,10 +57,11 @@ export default function Home() {
           all: posts.length ? posts.map((e, i) => <FeedPost key={e.id} event={e} index={i} />) : (
             <Empty title="quiet in here" body="follow a few people. what they add, cross off and ask about shows up here." />
           ),
-          invites: invites.length ? (
-            <View style={{ gap: 22 }}>{invites.map((r, i) => <OpenInviteRow key={r.item.id} {...r} index={i} />)}</View>
-          ) : (
-            <Empty title="no open invites" body="when someone you follow wants company for something, it lands here." />
+          asks: (
+            <AskList
+              asks={asks}
+              empty={{ title: 'nothing to answer', body: 'when friends invite you, add a gift, or need to borrow something, it shows up here.' }}
+            />
           ),
         }}
       />
