@@ -51,7 +51,7 @@ export function refresh(): Promise<void> {
 async function load() {
   const seen = changes;
   const who = db.me;
-  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events, likes, comments, blocked] = await Promise.all([
+  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events, likes, comments, blocked, unseen] = await Promise.all([
     supabase.from('profiles').select('*'),
     supabase.from('follows').select('*'),
     supabase.from('lists').select('*'),
@@ -66,8 +66,10 @@ async function load() {
     supabase.from('event_likes').select('*'),
     supabase.from('event_comments').select('*').order('created_at', { ascending: true }),
     supabase.rpc('blocked_profiles'),
+    // just whether there's anything new, for the dot on the bell
+    supabase.from('notifications').select('id', { count: 'exact', head: true }).is('seen_at', null),
   ]);
-  // blocked accounts are a nice-to-have here: if that lookup fails, load everything else anyway
+  // blocked accounts and the bell's dot are nice-to-haves here: if those lookups fail, load everything else anyway
   const failed = [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events, likes, comments].find((r) => r.error);
   if (failed?.error) {
     console.warn('refresh failed', failed.error.message);
@@ -97,6 +99,8 @@ async function load() {
   db.event_comments = (comments.data ?? []).filter((c) => loaded.has(c.event_id));
   if (blocked.error) console.warn('blocked_profiles failed', blocked.error.message);
   else db.blocked = blocked.data ?? [];
+  if (unseen.error) console.warn('notifications count failed', unseen.error.message);
+  else db.unseenNotifications = (unseen.count ?? 0) > 0;
 
   await signPhotoUrls();
   if (db.me !== who) return;
