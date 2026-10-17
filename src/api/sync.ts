@@ -10,6 +10,7 @@ import { Alert, AppState } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import type { Session, User } from '@supabase/supabase-js';
 import { commit, db, emptyTables, GiftStatus } from './db';
+import { listenForNotifications, stopListening } from './live';
 import { supabase } from './supabase';
 
 export const newId = () => randomUUID();
@@ -194,6 +195,7 @@ export async function signInWithCode(digits: string, code: string): Promise<stri
 async function startSession(session: Session | null) {
   const user: User | undefined = session?.user;
   if (!user) {
+    stopListening();
     Object.assign(db, { status: 'signedOut', me: '', phone: '' }, emptyTables());
     commit();
     return;
@@ -201,6 +203,7 @@ async function startSession(session: Session | null) {
   if (db.me === user.id && db.status !== 'loading' && db.status !== 'signedOut') return;
   db.me = user.id;
   db.phone = user.phone ?? '';
+  listenForNotifications(user.id);
   // Don't guess needsProfile here. At launch that would hide the splash and redirect an
   // already-onboarded person to the profile step before their profile had loaded.
   // Status stays as it is (loading at launch, signedOut mid sign-in) until refresh() decides.
