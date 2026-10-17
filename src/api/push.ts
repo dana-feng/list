@@ -4,8 +4,9 @@
 //   - forgets the token on sign-out, so the phone stops getting that account's pushes
 //   - opens the right screen when a push is tapped (useOpenTappedPush, in the root layout)
 //
-// Needs a development build (not Expo Go) with an EAS project id, and on iOS an Apple
-// developer account for the push key. Until then registerForPush() quietly does nothing.
+// Needs an EAS project id (`eas init`). On iPhone, Expo Go can receive pushes as is; a real
+// build needs the Apple developer account for the push key. Without the project id,
+// registerForPush() quietly does nothing.
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
