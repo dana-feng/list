@@ -11,6 +11,7 @@ import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono/400Regu
 import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono/500Medium';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useDb } from '@/api/db';
+import { registerForPush, useOpenTappedPush } from '@/api/push';
 import { startSync } from '@/api/sync';
 import { colors } from '@/theme';
 
@@ -29,6 +30,14 @@ export default function RootLayout() {
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);
+
+  // Push: ask once you're in (a no-op until push is set up; see src/api/push.ts), and open
+  // whatever a tapped push points at.
+  const signedIn = db.status === 'ready';
+  useEffect(() => {
+    if (signedIn && db.me) registerForPush(db.me);
+  }, [signedIn, db.me]);
+  useOpenTappedPush(ready && signedIn);
 
   if (!ready) return null;
 
