@@ -47,6 +47,7 @@ supabase/             database migrations and local config
 
 - `src/api/db.ts` is a local copy of the tables the signed-in person can see. Screens read it synchronously through the other `src/api/*` files and re-render with `useDb()`.
 - `src/api/sync.ts` fills it: `refresh()` selects every table, and the database's rules (`can_view_list` etc.) only return rows you're allowed to see. It runs at sign-in, when the app comes back to the foreground, every minute while open, and after every write.
+- The bell's dot is also live: `src/api/live.ts` listens on Supabase's real-time feed for your own notifications, so a new one lights the dot right away instead of on the next refresh.
 - Writes change the local copy first (so taps feel instant), then go to Supabase one at a time through `write()`. The refresh after each write picks up what the database's triggers did (feed posts, finished lists) and undoes the local change if the database refused it.
 - Photos: item photos upload to the private `photos` bucket (`<list id>/<item id>/<photo id>.jpg`) and are shown through signed links; profile photos go to the public `avatars` bucket.
 
@@ -67,6 +68,7 @@ The tables live in `supabase/migrations/` as SQL files, applied in order:
 - `…_notifications.sql`: the `notifications` table behind the bell on Home, written only by triggers (invites, sharing, tags, comments, replies, likes, interested, things added / crossed off / finished), plus `mark_notifications_read`. Until it's applied, the bell never shows a dot and the notifications screen says it couldn't load.
 - `…_item_tags.sql`: one tag per item (`items.tag`: invite, gift or borrow), `gift_quantity`, and two tables: `gift_claims` (readable only by whoever made the claim; counts come from `gift_status()`, claiming goes through `claim_gift()`) and `borrow_haves`. `open_invite` stays and is kept in step with the tag. **Apply this before shipping the app from that branch**: the app loads `borrow_haves` and `gift_status` on every refresh and saves new items with a `tag`.
 - `…_borrow_has_notification.sql`: tells a list's people when someone says they have the thing a borrow ask is for (`borrow_has`). Gift claims never notify anyone.
+- `…_notifications_realtime.sql`: puts `notifications` on the `supabase_realtime` publication so the bell's dot updates live. The table's read rule means each person only hears about their own rows. Until it's applied, the dot still updates on the one-minute refresh.
 
 Phone sign-in settings on the hosted project (Authentication > Sign In / Providers > Phone): provider on, **Enable phone confirmations off**. The Twilio fields hold placeholders; nothing is sent while confirmations are off. To turn on real texts later: put in real Twilio details, turn confirmations on, and switch `signInWithCode` in `src/api/sync.ts` to `signInWithOtp` / `verifyOtp`.
 
