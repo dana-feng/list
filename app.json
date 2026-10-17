@@ -33,7 +33,8 @@
         {
           "contactsPermission": "list uses your contacts to find friends who are already here."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "scheme": "list",
     "experiments": {
