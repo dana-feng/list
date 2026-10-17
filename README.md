@@ -89,9 +89,9 @@ The flow: a notification row is added or merged into → `notifications_push` tr
 
 To turn it on (none of this is needed for the rest of the app to work):
 
-1. **EAS project**: `npx eas-cli@latest init` adds `extra.eas.projectId` to `app.json`. Without it the app skips push setup.
-2. **iOS push key** (needs the Apple developer account): `npx eas-cli@latest credentials` → iOS → Push Notifications → let EAS create the key. Android needs an FCM key instead, whenever Android happens.
-3. **A development build**: push doesn't work in Expo Go. `npx eas-cli@latest build --profile development --platform ios`.
+1. **EAS project** (a free Expo account is enough): `npx eas-cli@latest init` adds `extra.eas.projectId` to `app.json`. Without it the app skips push setup.
+2. **Testing now, no Apple account:** on an iPhone, Expo Go can receive pushes (it uses Expo's own push key). Run `npx expo start`, open in Expo Go and say yes to notifications. (Android dropped push from Expo Go in SDK 53.)
+3. **For TestFlight / the App Store** (needs the Apple developer account): `npx eas-cli@latest credentials` → iOS → Push Notifications → let EAS create the key, then `npx eas-cli@latest build`. Android needs an FCM key instead, whenever Android happens.
 4. **The function**, with a long random secret:
    ```bash
    npx supabase secrets set PUSH_SECRET=<random string>
