@@ -11,6 +11,7 @@ import { randomUUID } from 'expo-crypto';
 import type { Session, User } from '@supabase/supabase-js';
 import { commit, db, emptyTables, GiftStatus } from './db';
 import { listenForNotifications, stopListening } from './live';
+import { forgetPushToken } from './push';
 import { supabase } from './supabase';
 
 export const newId = () => randomUUID();
@@ -238,6 +239,8 @@ export function startSync() {
 }
 
 export async function signOut() {
+  // while still signed in, so this phone stops getting the account's pushes
+  await forgetPushToken();
   await supabase.auth.signOut();
   await startSession(null);
 }
