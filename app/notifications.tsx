@@ -3,6 +3,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-n
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Notification, useDb } from '@/api/db';
+import { onNewNotification } from '@/api/live';
 import { describeNotification, loadNotifications, markNotificationsRead } from '@/api/notifications';
 import { refresh } from '@/api/sync';
 import { Avatar } from '@/components/Avatar';
@@ -31,6 +32,8 @@ export default function Notifications() {
   useEffect(() => {
     loadNotifications().then(show);
   }, [show]);
+  // something new while you're looking at the list: show it (which also marks it read)
+  useEffect(() => onNewNotification(() => void loadNotifications().then(show)), [show]);
 
   const fresh = rows?.filter((n) => !n.seen_at) ?? [];
   const earlier = rows?.filter((n) => n.seen_at) ?? [];
