@@ -116,7 +116,7 @@ export default function ListScreen() {
               label="More: list settings, delete list"
               actions={[
                 { label: 'list settings', onPress: () => setSettings(true) },
-                { label: 'delete list', confirm: true, onPress: destroy },
+                { label: 'delete list', confirm: true, confirmText: 'everything on it goes too, for everyone on it. this can’t be undone.', onPress: destroy },
               ]}
             />
           ) : !member ? (

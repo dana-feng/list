@@ -8,6 +8,7 @@ import { deleteAccount, signOut } from '@/api/sync';
 import { Avatar } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { FolderTab } from '@/components/FolderTab';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { FeedbackSheet } from '@/components/FeedbackSheet';
 import { Header, SaveAction, TextAction } from '@/components/Header';
 import { Icon } from '@/components/Icon';
@@ -150,20 +151,20 @@ export default function Settings() {
 
       <Button label="log out" tone="outline" onPress={leave} style={{ marginTop: 24, height: 48 }} />
       <View style={{ alignItems: 'center', marginTop: 10 }}>
-        {confirming ? (
-          <View style={{ alignItems: 'center', gap: 2 }}>
-            <Mono size={12} center color={colors.inkSoft} style={{ maxWidth: 260, lineHeight: 18 }}>this deletes your lists, photos and everything you’re interested in, for good.</Mono>
-            <View style={{ flexDirection: 'row', gap: 18 }}>
-              <LinkText label="delete everything" color={colors.bark} onPress={destroy} />
-              <LinkText label="keep my account" onPress={() => setConfirming(false)} />
-            </View>
-          </View>
-        ) : (
-          <LinkText label="delete my account" color={colors.bark} onPress={() => setConfirming(true)} />
-        )}
+        <LinkText label="delete my account" color={colors.bark} onPress={() => setConfirming(true)} />
         <Mono size={10} color={colors.inkFaint} style={{ marginTop: 8 }}>list v{Constants.expoConfig?.version ?? ''}</Mono>
       </View>
       {feedback ? <FeedbackSheet onClose={() => setFeedback(false)} /> : null}
+      {confirming ? (
+        <ConfirmDialog
+          title="delete your account?"
+          body="this deletes your lists, photos and everything you’re interested in, for good."
+          action="delete everything"
+          cancel="keep my account"
+          onConfirm={() => { setConfirming(false); destroy(); }}
+          onCancel={() => setConfirming(false)}
+        />
+      ) : null}
     </FolderScreen>
   );
 }

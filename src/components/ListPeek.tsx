@@ -7,6 +7,7 @@ import { names } from '@/lib';
 import { colors, folderFills, hash } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { LinkText } from './Button';
+import { ConfirmCard } from './ConfirmDialog';
 import { Paper } from './Paper';
 import { Hand, Mono, MonoMedium } from './Text';
 
@@ -63,19 +64,18 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
           </Pressable>
 
           <Paper fill={fill} shape={4} round={1.2} style={styles.menu}>
-            {confirming ? (
-              <>
-                <Mono size={12} center color={colors.inkSoft}>are you sure?</Mono>
-                <View style={{ flexDirection: 'row', gap: 16 }}>
-                  <LinkText label="yes" color={colors.bark} onPress={() => deleteList(list.id)} />
-                  <LinkText label="no" onPress={onClose} />
-                </View>
-              </>
-            ) : (
-              <LinkText label="delete list" color={colors.bark} onPress={() => setConfirming(true)} />
-            )}
+            <LinkText label="delete list" color={colors.bark} onPress={() => setConfirming(true)} />
           </Paper>
         </Animated.View>
+        {confirming ? (
+          <ConfirmCard
+            title={`delete “${list.title}”?`}
+            body="everything on it goes too, for everyone on it. this can’t be undone."
+            action="delete list"
+            onConfirm={() => deleteList(list.id)}
+            onCancel={() => setConfirming(false)}
+          />
+        ) : null}
       </View>
     </Modal>
   );

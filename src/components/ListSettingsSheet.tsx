@@ -7,6 +7,7 @@ import { colors, fonts, noOutline } from '@/theme';
 import { AudienceOption, AudiencePicker } from './AudiencePicker';
 import { Avatar } from './Avatar';
 import { Button, LinkText } from './Button';
+import { ConfirmCard } from './ConfirmDialog';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
 import { PersonPicker } from './PersonPicker';
@@ -71,17 +72,28 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
       onClose={close}
       footer={
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          {confirmingDelete ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Mono size={12} color={colors.inkSoft}>delete it?</Mono>
-              <LinkText label="yes" color={colors.bark} onPress={onDelete} />
-              <LinkText label="no" onPress={() => setConfirmingDelete(false)} />
-            </View>
-          ) : (
-            <LinkText label="delete list" color={colors.bark} onPress={() => setConfirmingDelete(true)} />
-          )}
+          <LinkText label="delete list" color={colors.bark} onPress={() => setConfirmingDelete(true)} />
           <Button label="done" onPress={close} style={{ minWidth: 130 }} />
         </View>
+      }
+      overlay={
+        confirmingDelete ? (
+          <ConfirmCard
+            title={`delete “${list.title}”?`}
+            body="everything on it goes too, for everyone on it. this can’t be undone."
+            action="delete list"
+            onConfirm={onDelete}
+            onCancel={() => setConfirmingDelete(false)}
+          />
+        ) : leaving ? (
+          <ConfirmCard
+            title="leave this list?"
+            body="it stays with the other owners. to come back, one of them has to invite you again."
+            action="leave list"
+            onConfirm={onLeave}
+            onCancel={() => setLeaving(false)}
+          />
+        ) : null
       }
     >
       <View style={{ gap: 20 }}>
@@ -127,13 +139,6 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
               <Mono size={12.5}>+ add</Mono>
             </Paper>
           </View>
-          {leaving ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Mono size={12} color={colors.inkSoft}>leave this list?</Mono>
-              <LinkText label="yes" color={colors.bark} onPress={onLeave} />
-              <LinkText label="no" onPress={() => setLeaving(false)} />
-            </View>
-          ) : null}
         </View>
 
         <View style={{ gap: 8 }}>

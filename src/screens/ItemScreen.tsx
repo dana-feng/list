@@ -151,7 +151,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     header = (
       <Header
         right={member ? (
-          <MoreMenu label="More: delete" actions={[{ label: 'delete item', confirm: true, onPress: destroy }]} />
+          <MoreMenu label="More: delete" actions={[{ label: 'delete item', confirm: true, confirmText: 'its photos, comments and stars go with it, for everyone.', onPress: destroy }]} />
         ) : addedBy?.id !== db.me ? (
           <MoreMenu label="More: report item" actions={[{ label: 'report item', danger: true, onPress: () => setReporting(true) }]} />
         ) : undefined}
