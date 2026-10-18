@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import type { Profile } from '@/api/db';
 import { colors } from '@/theme';
+import { SomeoneAvatar } from './Avatar';
 import { Paper } from './Paper';
 import { PersonRow } from './PersonRow';
 import { Hand, Mono } from './Text';
@@ -21,9 +22,7 @@ export function WhoList({ entries, counted }: { entries: WhoEntry[]; counted?: b
           <PersonRow key={e.person.id} person={e.person} index={i} fill={colors.cream} right={count ?? undefined} />
         ) : (
           <Paper key={`someone${i}`} fill={colors.cream} shape={i} lean={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, paddingLeft: 12 }} accessibilityLabel={counted ? `Someone, ${e.quantity}` : 'Someone'}>
-            <View style={{ width: 40, height: 40, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.ink, alignItems: 'center', justifyContent: 'center' }}>
-              <Hand size={18}>?</Hand>
-            </View>
+            <SomeoneAvatar seed={`someone${i}`} size={40} />
             <Hand size={17} style={{ flex: 1 }}>someone</Hand>
             {count}
           </Paper>

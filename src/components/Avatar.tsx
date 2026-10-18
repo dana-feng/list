@@ -26,6 +26,11 @@ export function Avatar({ person, size = 24, edge = colors.ink, fill }: Props) {
   );
 }
 
+/** "someone" on a surprise gift: the same pastel square as a face without a photo, with a ? for the initial. `seed` picks the pastel. */
+export function SomeoneAvatar({ seed = 'someone', size = 24, edge }: { seed?: string; size?: number; edge?: string }) {
+  return <Avatar person={{ id: seed, name: '?', username: '', profile_photo: null, bio: '', created_at: '' }} size={size} edge={edge} />;
+}
+
 /** Overlapping faces. */
 export function AvatarStack({ people, size = 22, max = 4 }: { people: Profile[]; size?: number; max?: number }) {
   return (
