@@ -32,6 +32,18 @@ npx tsc --noEmit          # typecheck
 npx expo lint             # lint
 ```
 
+## Tests
+
+```bash
+npm test              # everything, about 2 seconds
+npm run test:watch    # re-runs what changed as you edit
+```
+
+- `src/**/*.test.ts(x)` run with Jest (`jest-expo`) and React Native Testing Library. They also run on every pull request (`.github/workflows/test.yml`), along with the typecheck.
+- Nothing touches the network. `jest.setup.ts` swaps in a fake Supabase client (`src/test/fake-supabase.ts`) and a `write()` that records each save instead of sending it, so a test checks the local change and the database call the app queued (`savedCalls()`).
+- `src/test/fixtures.ts` builds the data for a test: `signIn()`, `person()`, `list()`, `item()`, `gift()`, `follow()`. Start each test from `signIn()`.
+- The push message wording has its own tests: `node --experimental-strip-types --test supabase/functions/push/message.test.ts`.
+
 ## Layout
 
 ```
