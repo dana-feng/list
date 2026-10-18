@@ -162,7 +162,7 @@ describe('setTag', () => {
 
   it('an invite for specific people saves who they are first', async () => {
     const i = item(list());
-    setTag(i.id, { tag: 'invite', audience: 'specific', invitees: ['u1', 'u2'], quantity: 1 });
+    setTag(i.id, { ...noTag(), tag: 'invite', audience: 'specific', invitees: ['u1', 'u2'] });
     expect(i.open_invite).toBe(true);
     const calls = await savedCalls();
     expect(calls.map((c) => c.table)).toEqual(['item_invitees', 'items']);
