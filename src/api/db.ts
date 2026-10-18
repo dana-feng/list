@@ -41,6 +41,8 @@ export type ItemPhoto = { id: string; item_id: string; path: string; position: n
 export type ItemInvitee = { item_id: string; user_id: string };
 /** Someone saying they have the thing a borrow ask is for. Everyone who can see the list sees who. */
 export type BorrowHave = { item_id: string; user_id: string; created_at: string };
+/** Someone tagged on a crossed-off item as having done it with the list's people. Anyone can be tagged. */
+export type ItemCompanion = { item_id: string; user_id: string; added_by: string | null; created_at: string };
 /** A gift's counts, from gift_status(). Who claimed is never sent, only how many, and how many are yours. */
 export type GiftStatus = { item_id: string; quantity: number; claimed: number; mine: number };
 export type Interest = { item_id: string; user_id: string; created_at: string };
@@ -64,7 +66,7 @@ export type EventComment = {
 
 export type NotificationKind =
   | 'list_invite' | 'viewer_added' | 'item_invite' | 'invite_accepted' | 'mention' | 'comment' | 'reply'
-  | 'like' | 'interested' | 'item_added' | 'item_done' | 'list_done' | 'borrow_has';
+  | 'like' | 'interested' | 'item_added' | 'item_done' | 'list_done' | 'borrow_has' | 'done_with';
 /**
  * A row on the notifications screen, written by the database. Several of the same thing on the
  * same post or list are one row: `actor_ids` is who (newest first), `count` how many times.
@@ -109,6 +111,7 @@ export type Db = {
   item_invitees: ItemInvitee[];
   interests: Interest[];
   borrow_haves: BorrowHave[];
+  item_companions: ItemCompanion[];
   /** item id -> its gift's counts */
   gifts: Record<string, GiftStatus>;
   events: FeedEvent[];
@@ -133,6 +136,7 @@ export const emptyTables = () => ({
   item_invitees: [] as ItemInvitee[],
   interests: [] as Interest[],
   borrow_haves: [] as BorrowHave[],
+  item_companions: [] as ItemCompanion[],
   gifts: {} as Record<string, GiftStatus>,
   events: [] as FeedEvent[],
   event_likes: [] as EventLike[],

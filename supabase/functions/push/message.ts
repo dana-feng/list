@@ -4,7 +4,7 @@
 
 export type Kind =
   | 'list_invite' | 'viewer_added' | 'item_invite' | 'invite_accepted' | 'mention' | 'comment' | 'reply'
-  | 'like' | 'interested' | 'item_added' | 'item_done' | 'list_done' | 'borrow_has';
+  | 'like' | 'interested' | 'item_added' | 'item_done' | 'list_done' | 'borrow_has' | 'done_with';
 
 /** The row claim_push() returns. */
 export type Claim = {
@@ -68,6 +68,7 @@ export function sentence(c: Claim): string {
     case 'item_added': return c.count > 1 ? `${by} added ${c.count} things to ${list}` : `${by} added ${thing} to ${list}`;
     case 'item_done': return c.count > 1 ? `${by} crossed off ${c.count} things on ${list}` : `${by} crossed off ${thing}`;
     case 'borrow_has': return `${by} ${many ? 'have' : 'has'} ${thing} you can borrow`;
+    case 'done_with': return `${by} did ${thing} with you`;
     case 'list_done': return `${list} is finished`;
   }
 }

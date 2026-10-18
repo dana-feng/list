@@ -1,5 +1,5 @@
 import { commit, db, InviteAudience, Item, ItemTag, now, Profile } from './db';
-import { followsSomeoneOn, getList, isListDone, isMember, listProgress } from './lists';
+import { canViewList, followsSomeoneOn, getList, isListDone, isMember, listPeople, listProgress } from './lists';
 import { getProfile } from './profiles';
 import { supabase } from './supabase';
 import { isLocal, newId, uploadImage, write } from './sync';
@@ -135,6 +135,63 @@ export function toggleHave(itemId: string) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Did it with: who the list's people did a crossed-off thing with
+// ---------------------------------------------------------------------------
+
+/** The most people one thing can be done with. The database refuses more. */
+export const MAX_COMPANIONS = 20;
+
+export const companionIds = (itemId: string) =>
+  db.item_companions
+    .filter((c) => c.item_id === itemId)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .map((c) => c.user_id);
+
+/** Who it was done with, in the order they were tagged. */
+export const companionsFor = (itemId: string): Profile[] =>
+  companionIds(itemId).map((id) => getProfile(id)).filter((p): p is Profile => !!p);
+
+/** Tagged on it while it's crossed off. Same rule as did_it_with_me in the database. */
+export function didItWith(itemId: string, userId = db.me) {
+  const item = getItem(itemId);
+  return !!item?.done_at && db.item_companions.some((c) => c.item_id === itemId && c.user_id === userId);
+}
+
+/**
+ * Changes who it was done with. Only the list's people, only once it's crossed off. Anyone
+ * can be tagged except yourself and people already on the list (they're in it anyway).
+ */
+export function setCompanions(itemId: string, userIds: string[]) {
+  const item = getItem(itemId);
+  if (!item || !item.done_at || !isMember(item.list_id)) return;
+  const onList = listPeople(item.list_id).map((p) => p.id);
+  const wanted = [...new Set(userIds)].filter((u) => u !== db.me && !onList.includes(u)).slice(0, MAX_COMPANIONS);
+  const before = companionIds(itemId);
+  const added = wanted.filter((u) => !before.includes(u));
+  const removed = before.filter((u) => !wanted.includes(u));
+  if (!added.length && !removed.length) return;
+  db.item_companions = db.item_companions
+    .filter((c) => !(c.item_id === itemId && removed.includes(c.user_id)))
+    .concat(added.map((user_id) => ({ item_id: itemId, user_id, added_by: db.me, created_at: now() })));
+  commit();
+  if (removed.length) write(() => supabase.from('item_companions').delete().eq('item_id', itemId).in('user_id', removed), 'who you did it with');
+  if (added.length) write(() => supabase.from('item_companions').insert(added.map((user_id) => ({ item_id: itemId, user_id, added_by: db.me }))), 'who you did it with');
+}
+
+/** Takes your own tag off. If the tag was all that let you see it, it goes from here too. */
+export function untagMe(itemId: string) {
+  const item = getItem(itemId);
+  if (!item || !db.item_companions.some((c) => c.item_id === itemId && c.user_id === db.me)) return;
+  db.item_companions = db.item_companions.filter((c) => !(c.item_id === itemId && c.user_id === db.me));
+  if (!canViewList(item.list_id)) {
+    db.items = db.items.filter((i) => i.id !== itemId);
+    db.events = db.events.filter((e) => e.item_id !== itemId);
+  }
+  commit();
+  write(() => supabase.from('item_companions').delete().eq('item_id', itemId).eq('user_id', db.me), 'that');
+}
+
 /** Your own star: only on open invites, and never on a list you're on. */
 export function toggleInterest(itemId: string) {
   const item = getItem(itemId);
@@ -251,6 +308,7 @@ export function deleteItem(itemId: string) {
   db.item_invitees = db.item_invitees.filter((v) => v.item_id !== itemId);
   db.interests = db.interests.filter((i) => i.item_id !== itemId);
   db.borrow_haves = db.borrow_haves.filter((h) => h.item_id !== itemId);
+  db.item_companions = db.item_companions.filter((c) => c.item_id !== itemId);
   delete db.gifts[itemId];
   db.events = db.events.filter((e) => e.item_id !== itemId);
   const list = getList(item.list_id);

@@ -1,26 +1,31 @@
 import { db, FeedEvent, Item, ItemTag, List, Profile } from './db';
-import { canClaimGift, isInvitedTo } from './items';
+import { canClaimGift, didItWith, isInvitedTo } from './items';
 import { getList, isMember, listPeople } from './lists';
 import { getProfile, isFollowing } from './profiles';
 
+/** A "did" post for something done with this person (they were tagged on it). */
+const doneWith = (e: FeedEvent, userId: string) => e.kind === 'item_done' && !!e.item_id && didItWith(e.item_id, userId);
+
 /**
- * All: posts from people you follow, newest first. Never your own, and never open invites:
- * those live under Open Invite. The database already left out lists you can't see.
+ * All: posts from people you follow, newest first, plus anything someone did with you. Never
+ * your own, and never open invites: those live under Open Invite. The database already left out
+ * lists you can't see.
  */
 export function feedAll(limit = 20): FeedEvent[] {
   return db.events
-    .filter((e) => e.kind !== 'open_invite' && e.actor_id !== db.me && isFollowing(e.actor_id) && getList(e.list_id))
+    .filter((e) => e.kind !== 'open_invite' && e.actor_id !== db.me && (isFollowing(e.actor_id) || doneWith(e, db.me)) && getList(e.list_id))
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
     .slice(0, limit);
 }
 
 /**
  * Someone's posts, for the activity tab on their profile: what they started and added, plus
- * every "did" and "finished" on lists they're on, since those belong to everyone on the list.
- * Only what you're allowed to see comes back from the database in the first place.
+ * every "did" and "finished" on lists they're on, since those belong to everyone on the list,
+ * and every "did" they were tagged on. Only what you're allowed to see comes back from the
+ * database in the first place.
  */
 export function activityFor(userId: string, limit = 50): FeedEvent[] {
-  const shared = (e: FeedEvent) => (e.kind === 'item_done' || e.kind === 'list_done') && isMember(e.list_id, userId);
+  const shared = (e: FeedEvent) => ((e.kind === 'item_done' || e.kind === 'list_done') && isMember(e.list_id, userId)) || doneWith(e, userId);
   return db.events
     .filter((e) => e.kind !== 'open_invite' && getList(e.list_id) && (e.actor_id === userId || shared(e)))
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))

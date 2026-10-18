@@ -6,6 +6,7 @@ import { addPhoto, getItem, itemsForList, photosFor, removePhoto } from '@/api/i
 import { getList, isListDone, listPeople, listProgress } from '@/api/lists';
 import { AvatarStack } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { DidItWith } from '@/components/DidItWith';
 import { BackButton, goBack, Header } from '@/components/Header';
 import { PhotoCarousel } from '@/components/Photo';
 import { Paper } from '@/components/Paper';
@@ -16,7 +17,7 @@ import { monthDay, names } from '@/lib';
 import { pickPhotos } from '@/pickPhotos';
 import { colors, hash } from '@/theme';
 
-/** Photos for an item you just crossed off, or every item crossed off for a whole list (?kind=list, id = the list). */
+/** Photos and who you did it with for an item you just crossed off, or every item crossed off for a whole list (?kind=list, id = the list). */
 export default function Done() {
   useDb();
   const { id, kind } = useLocalSearchParams<{ id: string; kind?: string }>();
@@ -70,6 +71,7 @@ function ItemDone({ itemId, onListDone }: { itemId: string; onListDone: (listId:
           <AvatarStack people={people} size={26} />
           <Mono size={11} color={colors.paper}>{names(people)}</Mono>
         </View>
+        <DidItWith itemId={item.id} onDark />
         <Mono size={10.5} color={colors.onDarkSoft}>{list.title}</Mono>
       </View>
     </Screen>

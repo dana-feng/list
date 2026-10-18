@@ -13,6 +13,7 @@ import { getProfile } from '@/api/profiles';
 import { AvatarStack } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { DateChip, DateField } from '@/components/DateField';
+import { DidItWith } from '@/components/DidItWith';
 import { canSayDown, interestLabel } from '@/components/Down';
 import { FolderTab } from '@/components/FolderTab';
 import { goBack, Header, TextAction } from '@/components/Header';
@@ -256,6 +257,9 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
         </View>
       ) : null}
 
+      {/* who it was done with: tap to change */}
+      {member && item && done ? <View style={{ marginTop: 4, marginHorizontal: 4 }}><DidItWith itemId={item.id} /></View> : null}
+
       {/* a friend's open invite */}
       {!member && item && canDown ? (
         <>
@@ -276,6 +280,8 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
         </>
       ) : null}
       {!member && done && !(isGift && gift.mine) ? <Mono size={12} style={{ marginTop: 14, marginHorizontal: 4 }}>done · {dayOf(item!.done_at!)}</Mono> : null}
+      {/* someone else's: who they did it with, and "untag me" if that's you */}
+      {!member && item && done ? <View style={{ marginTop: 6, marginHorizontal: 4 }}><DidItWith itemId={item.id} /></View> : null}
 
       {/* a friend's gift: "i'll get it" (with how many, when more than one is wanted). Tap again to take it back. */}
       {!member && item && isGift ? <GiftClaim itemId={item.id} owner={ownerObject} howMany={howMany} setHowMany={setHowMany} /> : null}

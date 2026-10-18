@@ -10,7 +10,7 @@ type Props = { title: string; count: string; onCard: () => void; onLater: () => 
 
 /**
  * "you did it!" after crossing something off. The post already went out;
- * "add photos" opens the done screen, "not now" just closes this.
+ * "add photos + people" opens the done screen (photos, and who you did it with), "not now" just closes this.
  */
 export function DoneSheet({ title, count, onCard, onLater }: Props) {
   const insets = useSafeAreaInsets();
@@ -27,7 +27,7 @@ export function DoneSheet({ title, count, onCard, onLater }: Props) {
           <Hand size={18} color={colors.paper} style={{ opacity: 0.92 }}>{title}</Hand>
         </View>
         <View style={{ gap: 4 }}>
-          <Button label="add photos" tone="paper" onPress={onCard} style={{ height: 48 }} />
+          <Button label="add photos + people" tone="paper" onPress={onCard} style={{ height: 48 }} />
           <View style={{ alignItems: 'center' }}>
             <LinkText label="not now" color={colors.paper} onPress={onLater} />
           </View>

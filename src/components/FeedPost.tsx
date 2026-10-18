@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, FeedEvent, Profile } from '@/api/db';
-import { getItem, photosFor } from '@/api/items';
+import { companionsFor, getItem, photosFor } from '@/api/items';
 import { getList, listPeople } from '@/api/lists';
 import { getProfile } from '@/api/profiles';
 import { commentCount, likedByMe, likesFor, toggleLike } from '@/api/reactions';
@@ -37,8 +37,10 @@ export function describePost(event: FeedEvent) {
   if (!list || !actor || (event.item_id && !item) || event.kind === 'open_invite') return null;
 
   const kind: Kind = event.kind;
-  // "done" and "finished" belong to everyone on the list, not just whoever crossed it off
+  // "done" and "finished" belong to everyone on the list, not just whoever crossed it off,
+  // and a "did" also to whoever they did it with
   const crew = kind === 'item_done' || kind === 'list_done' ? listPeople(list.id) : [actor];
+  if (kind === 'item_done' && item) crew.push(...companionsFor(item.id).filter((p) => !crew.some((c) => c.id === p.id)));
   const people = crew.length ? crew : [actor];
   // stacked, biggest in the middle: who + what they did (small), the item or list (big), where it lives (small)
   const verb = { list_created: 'started a list', list_done: 'finished a list', item_added: 'added', item_done: 'did' }[kind];

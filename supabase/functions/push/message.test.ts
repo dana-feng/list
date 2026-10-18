@@ -33,6 +33,7 @@ test('sentences match the notifications screen', () => {
   assert.equal(sentence({ ...base, kind: 'interested', actors: ['jo', 'tochi'], actor_count: 2 }), 'jo and tochi are interested in apple picking');
   assert.equal(sentence({ ...base, kind: 'item_done', count: 4 }), 'dana crossed off 4 things on fall weekends');
   assert.equal(sentence({ ...base, kind: 'borrow_has', item_title: 'black heels' }), 'dana has black heels you can borrow');
+  assert.equal(sentence({ ...base, kind: 'done_with' }), 'dana did apple picking with you');
   assert.equal(sentence({ ...base, kind: 'list_done' }), 'fall weekends is finished');
 });
 
