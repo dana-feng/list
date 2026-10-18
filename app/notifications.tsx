@@ -102,7 +102,7 @@ function Row({ n }: { n: Notification }) {
           <Avatar person={a} size={32} edge={colors.paper} />
         ) : n.kind === 'gift_claim' ? (
           // a surprise gift: nobody's face, just "someone"
-          <SomeoneAvatar seed={n.id} size={32} edge={colors.paper} />
+          <SomeoneAvatar seed={n.id} size={32} />
         ) : null}
       </View>
       <View style={{ flex: 1, gap: 3 }}>
