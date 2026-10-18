@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { db, useDb } from '@/api/db';
+import { useLive } from '@/api/watch';
 import { deleteItem, itemsForList, itemsLeft, markDone, reorderItems, undoDone } from '@/api/items';
 import {
   canViewList, deleteList, getList, invitedBy, isListDone, isMember, leaveList, listPeople, listProgress, membership,
@@ -45,6 +46,11 @@ export default function ListScreen() {
   const [reporting, setReporting] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [dragging, setDragging] = useState(false);
+  // co-owners' changes show up while it's open: things added, crossed off, reordered, deleted, renamed
+  useLive(`list:${id}`, [
+    { table: 'items', filter: `list_id=eq.${id}`, deleted: (old) => db.items.some((i) => i.id === old.id && i.list_id === id) },
+    { table: 'lists', filter: `id=eq.${id}` },
+  ], !deleted && !!list);
 
   // deleted here: stay blank while the screen slides away
   if (deleted) return <FolderScreen header={<Header />} folderTabs={<FolderTab label=" " />}>{null}</FolderScreen>;
@@ -110,6 +116,7 @@ export default function ListScreen() {
 
   return (
     <FolderScreen
+      refreshable
       header={
         <Header
           right={member ? (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, useDb } from '@/api/db';
+import { useLive } from '@/api/watch';
 import {
   addItem, addPhoto, canClaimGift, itemsLeft, photosLeft, canSayHave, claimGift, deleteItem, getItem, giftClaimers, giftOf, havesFor, howManyIHave, interestedPeople,
   isInterested, isInvitedTo, isSurprise, markDone, noTag, photosFor, removePhoto, setHaveCount, setTag, TagChoice, tagChoiceOf, toggleHave, toggleInterest,
@@ -79,6 +80,15 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const [howMany, setHowMany] = useState<number | null>(null);
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const list = draft.listId ? getList(draft.listId) : undefined;
+  // what others do shows up while it's open: crossing it off, claims on a gift, stars, "i have it", photos
+  const ofThis = (old: Record<string, unknown>) => old.item_id === id;
+  useLive(`item:${id}`, [
+    { table: 'items', filter: `id=eq.${id}`, deleted: (old) => old.id === id },
+    { table: 'item_photos', filter: `item_id=eq.${id}`, deleted: (old) => db.item_photos.some((p) => p.id === old.id && p.item_id === id) },
+    { table: 'interests', filter: `item_id=eq.${id}`, deleted: ofThis },
+    { table: 'borrow_haves', filter: `item_id=eq.${id}`, deleted: ofThis },
+    { topic: `gift:${id}` },
+  ], !isNew && !deleted && !!item);
 
   // deleted here: stay blank while the screen slides away
   if (deleted) return <FolderScreen header={<Header />} folderTabs={<FolderTab label=" " />}>{null}</FolderScreen>;
@@ -276,6 +286,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
 
   return (
     <FolderScreen
+      refreshable={!isNew}
       header={header}
       folderTabs={tab}
       overlay={cele && item && list ? (
