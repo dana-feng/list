@@ -111,6 +111,8 @@ Tests for the message wording: `node --experimental-strip-types --test supabase/
 
 The app talks to the hosted Supabase project, so a database change only takes effect once it is pushed there. Never edit a migration that has already been pushed; add a new one.
 
+On a Mac whose processor lacks AVX (older Intel), Supabase CLI 2.99 and later crash on start ("Illegal instruction"). Use `npm run supabase -- <command>` instead of `npx supabase <command>`; it runs 2.98.0, the last version that works there.
+
 One-time setup on a new machine:
 
 ```bash
