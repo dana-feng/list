@@ -18,54 +18,42 @@ import { names } from '@/lib';
 import { cardFills, colors } from '@/theme';
 
 type Kind = keyof SearchResults;
-type Tab = 'all' | Kind;
 
-/** On "all", each kind shows this many before "see all". */
-const PREVIEW = 3;
+/** Each kind shows this many until you tap "show all". */
+const PREVIEW = 5;
 
-/** People by name or @username, and lists and items by what they're called (items by their notes too). */
+/** People by name or @username, and lists and items by what they're called (items by their notes too), all on one page. */
 export default function Search() {
   useDb();
   const [q, setQ] = useState('');
-  const [tab, setTab] = useState<Tab>('all');
+  // kinds opened up with "show all"; back to the preview whenever the search changes
+  const [open, setOpen] = useState<Kind[]>([]);
   const term = q.trim();
   const found = search(q);
   const count = found.people.length + found.lists.length + found.items.length;
-  const shown = <K extends Kind>(kind: K): SearchResults[K] => (tab === 'all' ? (found[kind].slice(0, PREVIEW) as SearchResults[K]) : found[kind]);
-  const more = (kind: Kind) => tab === 'all' && found[kind].length > PREVIEW;
-  const nothing = term && !(tab === 'all' ? count : found[tab].length);
+  const shown = <K extends Kind>(kind: K): SearchResults[K] => (open.includes(kind) ? found[kind] : (found[kind].slice(0, PREVIEW) as SearchResults[K]));
+  const type = (next: string) => {
+    setQ(next);
+    setOpen([]);
+  };
 
   const section = (kind: Kind, body: React.ReactNode) =>
-    shown(kind).length ? (
+    found[kind].length ? (
       <View style={{ gap: 8 }}>
-        {tab === 'all' ? (
-          <View style={styles.heading}>
-            <Label>{kind}</Label>
-            {more(kind) ? (
-              <Pressable onPress={() => setTab(kind)} hitSlop={8} accessibilityRole="button" accessibilityLabel={`See all ${found[kind].length} ${kind}`}>
-                <MonoMedium size={11}>see all {found[kind].length} →</MonoMedium>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
+        <Label style={{ marginHorizontal: 2 }}>{kind}</Label>
         {body}
+        {found[kind].length > PREVIEW && !open.includes(kind) ? (
+          <Pressable onPress={() => setOpen([...open, kind])} hitSlop={8} style={{ alignSelf: 'flex-start', marginHorizontal: 2, minHeight: 32, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={`Show all ${found[kind].length} ${kind}`}>
+            <MonoMedium size={11}>show all {found[kind].length} {kind} ↓</MonoMedium>
+          </Pressable>
+        ) : null}
       </View>
     ) : null;
 
   return (
-    <FolderScreen
-      header={<Header />}
-      roundCorner={tab !== 'all'}
-      folderTabs={
-        <>
-          {(['all', 'people', 'lists', 'items'] as const).map((kind) => (
-            <FolderTab key={kind} tab label={kind} on={tab === kind} onPress={() => setTab(kind)} />
-          ))}
-        </>
-      }
-    >
+    <FolderScreen header={<Header />} folderTabs={<FolderTab label={term ? `search · “${term}”` : 'search'} />}>
       <View style={{ marginBottom: 14 }}>
-        <SearchField value={q} onChange={setQ} placeholder="search people, lists, items" autoFocus />
+        <SearchField value={q} onChange={type} placeholder="search people, lists, items" autoFocus />
       </View>
       {!term ? (
         <Mono size={12} center color={colors.inkSoft} style={{ marginTop: 24, lineHeight: 18 }}>find people by name or @username, and lists and items by what they’re called.</Mono>
@@ -75,12 +63,10 @@ export default function Search() {
         {section('lists', shown('lists').map((l, i) => <ListResult key={l.id} list={l} index={i} />))}
         {section('items', shown('items').map((it, i) => <ItemResult key={it.id} item={it} index={i} />))}
       </View>
-      {nothing ? (
+      {term && !count ? (
         <View style={{ marginTop: 24, alignItems: 'center', gap: 6 }}>
-          <Hand size={20}>{`no ${tab === 'all' ? 'people, lists or items' : tab} called “${term}”`}</Hand>
-          <Mono size={12} center color={colors.inkSoft} style={{ maxWidth: 270, lineHeight: 18 }}>
-            {tab !== 'all' && count ? 'there are matches on the other tabs.' : 'try part of a name, or check the spelling. lists and items only show if you can open them.'}
-          </Mono>
+          <Hand size={20}>{`nothing called “${term}”`}</Hand>
+          <Mono size={12} center color={colors.inkSoft} style={{ maxWidth: 270, lineHeight: 18 }}>try part of a name, or check the spelling. lists and items only show if you can open them.</Mono>
         </View>
       ) : null}
     </FolderScreen>
@@ -134,6 +120,5 @@ function ItemResult({ item, index }: { item: Item; index: number }) {
 }
 
 const styles = StyleSheet.create({
-  heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingVertical: 10, paddingHorizontal: 12 },
 });
