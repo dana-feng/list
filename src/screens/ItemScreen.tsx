@@ -375,7 +375,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
 }
 
 /**
- * "i'll get it" on a friend's gift. Filled once you've said you will; tap again to take it back.
+ * "i'll get it" on a friend's gift, like "i'm interested": "you're getting it", filled, once you've said you will; tap again to take it back.
  * When more than one is wanted, a stepper beside it picks how many. On a surprise nobody sees
  * who's getting what ("someone"); otherwise everyone who can see the list does.
  */
@@ -393,7 +393,7 @@ function GiftClaim({ itemId, owner, surprise, howMany, setHowMany }: { itemId: s
   const n = Math.min(most, Math.max(1, howMany ?? (mine || 1)));
   const button = (
     <Button
-      label="i'll get it"
+      label={mine ? "you're getting it" : "i'll get it"}
       tone={mine ? 'bark' : 'outline'}
       onPress={() => {
         toggle(!mine);
@@ -433,7 +433,7 @@ function GiftClaim({ itemId, owner, surprise, howMany, setHowMany }: { itemId: s
 }
 
 /**
- * "i have it" on a friend's borrow ask. When more than one is wanted, a stepper beside it says
+ * "i have it" on a friend's borrow ask ("you have it", filled, once you've said so). When more than one is wanted, a stepper beside it says
  * how many you have. Tap again to take it back.
  */
 function HaveIt({ itemId, title, wanted, owner, howMany, setHowMany }: {
@@ -443,7 +443,7 @@ function HaveIt({ itemId, title, wanted, owner, howMany, setHowMany }: {
   const n = Math.min(wanted, Math.max(1, howMany ?? (mine || 1)));
   const button = (
     <Button
-      label="i have it"
+      label={mine ? 'you have it' : 'i have it'}
       tone={mine ? 'bark' : 'outline'}
       onPress={() => { toggle(!mine); toggleHave(itemId, n); }}
       accessibilityLabel={mine ? `You said you have ${title}. Tap to take it back` : `I have ${wanted > 1 ? n : title}`}

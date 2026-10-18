@@ -68,7 +68,7 @@ export function AskRow({ item, list, index }: { item: Item; list: List; index: n
   );
 }
 
-/** The one thing to do about an ask from the ticket. Off is filled, on is outlined, like "i'm interested". */
+/** The one thing to do about an ask from the ticket. Like "i'm interested": "i…" in outline until you tap it, then "you…" filled in. */
 function AskButton({ item }: { item: Item }) {
   if (item.tag === 'invite') return <DownButton itemId={item.id} />;
   if (item.tag === 'gift') {
@@ -78,6 +78,7 @@ function AskButton({ item }: { item: Item }) {
       <Pill
         label={mine ? "you're getting it" : "i'll get it"}
         on={!!mine}
+        filled={!!mine}
         onPress={() => {
           toggle(!mine);
           claimGift(item.id, mine ? 0 : 1);
@@ -92,6 +93,7 @@ function AskButton({ item }: { item: Item }) {
     <Pill
       label={have ? 'you have it' : 'i have it'}
       on={have}
+      filled={have}
       onPress={() => {
         toggle(!have);
         toggleHave(item.id);
