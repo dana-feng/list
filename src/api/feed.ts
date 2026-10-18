@@ -19,13 +19,13 @@ export function feedAll(limit = 20): FeedEvent[] {
 }
 
 /**
- * Someone's posts, for the activity tab on their profile: what they started and added, plus
- * every "did" and "finished" on lists they're on, since those belong to everyone on the list,
- * and every "did" they were tagged on. Only what you're allowed to see comes back from the
+ * Someone's posts, for the activity tab on their profile: what they started, added, crossed off,
+ * tagged and joined, plus every "finished" on lists they're on (that belongs to everyone on the
+ * list) and every "did" they were tagged on. Only what you're allowed to see comes back from the
  * database in the first place.
  */
 export function activityFor(userId: string, limit = 50): FeedEvent[] {
-  const shared = (e: FeedEvent) => ((e.kind === 'item_done' || e.kind === 'list_done') && isMember(e.list_id, userId)) || doneWith(e, userId);
+  const shared = (e: FeedEvent) => (e.kind === 'list_done' && isMember(e.list_id, userId)) || doneWith(e, userId);
   return db.events
     .filter((e) => e.kind !== 'open_invite' && getList(e.list_id) && (e.actor_id === userId || shared(e)))
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))

@@ -16,6 +16,7 @@ import { PeoplePress } from './PeopleSheet';
 import { openProfile } from './PersonRow';
 import { Photo } from './Photo';
 import { PhotoViewer } from './PhotoViewer';
+import { TAG_ICON } from './TagField';
 import { Hand, Mono, MonoMedium } from './Text';
 
 type Kind = Exclude<FeedEvent['kind'], 'open_invite'>;
@@ -26,7 +27,14 @@ const MARK: Record<Kind, { icon: IconName; color: string }> = {
   list_done: { icon: 'folder', color: colors.olive },
   item_added: { icon: 'plus', color: colors.ink },
   item_done: { icon: 'check', color: colors.olive },
+  photos_added: { icon: 'image', color: colors.ink },
+  list_joined: { icon: 'people', color: colors.ink },
+  item_tagged: { icon: 'plus', color: colors.ink },
+  item_dated: { icon: 'calendar', color: colors.ink },
 };
+
+/** "wants", "wants company for", "wants to borrow": what tagging an item says. */
+const ASKS = { gift: 'wants', invite: 'wants company for', borrow: 'wants to borrow' } as const;
 
 /** Everything a post shows, or null when it can't be shown (open invites, or something you can't see). */
 export function describePost(event: FeedEvent) {
@@ -37,23 +45,44 @@ export function describePost(event: FeedEvent) {
   if (!list || !actor || (event.item_id && !item) || event.kind === 'open_invite') return null;
 
   const kind: Kind = event.kind;
-  // "done" and "finished" belong to everyone on the list, not just whoever crossed it off,
-  // and a "did" also to whoever they did it with
-  const crew = kind === 'item_done' || kind === 'list_done' ? listPeople(list.id) : [actor];
+  // "finished" belongs to everyone on the list; a "did" to whoever crossed it off and whoever
+  // they did it with; everything else to whoever did it
+  const crew = kind === 'list_done' ? listPeople(list.id) : [actor];
   if (kind === 'item_done' && item) crew.push(...companionsFor(item.id).filter((p) => !crew.some((c) => c.id === p.id)));
   const people = crew.length ? crew : [actor];
+  // a "photos" post shows the photos that person added
+  const allPhotos = item ? photosFor(item.id) : [];
+  const theirs = allPhotos.filter((p) => p.added_by === actor.id);
+  if (kind === 'photos_added' && !theirs.length) return null;
+  const photos = kind === 'photos_added' ? theirs : allPhotos;
+  const due = item?.date ? `due ${longDay(item.date)}` : null;
   // stacked, biggest in the middle: who + what they did (small), the item or list (big), where it lives (small)
-  const verb = { list_created: 'started a list', list_done: 'finished a list', item_added: 'added', item_done: 'did' }[kind];
+  const verb = {
+    list_created: 'started a list',
+    list_done: 'finished a list',
+    item_added: 'added',
+    item_done: 'did',
+    photos_added: `added ${theirs.length === 1 ? 'a photo' : `${theirs.length} photos`} to`,
+    list_joined: 'joined',
+    item_tagged: item?.tag ? ASKS[item.tag] : 'added',
+    item_dated: 'set a date for',
+  }[kind];
   const under = {
     list_created: null,
     list_done: null,
-    item_added: [list.title, item?.date ? `due ${longDay(item.date)}` : null].filter(Boolean).join(' · '),
+    item_added: [list.title, due].filter(Boolean).join(' · '),
     item_done: list.title,
+    photos_added: list.title,
+    list_joined: null,
+    item_tagged: [list.title, due].filter(Boolean).join(' · '),
+    item_dated: [list.title, due].filter(Boolean).join(' · '),
   }[kind];
+  // the item's tag changed back since: nothing left to say
+  if (kind === 'item_tagged' && !item?.tag) return null;
   return {
     kind, list, item, people, verb, under,
     title: item ? item.title : list.title,
-    photos: item ? photosFor(item.id) : [],
+    photos,
     path: item ? `/item/${item.id}` : `/list/${list.id}`,
   };
 }
@@ -86,7 +115,8 @@ export function FeedPost({ event, index }: { event: FeedEvent; index: number }) 
 export function PostBody({ event, post, index, go = (to) => to() }: { event: FeedEvent; post: Post; index: number; go?: (to: () => void) => void }) {
   const [viewing, setViewing] = useState<number | null>(null);
   const { kind, people, verb, title, under, photos, path } = post;
-  const mark = MARK[kind];
+  // a tagged item shows its tag's own icon
+  const mark = kind === 'item_tagged' && post.item?.tag ? { ...MARK[kind], icon: TAG_ICON[post.item.tag] } : MARK[kind];
   const who = names(people);
   // up to three photos in a row under the sentence; one photo gets the full width
   const shown = photos.slice(0, 3);

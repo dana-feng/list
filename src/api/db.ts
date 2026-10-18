@@ -8,7 +8,10 @@ export type Visibility = 'anyone' | 'followers' | 'specific' | 'just_me';
 export type InviteAudience = 'followers' | 'specific' | 'anyone';
 /** What an item asks for: company (an open invite), a gift, or something to borrow. */
 export type ItemTag = 'invite' | 'gift' | 'borrow';
-export type EventKind = 'list_created' | 'item_added' | 'open_invite' | 'item_done' | 'list_done';
+export type EventKind =
+  | 'list_created' | 'item_added' | 'open_invite' | 'item_done' | 'list_done'
+  // added in more_feed_posts: photos added later, someone joining a list, an item tagged or given a date
+  | 'photos_added' | 'list_joined' | 'item_tagged' | 'item_dated';
 
 export type Profile = { id: string; username: string; name: string; profile_photo: string | null; bio: string; created_at: string };
 export type Follow = { follower_id: string; followee_id: string; created_at: string };
