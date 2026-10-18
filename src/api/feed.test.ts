@@ -51,14 +51,15 @@ describe('feedAll', () => {
 });
 
 describe('activityFor', () => {
-  it('is what they did, plus "did" and "finished" on lists they\'re on', () => {
+  it('is what they did, plus "finished" on lists they\'re on, not a co-owner\'s crossings', () => {
     const ada = person();
     const bo = person();
     const shared = list({ visibility: 'anyone' }, [ada, bo]);
     const theirs = post(ada.id, 'item_added', shared.id);
-    const crossedByBo = post(bo.id, 'item_done', shared.id);
+    const finished = post(bo.id, 'list_done', shared.id);
+    post(bo.id, 'item_done', shared.id);
     post(bo.id, 'item_added', shared.id);
-    expect(activityFor(ada.id).map((e) => e.id).sort()).toEqual([theirs.id, crossedByBo.id].sort());
+    expect(activityFor(ada.id).map((e) => e.id).sort()).toEqual([theirs.id, finished.id].sort());
   });
 });
 
