@@ -210,7 +210,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       ) : item!.date || isGift || isBorrow ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {item!.date ? <DateChip value={item!.date} /> : null}
-          {isGift || isBorrow ? <TagBadge tag={item!.tag!} /> : null}
+          {isGift || isBorrow ? <TagBadge tag={item!.tag!} surprise={isSurprise(item!)} /> : null}
         </View>
       ) : null}
 

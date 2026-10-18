@@ -135,7 +135,7 @@ function TagChip({ value, interested, onPress, expanded }: { value: TagChoice; i
       </Paper>
     );
   }
-  const label = value.tag === 'gift' ? `gift · ${value.quantity}` : value.quantity > 1 ? `borrow · ${value.quantity}` : 'borrow';
+  const label = value.tag === 'gift' ? `gift · ${value.quantity}${value.surprise ? ' · surprise' : ''}` : value.quantity > 1 ? `borrow · ${value.quantity}` : 'borrow';
   return (
     <Paper onPress={onPress} fill={colors.cream} edge="ink" edgeWidth={1.3} shape={3} round={1.3} style={chip} accessibilityLabel={`${label}. Change`} accessibilityState={{ expanded }}>
       <Icon name={TAG_ICON[value.tag]} size={15} strokeWidth={1.8} />
@@ -144,12 +144,12 @@ function TagChip({ value, interested, onPress, expanded }: { value: TagChoice; i
   );
 }
 
-/** On someone else's item: just what it is ("gift", "borrow"), not its settings. */
-export function TagBadge({ tag }: { tag: ItemTag }) {
+/** On someone else's item: what it is ("gift", "borrow"), and whether a gift is a surprise. */
+export function TagBadge({ tag, surprise }: { tag: ItemTag; surprise?: boolean }) {
   return (
     <Paper fill={colors.cream} edge="ink" edgeWidth={1.3} shape={3} round={1.3} style={chip}>
       <Icon name={TAG_ICON[tag]} size={15} strokeWidth={1.8} />
-      <MonoMedium size={12}>{tag}</MonoMedium>
+      <MonoMedium size={12}>{tag === 'gift' && surprise ? 'gift · surprise' : tag}</MonoMedium>
     </Paper>
   );
 }
