@@ -107,7 +107,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const progress = list ? listProgress(list.id) : null;
   const owner = list ? listPeople(list.id).find((p) => p.id !== db.me) ?? listPeople(list.id)[0] : undefined;
   const photos = item ? photosFor(item.id) : draft.photos.map((path, i) => ({ id: `new${i}`, path }));
-  // who to report it about: whoever added it (left out if that post isn't visible to you)
+  // whoever added it: shown under the title, and who to report it about (left out if that post isn't visible to you)
   const added = item ? db.events.find((e) => e.item_id === item.id && e.kind === 'item_added') : undefined;
   const addedBy = added ? getProfile(added.actor_id) : undefined;
   const tagValue: TagChoice = item ? tagChoiceOf(item) : draft.tag;
@@ -227,6 +227,10 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
           ) : null}
         </View>
       )}
+      {/* who put it on the list, and when (only when their "added" post is visible to you) */}
+      {!isNew && added && addedBy ? (
+        <Mono size={11} color={colors.inkSoft} style={{ marginTop: -6 }}>added by {names([addedBy])} · {monthDay(added.created_at)}</Mono>
+      ) : null}
 
       {member ? (
         <DateField value={item ? item.date : draft.date} onChange={setDate} beside={tagField} />
