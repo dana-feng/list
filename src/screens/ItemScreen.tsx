@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, useDb } from '@/api/db';
 import {
-  addItem, addPhoto, canClaimGift, canSayHave, claimGift, deleteItem, getItem, giftClaimers, giftOf, havesFor, howManyIHave, interestedPeople,
+  addItem, addPhoto, canClaimGift, itemsLeft, photosLeft, canSayHave, claimGift, deleteItem, getItem, giftClaimers, giftOf, havesFor, howManyIHave, interestedPeople,
   isInterested, isInvitedTo, isSurprise, markDone, noTag, photosFor, removePhoto, setHaveCount, setTag, TagChoice, tagChoiceOf, toggleHave, toggleInterest,
   undoDone, updateItem,
 } from '@/api/items';
@@ -35,6 +35,7 @@ import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
 import { WhoList } from '@/components/WhoList';
 import { success, tap, toggle } from '@/haptics';
 import { monthDay, names, toDay } from '@/lib';
+import { ITEM_TITLE_MAX, ITEMS_PER_LIST, PHOTOS_PER_ITEM } from '@/limits';
 import { pickPhotos } from '@/pickPhotos';
 import { colors } from '@/theme';
 
@@ -105,11 +106,15 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   // ---- changes: straight to the item, or into the draft for a new one ----
   const setDate = (date: string | null) => (item ? updateItem(item.id, { date }) : set({ date }));
   const changeTag = (next: TagChoice) => (item ? setTag(item.id, next) : set({ tag: next }));
+  // photos still allowed: up to PHOTOS_PER_ITEM in all
+  const roomForPhotos = item ? photosLeft(item.id) : Math.max(0, PHOTOS_PER_ITEM - draft.photos.length);
   const addPhotos = async () => {
-    const uris = await pickPhotos();
+    const uris = await pickPhotos(true, roomForPhotos);
     if (item) uris.forEach((uri) => addPhoto(item.id, uri));
-    else set({ photos: [...draft.photos, ...uris] });
+    else set({ photos: [...draft.photos, ...uris].slice(0, PHOTOS_PER_ITEM) });
   };
+  // a new item's list is already full
+  const listFull = isNew && !!draft.listId && !itemsLeft(draft.listId);
   const removeNew = (photoId: string) => set({ photos: draft.photos.filter((_, i) => `new${i}` !== photoId) });
   // notes save themselves when you tap away or leave the screen (only if they changed)
   const saveNotes = () => {
@@ -148,7 +153,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   let tab;
   if (isNew) {
     // save up top, where the keyboard can't cover it
-    header = <Header left={<TextAction label="cancel" onPress={goBack} />} title="new item" right={<SaveAction onPress={save} disabled={!draft.title.trim() || !draft.listId} />} />;
+    header = <Header left={<TextAction label="cancel" onPress={goBack} />} title="new item" right={<SaveAction onPress={save} disabled={!draft.title.trim() || !draft.listId || listFull} />} />;
     tab = <FolderTab label={<ListPickerTab list={list} open={picking} onPress={() => setPicking(!picking)} />} />;
   } else {
     header = (
@@ -192,11 +197,11 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const card = (
     <Paper fill={done ? colors.gold : colors.sage} edge="ink" edgeWidth={1.5} shape={4} lean={0} style={styles.card}>
       {isNew ? (
-        <TitleInput value={draft.title} onChange={(title) => set({ title })} placeholder="untitled item" size={28} autoFocus={!picking} />
+        <TitleInput value={draft.title} onChange={(title) => set({ title })} placeholder="untitled item" max={ITEM_TITLE_MAX} size={28} autoFocus={!picking} />
       ) : (
         <View style={styles.titleRow}>
           <View style={{ flex: 1 }}>
-            <EditableTitle value={item!.title} onSave={member ? (title) => updateItem(item!.id, { title }) : undefined} size={28} color={done ? colors.inkSoft : colors.ink} placeholder="untitled item" />
+            <EditableTitle value={item!.title} onSave={member ? (title) => updateItem(item!.id, { title }) : undefined} max={ITEM_TITLE_MAX} size={28} color={done ? colors.inkSoft : colors.ink} placeholder="untitled item" />
           </View>
           {/* crossing it off (yours), and filled in once it is: tap again to un-cross, like a row on the list */}
           {member && !done ? (
@@ -262,7 +267,8 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
 
       <PhotoStrip
         photos={photos}
-        onAdd={member ? addPhotos : undefined}
+        // the add tile goes away at PHOTOS_PER_ITEM
+        onAdd={member && roomForPhotos ? addPhotos : undefined}
         onRemove={member ? (isNew ? removeNew : setRemoving) : undefined}
       />
     </Paper>
@@ -357,6 +363,9 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
             </Mono>
           )}
         </>
+      ) : null}
+      {isNew && listFull ? (
+        <Mono size={11} color={colors.inkSoft} style={{ marginTop: 18, marginHorizontal: 4, lineHeight: 17 }}>that list is full: lists hold up to {ITEMS_PER_LIST} items. pick another, or delete some first.</Mono>
       ) : null}
 
       {isNew && picking ? (

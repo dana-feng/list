@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { db, Profile, Visibility } from '@/api/db';
 import { canLeaveList, cancelInvite, getList, inviteMembers, renameList, setViewers, setVisibility, viewerIds } from '@/api/lists';
 import { getProfile, me } from '@/api/profiles';
+import { LIST_TITLE_MAX } from '@/limits';
 import { colors, fonts, noOutline } from '@/theme';
 import { AudienceOption, AudiencePicker } from './AudiencePicker';
 import { Avatar } from './Avatar';
@@ -113,6 +114,7 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
             <TextInput
               value={title}
               onChangeText={setTitle}
+              maxLength={LIST_TITLE_MAX}
               placeholder="untitled list"
               placeholderTextColor={colors.inkFaint}
               accessibilityLabel="List name"

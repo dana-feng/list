@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import type { Profile } from '@/api/db';
 import { getProfile, me } from '@/api/profiles';
+import { LIST_TITLE_MAX } from '@/limits';
 import { colors, fonts, noOutline } from '@/theme';
 import { Avatar } from './Avatar';
 import { Paper } from './Paper';
 import { PersonPicker } from './PersonPicker';
-import { Hand, Label, Mono } from './Text';
+import { CharsLeft, Hand, Label, Mono } from './Text';
 import { Choice, choiceIcon, choiceLabel, VisibilityButton, VisibilityMenu, visibilityOptions } from './VisibilityPicker';
 
 /** "label ...stuff" on one line, the label in a fixed column. */
@@ -28,12 +29,14 @@ function PersonChip({ person, you }: { person: Profile; you?: boolean }) {
   );
 }
 
-/** The big title field with a dashed underline. */
-export function TitleInput({ value, onChange, placeholder, size = 30, autoFocus, onBlur }: { value: string; onChange: (v: string) => void; placeholder: string; size?: number; autoFocus?: boolean; onBlur?: () => void }) {
+/** The big title field with a dashed underline. Typing stops at `max` characters. */
+export function TitleInput({ value, onChange, placeholder, max, size = 30, autoFocus, onBlur }: { value: string; onChange: (v: string) => void; placeholder: string; max: number; size?: number; autoFocus?: boolean; onBlur?: () => void }) {
   return (
+    <View>
     <TextInput
       value={value}
       onChangeText={onChange}
+      maxLength={max}
       onBlur={onBlur}
       placeholder={placeholder}
       placeholderTextColor={colors.inkFaint}
@@ -47,6 +50,8 @@ export function TitleInput({ value, onChange, placeholder, size = 30, autoFocus,
         borderBottomWidth: 1.6, borderStyle: 'dashed', borderColor: colors.ink,
       }, noOutline]}
     />
+    <CharsLeft value={value} max={max} />
+    </View>
   );
 }
 
@@ -54,7 +59,7 @@ export function TitleInput({ value, onChange, placeholder, size = 30, autoFocus,
  * A title you can tap to rename, with no edit mode: it turns into a field, and saves when you tap away.
  * Leave out `onSave` (not yours) and it's plain text.
  */
-export function EditableTitle({ value, onSave, size, color, placeholder }: { value: string; onSave?: (v: string) => void; size: number; color?: string; placeholder: string }) {
+export function EditableTitle({ value, onSave, max, size, color, placeholder }: { value: string; onSave?: (v: string) => void; max: number; size: number; color?: string; placeholder: string }) {
   const [draft, setDraft] = useState<string | null>(null);
   if (draft !== null) {
     const commit = () => {
@@ -62,7 +67,7 @@ export function EditableTitle({ value, onSave, size, color, placeholder }: { val
       setDraft(null);
       if (next && next !== value) onSave?.(next);
     };
-    return <TitleInput value={draft} onChange={setDraft} onBlur={commit} placeholder={placeholder} size={size} autoFocus />;
+    return <TitleInput value={draft} onChange={setDraft} onBlur={commit} placeholder={placeholder} max={max} size={size} autoFocus />;
   }
   const text = <Hand size={size} color={color} style={{ lineHeight: Math.round(size * 1.1) }}>{value}</Hand>;
   if (!onSave) return text;
@@ -100,7 +105,7 @@ export function ListFields({ title, onTitle, owners, lockedOwners = [], onOwners
   };
   return (
     <View>
-      <TitleInput value={title} onChange={onTitle} placeholder="untitled list" autoFocus={autoFocus} />
+      <TitleInput value={title} onChange={onTitle} placeholder="untitled list" max={LIST_TITLE_MAX} autoFocus={autoFocus} />
       <View style={{ gap: 6, marginTop: 14 }}>
         <FieldRow label="owners">
           <PersonChip person={me()} you />

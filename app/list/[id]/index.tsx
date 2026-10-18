@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { db, useDb } from '@/api/db';
-import { deleteItem, itemsForList, markDone, reorderItems, undoDone } from '@/api/items';
+import { deleteItem, itemsForList, itemsLeft, markDone, reorderItems, undoDone } from '@/api/items';
 import {
   canViewList, deleteList, getList, invitedBy, isListDone, isMember, leaveList, listPeople, listProgress, membership,
   renameList, respondInvite, visibilityLabel,
@@ -27,6 +27,7 @@ import { choiceIcon } from '@/components/VisibilityPicker';
 import { Hand, Label, Mono } from '@/components/Text';
 import { success, tap, toggle } from '@/haptics';
 import { names } from '@/lib';
+import { ITEMS_PER_LIST, LIST_TITLE_MAX } from '@/limits';
 import { colors } from '@/theme';
 
 /**
@@ -129,7 +130,7 @@ export default function ListScreen() {
       overlay={celeItem ? <DoneSheet itemId={celeItem.id} title={celeItem.title} count={`${listProgress(id).done} of ${listProgress(id).total} done`} onCard={() => afterCele(true)} onLater={() => afterCele(false)} /> : null}
     >
       <View style={{ paddingHorizontal: 4 }}>
-          <EditableTitle value={list.title} onSave={member ? (t) => renameList(id, t) : undefined} size={28} placeholder="untitled list" />
+          <EditableTitle value={list.title} onSave={member ? (t) => renameList(id, t) : undefined} max={LIST_TITLE_MAX} size={28} placeholder="untitled list" />
           <PeoplePress people={people} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, alignSelf: 'flex-start' }}>
             <AvatarStack people={people} size={22} />
             <Mono size={11}>{names(people)}</Mono>
@@ -163,10 +164,12 @@ export default function ListScreen() {
       {open.length ? <Label style={{ marginTop: 18, marginBottom: 8, marginHorizontal: 2 }}>{whole ? 'to do' : 'open invites'}</Label> : null}
       <View style={{ gap: member ? 6 : 8, marginTop: open.length ? 0 : 18 }}>
         {/* first, so it's reachable without scrolling; new items land right under it */}
-        {member ? (
+        {member && itemsLeft(id) ? (
           <Paper onPress={() => router.push(`/item/new?list=${id}`)} edge="dash" shape={3} style={{ height: 48, justifyContent: 'center', paddingLeft: 18 }} accessibilityLabel="Add an item to this list">
             <Hand size={18} color={colors.inkSoft}>{total ? '+ add' : '+ add the first thing'}</Hand>
           </Paper>
+        ) : member ? (
+          <Mono size={11} color={colors.inkSoft} style={{ marginHorizontal: 4, marginBottom: 4 }}>this list is full: lists hold up to {ITEMS_PER_LIST} items. delete some to add more.</Mono>
         ) : null}
         {/* nothing on it at all: say so rather than leave the folder blank */}
         {!total && !member ? <Mono size={12} color={colors.inkSoft} style={{ marginHorizontal: 4 }}>nothing on this list yet.</Mono> : null}

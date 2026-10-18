@@ -18,6 +18,7 @@ import { FolderScreen } from '@/components/Screen';
 import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
 import { usernameStatus } from '@/components/UsernameField';
 import { pickPhotos, takePhoto } from '@/pickPhotos';
+import { NAME_MAX } from '@/limits';
 import { colors, fonts, noOutline } from '@/theme';
 
 /** Settings, and the same screen as "edit profile". */
@@ -84,7 +85,7 @@ export default function Settings() {
           <LinkText label="edit photo" size={13} onPress={() => setPhotoMenu(true)} />
         </View>
         <Field label="name">
-          <TextInput value={name} onChangeText={setName} accessibilityLabel="Name" style={[styles.input, noOutline]} />
+          <TextInput value={name} onChangeText={setName} maxLength={NAME_MAX} accessibilityLabel="Name" style={[styles.input, noOutline]} />
         </Field>
         <Field label="username" help={status ? (status.ok ? "that one's yours" : status.text) : undefined}>
           <Mono size={14} color={colors.inkSoft}>@</Mono>

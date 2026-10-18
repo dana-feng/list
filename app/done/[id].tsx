@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useDb } from '@/api/db';
-import { addPhoto, getItem, itemsForList, photosFor, removePhoto } from '@/api/items';
+import { addPhoto, getItem, itemsForList, photosFor, photosLeft, removePhoto } from '@/api/items';
 import { getList, isListDone, listPeople, listProgress } from '@/api/lists';
 import { AvatarStack } from '@/components/Avatar';
 import { Button } from '@/components/Button';
@@ -48,7 +48,8 @@ function ItemDone({ itemId, onListDone }: { itemId: string; onListDone: (listId:
   const people = listPeople(list.id);
   const { done, total } = listProgress(list.id);
   const photos = photosFor(item.id);
-  const add = async () => (await pickPhotos()).forEach((uri) => addPhoto(item.id, uri));
+  const room = photosLeft(item.id);
+  const add = async () => (await pickPhotos(true, room)).forEach((uri) => addPhoto(item.id, uri));
   const finish = () => {
     if (item.done_at && isListDone(list.id)) onListDone(list.id);
     else goBack();
@@ -63,7 +64,8 @@ function ItemDone({ itemId, onListDone }: { itemId: string; onListDone: (listId:
       <View style={{ paddingLeft: 22, marginTop: 6 }}>
         {/* the empty slot is always the last thing to swipe to, so there's always somewhere to add more */}
         {photos.length ? (
-          <PhotoCarousel photos={photos} height={392} peek={70} gap={12} count={false} onRemove={setRemoving} last={(size) => <AddPhotos onPress={add} style={size} />} />
+          // the empty slot goes away once the item has as many photos as it can hold
+          <PhotoCarousel photos={photos} height={392} peek={70} gap={12} count={false} onRemove={setRemoving} last={room ? (size) => <AddPhotos onPress={add} style={size} /> : undefined} />
         ) : (
           <AddPhotos onPress={add} style={{ height: 392, marginRight: 22 }} />
         )}
