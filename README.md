@@ -70,6 +70,7 @@ The tables live in `supabase/migrations/` as SQL files, applied in order:
 - `…_borrow_has_notification.sql`: tells a list's people when someone says they have the thing a borrow ask is for (`borrow_has`). Gift claims never notify anyone.
 - `…_notifications_realtime.sql`: puts `notifications` on the `supabase_realtime` publication so the bell's dot updates live. The table's read rule means each person only hears about their own rows. Until it's applied, the dot still updates on the one-minute refresh.
 - `…_push_notifications.sql`: push notifications off the same table. `push_tokens` (each person's phones, saved with `save_push_token` / removed with `forget_push_token`), a `notifications_push` trigger that asks the `push` Edge Function to send (through `pg_net`, only once the two Vault secrets below exist), and `claim_push()`, which decides what buzzes. Safe to apply before push is set up: without the secrets the trigger does nothing.
+- `…_feedback.sql`: the `feedback` table (write-only from the app) and a trigger that copies each new row to the team's Google Sheet. The sheet needs a one-time setup: see [docs/FEEDBACK.md](docs/FEEDBACK.md).
 
 Phone sign-in settings on the hosted project (Authentication > Sign In / Providers > Phone): provider on, **Enable phone confirmations off**. The Twilio fields hold placeholders; nothing is sent while confirmations are off. To turn on real texts later: put in real Twilio details, turn confirmations on, and switch `signInWithCode` in `src/api/sync.ts` to `signInWithOtp` / `verifyOtp`.
 
@@ -109,6 +110,8 @@ Tests for the message wording: `node --experimental-strip-types --test supabase/
 ### Updating the database
 
 The app talks to the hosted Supabase project, so a database change only takes effect once it is pushed there. Never edit a migration that has already been pushed; add a new one.
+
+On a Mac whose processor lacks AVX (older Intel), Supabase CLI 2.99 and later crash on start ("Illegal instruction"). Use `npm run supabase -- <command>` instead of `npx supabase <command>`; it runs 2.98.0, the last version that works there.
 
 One-time setup on a new machine:
 

@@ -8,6 +8,7 @@ import { deleteAccount, signOut } from '@/api/sync';
 import { Avatar } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { FolderTab } from '@/components/FolderTab';
+import { FeedbackSheet } from '@/components/FeedbackSheet';
 import { Header, SaveAction, TextAction } from '@/components/Header';
 import { Icon } from '@/components/Icon';
 import { Paper } from '@/components/Paper';
@@ -28,6 +29,7 @@ export default function Settings() {
   const [bio, setBio] = useState(person.bio);
   const [confirming, setConfirming] = useState(false);
   const [photoMenu, setPhotoMenu] = useState(false);
+  const [feedback, setFeedback] = useState(false);
   const masked = db.phone ? `+1 (${db.phone.slice(-10, -7)}) ••• ${db.phone.slice(-4)}` : '';
   const status = usernameStatus(username, person.username);
   const canSave = !!name.trim() && (username === person.username || !!status?.ok);
@@ -143,7 +145,7 @@ export default function Settings() {
       <Row label="blocked profiles" value={db.blocked.length ? String(db.blocked.length) : undefined} onPress={() => router.push('/blocked')} />
 
       <Label style={styles.label}>help</Label>
-      <Row label="help + feedback" />
+      <Row label="help + feedback" onPress={() => setFeedback(true)} />
       <Row label="terms + privacy" />
 
       <Button label="log out" tone="outline" onPress={leave} style={{ marginTop: 24, height: 48 }} />
@@ -161,6 +163,7 @@ export default function Settings() {
         )}
         <Mono size={10} color={colors.inkFaint} style={{ marginTop: 8 }}>list v{Constants.expoConfig?.version ?? ''}</Mono>
       </View>
+      {feedback ? <FeedbackSheet onClose={() => setFeedback(false)} /> : null}
     </FolderScreen>
   );
 }
