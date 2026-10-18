@@ -34,7 +34,7 @@ export default function Home() {
           <Hand size={40} color={colors.paper} style={{ lineHeight: 44 }}>list</Hand>
           <View style={{ flexDirection: 'row' }}>
             <Bell />
-            <Pressable onPress={() => router.push('/search')} style={styles.icon} accessibilityRole="button" accessibilityLabel="Find people">
+            <Pressable onPress={() => router.push('/search')} style={styles.icon} accessibilityRole="button" accessibilityLabel="Search">
               <Icon name="search" size={21} color={colors.paper} strokeWidth={1.8} />
             </Pressable>
           </View>
