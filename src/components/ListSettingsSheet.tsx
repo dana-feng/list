@@ -50,6 +50,8 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
   const [leaving, setLeaving] = useState(false);
   // everyone else on the list, joined or still invited
   const others = db.list_members.filter((m) => m.list_id === listId && m.user_id !== db.me);
+  // just you on it: "owners" would mean you
+  const options = others.length ? OPTIONS : OPTIONS.map((o) => (o.value === 'just_me' ? { ...o, title: 'you' } : o));
 
   const close = () => {
     renameList(listId, title);
@@ -136,7 +138,7 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
 
         <View style={{ gap: 8 }}>
           <Label>who can see it</Label>
-          <AudiencePicker options={OPTIONS} value={choice} people={viewers} onChange={(c, v) => { setChoice(c); setViewerDraft(v); }} />
+          <AudiencePicker options={options} value={choice} people={viewers} onChange={(c, v) => { setChoice(c); setViewerDraft(v); }} />
         </View>
       </View>
 

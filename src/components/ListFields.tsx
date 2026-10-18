@@ -7,7 +7,7 @@ import { Avatar } from './Avatar';
 import { Paper } from './Paper';
 import { PersonPicker } from './PersonPicker';
 import { Hand, Label, Mono } from './Text';
-import { Choice, choiceIcon, choiceLabel, VisibilityButton, VisibilityMenu } from './VisibilityPicker';
+import { Choice, choiceIcon, choiceLabel, VisibilityButton, VisibilityMenu, visibilityOptions } from './VisibilityPicker';
 
 /** "label ...stuff" on one line, the label in a fixed column. */
 export function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -92,6 +92,7 @@ export function ListFields({ title, onTitle, owners, lockedOwners = [], onOwners
   const [menu, setMenu] = useState(false);
   const [picking, setPicking] = useState<'owners' | 'viewers' | null>(null);
   const people = [...lockedOwners, ...owners].map((id) => getProfile(id)).filter((p): p is Profile => !!p);
+  const solo = !people.length;
   const pick = (c: Choice) => {
     setMenu(false);
     if (c === 'specific') setPicking('viewers');
@@ -109,12 +110,12 @@ export function ListFields({ title, onTitle, owners, lockedOwners = [], onOwners
           </Paper>
         </FieldRow>
         <FieldRow label="who can see">
-          <VisibilityButton label={choiceLabel(choice, viewers.length)} icon={choiceIcon(choice)} open={menu} onPress={() => setMenu(!menu)} />
+          <VisibilityButton label={choiceLabel(choice, viewers.length, solo)} icon={choiceIcon(choice)} open={menu} onPress={() => setMenu(!menu)} />
         </FieldRow>
       </View>
       {menu ? (
         <View style={{ marginLeft: 102 }}>
-          <VisibilityMenu value={choice} onPick={pick} />
+          <VisibilityMenu value={choice} onPick={pick} options={visibilityOptions(solo)} />
         </View>
       ) : null}
       {picking === 'owners' ? <PersonPicker
