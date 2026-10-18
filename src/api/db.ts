@@ -64,7 +64,7 @@ export type EventComment = {
 
 export type NotificationKind =
   | 'list_invite' | 'viewer_added' | 'item_invite' | 'invite_accepted' | 'mention' | 'comment' | 'reply'
-  | 'like' | 'interested' | 'item_added' | 'item_done' | 'list_done';
+  | 'like' | 'interested' | 'item_added' | 'item_done' | 'list_done' | 'borrow_has';
 /**
  * A row on the notifications screen, written by the database. Several of the same thing on the
  * same post or list are one row: `actor_ids` is who (newest first), `count` how many times.

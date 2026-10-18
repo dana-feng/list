@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useNavigation } from 'expo-router';
 import { useDb } from '@/api/db';
+import { asksOf } from '@/api/feed';
 import { listsForProfile } from '@/api/lists';
 import { me } from '@/api/profiles';
 import { FolderGrid } from '@/components/FolderGrid';
 import { Icon } from '@/components/Icon';
 import { ProfileHeader } from '@/components/ProfileHeader';
+import { AskList } from '@/components/AskList';
 import { ActivityList, PROFILE_TABS, ProfileTab, ProfileTabs } from '@/components/ProfileTabs';
 import { Screen } from '@/components/Screen';
 import { SwipeTabs, useTabPosition } from '@/components/SwipeTabs';
@@ -42,7 +44,7 @@ export default function Me() {
       }
     >
       <ProfileHeader person={person} />
-      <ProfileTabs tab={tab} onChange={setTab} position={tracking.position} lists={rows.filter((r) => !r.invited).length} />
+      <ProfileTabs tab={tab} onChange={setTab} position={tracking.position} lists={rows.filter((r) => !r.invited).length} asks={asksOf(person.id).length} />
       <SwipeTabs
         tabs={PROFILE_TABS}
         tab={tab}
@@ -57,6 +59,7 @@ export default function Me() {
             </View>
           ),
           activity: <ActivityList userId={person.id} empty="what you add and cross off shows up here." />,
+          asks: <View style={{ marginTop: 18 }}><AskList light asks={(only) => asksOf(person.id, only)} empty={{ title: 'no asks yet', body: 'tag something invite, gift or borrow and it shows up here.' }} /></View>,
         }}
       />
     </Screen>

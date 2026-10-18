@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useDb } from '@/api/db';
+import { asksOf } from '@/api/feed';
 import { listsForProfile } from '@/api/lists';
 import { getProfileByUsername, isFollowing, toggleFollow } from '@/api/profiles';
 import { block, blockedByUsername, unblock } from '@/api/safety';
@@ -11,6 +12,7 @@ import { FolderGrid } from '@/components/FolderGrid';
 import { Header } from '@/components/Header';
 import { MoreMenu } from '@/components/MoreMenu';
 import { ProfileHeader } from '@/components/ProfileHeader';
+import { AskList } from '@/components/AskList';
 import { ActivityList, PROFILE_TABS, ProfileTab, ProfileTabs } from '@/components/ProfileTabs';
 import { ReportSheet } from '@/components/ReportSheet';
 import { Screen } from '@/components/Screen';
@@ -86,7 +88,7 @@ export default function User() {
       }
     >
       <ProfileHeader person={person} action={follow} />
-      <ProfileTabs tab={tab} onChange={setTab} position={tracking.position} lists={rows.filter((r) => !r.invited).length} />
+      <ProfileTabs tab={tab} onChange={setTab} position={tracking.position} lists={rows.filter((r) => !r.invited).length} asks={asksOf(person.id).length} />
       <SwipeTabs
         tabs={PROFILE_TABS}
         tab={tab}
@@ -103,6 +105,7 @@ export default function User() {
             </View>
           ),
           activity: <ActivityList userId={person.id} empty={following || person.id === db.me ? `what ${person.name} adds and crosses off shows up here.` : `follow ${person.name} to see what they add and cross off.`} />,
+          asks: <View style={{ marginTop: 18 }}><AskList light asks={(only) => asksOf(person.id, only)} empty={{ title: 'no asks', body: `when ${person.name} wants company, a gift, or to borrow something, it shows up here.` }} /></View>,
         }}
       />
       {reporting ? <ReportSheet what={person.username} target={{ profile_id: person.id, content: [person.name, person.bio].filter(Boolean).join(' · ') }} person={person} onClose={() => setReporting(false)} /> : null}
