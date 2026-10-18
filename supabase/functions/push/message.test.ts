@@ -35,10 +35,16 @@ test('sentences match the notifications screen', () => {
   assert.equal(sentence({ ...base, kind: 'borrow_has', item_title: 'black heels' }), 'dana has black heels you can borrow');
   assert.equal(sentence({ ...base, kind: 'done_with' }), 'dana did apple picking with you');
   assert.equal(sentence({ ...base, kind: 'list_done' }), 'fall weekends is finished');
+  assert.equal(sentence({ ...base, kind: 'gift_claim', actors: [], actor_count: 0 }), 'someone is getting apple picking');
+  assert.equal(sentence({ ...base, kind: 'gift_claim', actors: [], actor_count: 0, count: 3 }), '3 people are getting apple picking');
+  assert.equal(sentence({ ...base, kind: 'gift_claim' }), 'dana is getting apple picking');
 });
 
 test('taps open the same place as the row', () => {
   assert.equal(link(base), '/item/i1');
+  assert.equal(link({ ...base, event_id: 'e1' }), '/post/e1?item=i1');
+  assert.equal(link({ ...base, kind: 'done_with', event_id: 'e1' }), '/post/e1?item=i1');
+  assert.equal(link({ ...base, kind: 'borrow_has', event_id: 'e1' }), '/item/i1');
   assert.equal(link({ ...base, kind: 'item_done', count: 3 }), '/list/l1');
   assert.equal(link({ ...base, kind: 'list_done' }), '/list/l1');
   assert.equal(link({ ...base, item_id: null, list_id: null }), '/notifications');

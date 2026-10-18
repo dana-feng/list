@@ -9,7 +9,7 @@
 import { Alert, AppState } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import type { Session, User } from '@supabase/supabase-js';
-import { commit, db, emptyTables, GiftStatus } from './db';
+import { commit, db, emptyTables, GiftClaim, GiftStatus } from './db';
 import { listenForNotifications, stopListening } from './live';
 import { forgetPushToken } from './push';
 import { supabase } from './supabase';
@@ -53,7 +53,7 @@ export function refresh(): Promise<void> {
 async function load() {
   const seen = changes;
   const who = db.me;
-  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, haves, companions, gifts, events, likes, comments, blocked, unseen] = await Promise.all([
+  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, haves, companions, gifts, events, likes, comments, blocked, unseen, claims] = await Promise.all([
     supabase.from('profiles').select('*'),
     supabase.from('follows').select('*'),
     supabase.from('lists').select('*'),
@@ -73,8 +73,9 @@ async function load() {
     supabase.rpc('blocked_profiles'),
     // just whether there's anything new, for the dot on the bell
     supabase.from('notifications').select('id', { count: 'exact', head: true }).is('seen_at', null),
+    supabase.rpc('gift_claimers'),
   ]);
-  // blocked accounts and the bell's dot are nice-to-haves here: if those lookups fail, load everything else anyway
+  // blocked accounts, the bell's dot and who's getting each gift are nice-to-haves here: if those lookups fail, load everything else anyway
   const failed = [profiles, follows, lists, members, viewers, items, photos, invitees, interests, haves, companions, gifts, events, likes, comments].find((r) => r.error);
   if (failed?.error) {
     console.warn('refresh failed', failed.error.message);
@@ -105,6 +106,8 @@ async function load() {
   const loaded = new Set(db.events.map((e) => e.id));
   db.event_likes = (likes.data ?? []).filter((l) => loaded.has(l.event_id));
   db.event_comments = (comments.data ?? []).filter((c) => loaded.has(c.event_id));
+  if (claims.error) console.warn('gift_claimers failed', claims.error.message);
+  else db.gift_claims = (claims.data ?? []) as GiftClaim[];
   if (blocked.error) console.warn('blocked_profiles failed', blocked.error.message);
   else db.blocked = blocked.data ?? [];
   if (unseen.error) console.warn('notifications count failed', unseen.error.message);

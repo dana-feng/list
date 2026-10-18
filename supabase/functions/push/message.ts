@@ -4,7 +4,7 @@
 
 export type Kind =
   | 'list_invite' | 'viewer_added' | 'item_invite' | 'invite_accepted' | 'mention' | 'comment' | 'reply'
-  | 'like' | 'interested' | 'item_added' | 'item_done' | 'list_done' | 'borrow_has' | 'done_with';
+  | 'like' | 'interested' | 'item_added' | 'item_done' | 'list_done' | 'borrow_has' | 'done_with' | 'gift_claim';
 
 /** The row claim_push() returns. */
 export type Claim = {
@@ -15,6 +15,8 @@ export type Claim = {
   body: string;
   list_id: string | null;
   item_id: string | null;
+  /** the post a tap opens (likes, comments, "did"…), when there is one */
+  event_id?: string | null;
   /** up to 2 names, newest first */
   actors: string[];
   /** how many people in all */
@@ -70,12 +72,18 @@ export function sentence(c: Claim): string {
     case 'borrow_has': return `${by} ${many ? 'have' : 'has'} ${thing} you can borrow`;
     case 'done_with': return `${by} did ${thing} with you`;
     case 'list_done': return `${list} is finished`;
+    // a surprise gift has no names: "someone", or how many people
+    case 'gift_claim':
+      if (!c.actor_count) return c.count > 1 ? `${c.count} people are getting ${thing}` : `someone is getting ${thing}`;
+      return `${by} ${many ? 'are' : 'is'} getting ${thing}`;
   }
 }
 
 /** Where a tap goes: same as tapping the row on the notifications screen. */
 export function link(c: Claim): string {
   const toList = c.kind === 'list_done' || ((c.kind === 'item_added' || c.kind === 'item_done') && c.count > 1);
+  const aboutPost = ['like', 'comment', 'reply', 'mention', 'item_added', 'item_done', 'done_with'].includes(c.kind);
+  if (aboutPost && !toList && c.event_id) return `/post/${c.event_id}${c.item_id ? `?item=${c.item_id}` : ''}`;
   if (c.item_id && !toList) return `/item/${c.item_id}`;
   if (c.list_id) return `/list/${c.list_id}`;
   return '/notifications';

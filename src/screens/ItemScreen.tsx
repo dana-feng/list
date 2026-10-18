@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, useDb } from '@/api/db';
 import {
-  addItem, addPhoto, canClaimGift, canSayHave, claimGift, deleteItem, getItem, giftOf, havesFor, iHaveIt, interestedPeople, isInterested,
-  isInvitedTo, markDone, noTag, photosFor, removePhoto, setTag, TagChoice, tagChoiceOf, toggleHave, toggleInterest, undoDone, updateItem,
+  addItem, addPhoto, canClaimGift, canSayHave, claimGift, deleteItem, getItem, giftClaimers, giftOf, havesFor, howManyIHave, interestedPeople,
+  isInterested, isInvitedTo, isSurprise, markDone, noTag, photosFor, removePhoto, setHaveCount, setTag, TagChoice, tagChoiceOf, toggleHave, toggleInterest,
+  undoDone, updateItem,
 } from '@/api/items';
 import { inviteHosts } from '@/api/feed';
 import { getList, isListDone, isMember, listPeople, listProgress } from '@/api/lists';
@@ -17,13 +18,12 @@ import { DidItWith } from '@/components/DidItWith';
 import { DoneSheet } from '@/components/DoneSheet';
 import { canSayDown, interestLabel } from '@/components/Down';
 import { FolderTab } from '@/components/FolderTab';
-import { goBack, Header, TextAction } from '@/components/Header';
+import { goBack, Header, SaveAction, TextAction } from '@/components/Header';
 import { EditableTitle, FieldRow, TitleInput } from '@/components/ListFields';
 import { ListPicker, ListPickerTab } from '@/components/ListPicker';
 import { MoreMenu } from '@/components/MoreMenu';
 import { NotesField } from '@/components/NotesField';
 import { Paper } from '@/components/Paper';
-import { PeopleList } from '@/components/PeopleList';
 import { PeoplePress } from '@/components/PeopleSheet';
 import { PhotoStrip } from '@/components/PhotoGrid';
 import { ReportSheet } from '@/components/ReportSheet';
@@ -31,6 +31,7 @@ import { Circle } from '@/components/Scribble';
 import { FolderScreen } from '@/components/Screen';
 import { Stepper, TagBadge, TagField } from '@/components/TagField';
 import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
+import { WhoList } from '@/components/WhoList';
 import { success, tap, toggle } from '@/haptics';
 import { monthDay, names, toDay } from '@/lib';
 import { pickPhotos } from '@/pickPhotos';
@@ -44,7 +45,7 @@ const editableNotes = (saved: string) => {
 
 /**
  * What's typed but not saved yet. For a new item that's everything, until "save".
- * For an existing one it's only the notes, which save when you tap away from them.
+ * For an existing one it's only the notes, which save when you tap away from them or tap "done" up top.
  */
 type Draft = {
   /** notes are the typed text here: tags as @username, turned into ids on save. unfound: tagged people who can't be found, to keep their tags */
@@ -72,6 +73,8 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     tag: noTag(),
   }));
   const [howMany, setHowMany] = useState<number | null>(null);
+  // typing in an existing item's notes: "done" up top puts the keyboard away, which saves them
+  const [inNotes, setInNotes] = useState(false);
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const list = draft.listId ? getList(draft.listId) : undefined;
 
@@ -143,12 +146,15 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   let header;
   let tab;
   if (isNew) {
-    header = <Header left={<TextAction label="cancel" onPress={goBack} />} title="new item" />;
+    // save up top, where the keyboard can't cover it
+    header = <Header left={<TextAction label="cancel" onPress={goBack} />} title="new item" right={<SaveAction onPress={save} disabled={!draft.title.trim() || !draft.listId} />} />;
     tab = <FolderTab label={<ListPickerTab list={list} open={picking} onPress={() => setPicking(!picking)} />} />;
   } else {
     header = (
       <Header
-        right={member ? (
+        right={inNotes ? (
+          <SaveAction label="done" onPress={() => Keyboard.dismiss()} />
+        ) : member ? (
           <MoreMenu label="More: delete" actions={[{ label: 'delete item', confirm: true, onPress: destroy }]} />
         ) : addedBy?.id !== db.me ? (
           <MoreMenu label="More: report item" actions={[{ label: 'report item', danger: true, onPress: () => setReporting(true) }]} />
@@ -175,6 +181,10 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   // the list's people, for "from" on a friend's gift or borrow ask
   const askers = list ? listPeople(list.id) : [];
   const haves = isBorrow ? havesFor(item!.id) : [];
+  // who's getting a gift: "someone" on a surprise, except you
+  const claimers = isGift ? giftClaimers(item!.id) : [];
+  const surprise = !!item && isSurprise(item);
+  const wanted = item?.gift_quantity ?? 1;
   const ownerName = askers.length === 1 ? askers[0].name : 'they';
   const ownerObject = askers.length === 1 ? askers[0].name : 'them';
   // a friend's invite: whose it is, so you know who you'd be joining
@@ -218,6 +228,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
             </PeoplePress>
           </FieldRow>
           {isGift ? <FieldRow label="available"><MonoMedium size={11.5}>{gift.left} of {gift.quantity}</MonoMedium></FieldRow> : null}
+          {isBorrow && wanted > 1 ? <FieldRow label="needs"><MonoMedium size={11.5}>{wanted}</MonoMedium></FieldRow> : null}
         </View>
       ) : null}
       {member && isGift ? (
@@ -266,9 +277,6 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       {member && item && done ? (
         <View style={styles.doneRow}>
           <View style={styles.doneChip}><MonoMedium size={11.5} color={colors.paper}>done · {dayOf(item.done_at!)}</MonoMedium></View>
-          <Pressable onPress={() => router.push(`/done/${item.id}`)} style={{ height: 40, justifyContent: 'center' }} accessibilityRole="button">
-            <MonoMedium size={12}>add photos →</MonoMedium>
-          </Pressable>
           <View style={{ marginLeft: 'auto' }}>
             <LinkText label="undo" onPress={() => { tap(); undoDone(item.id); }} />
           </View>
@@ -297,35 +305,29 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       {!member && done && !(isGift && gift.mine) ? <Mono size={12} style={{ marginTop: 14, marginHorizontal: 4 }}>done · {dayOf(item!.done_at!)}</Mono> : null}
 
       {/* a friend's gift: "i'll get it" (with how many, when more than one is wanted). Tap again to take it back. */}
-      {!member && item && isGift ? <GiftClaim itemId={item.id} owner={ownerObject} howMany={howMany} setHowMany={setHowMany} /> : null}
+      {!member && item && isGift ? <GiftClaim itemId={item.id} owner={ownerObject} surprise={surprise} howMany={howMany} setHowMany={setHowMany} /> : null}
 
-      {/* your gift: how many are left shows on the card; who's getting them never does */}
+      {/* your gift: how many are left shows on the card; who's getting them only when it isn't a surprise */}
       {member && item && isGift ? (
         <Mono size={11} color={colors.inkSoft} style={{ marginTop: 12, marginHorizontal: 4, lineHeight: 17 }}>
-          {item.auto_done && done ? `all ${gift.quantity} are covered, so it's marked done. tap undo to open it back up.` : "you'll see how many are left, never who's getting them."}
+          {item.auto_done && done ? `all ${gift.quantity} are covered, so it's marked done. tap undo to open it back up.` : surprise ? "it's a surprise: you'll see how many are left, never who's getting them." : "not a surprise: everyone sees who's getting it."}
         </Mono>
       ) : null}
 
       {/* a friend's borrow ask */}
-      {!member && item && canSayHave(item.id) ? (
-        <>
-          <Button
-            label="i have it"
-            tone={iHaveIt(item.id) ? 'bark' : 'outline'}
-            onPress={() => { toggle(!iHaveIt(item.id)); toggleHave(item.id); }}
-            accessibilityLabel={iHaveIt(item.id) ? `You said you have ${item.title}. Tap to take it back` : `I have ${item.title}`}
-            style={{ marginTop: 16 }}
-          />
-          <Mono size={11} color={colors.inkSoft} style={{ marginTop: 8, marginHorizontal: 4, lineHeight: 17 }}>
-            {iHaveIt(item.id) ? `${ownerName} can see you have it. tap again to take it back.` : `${ownerName} sees who has it and reaches out.`}
-          </Mono>
-        </>
-      ) : null}
+      {!member && item && canSayHave(item.id) ? <HaveIt itemId={item.id} title={item.title} wanted={wanted} owner={ownerName} howMany={howMany} setHowMany={setHowMany} /> : null}
 
       {member || item?.notes ? (
         <>
           <Label style={{ marginTop: 24, marginBottom: 8, marginHorizontal: 2 }}>{member ? 'notes' : `${owner?.name ?? 'their'}'s notes`}</Label>
-          <NotesField value={member ? draft.notes : item!.notes} onChange={(notes) => set({ notes })} onBlur={isNew ? undefined : saveNotes} editing={member} listId={draft.listId} />
+          <NotesField
+            value={member ? draft.notes : item!.notes}
+            onChange={(notes) => set({ notes })}
+            onFocus={isNew ? undefined : () => setInNotes(true)}
+            onBlur={isNew ? undefined : () => { setInNotes(false); saveNotes(); }}
+            editing={member}
+            listId={draft.listId}
+          />
         </>
       ) : null}
 
@@ -333,7 +335,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
         <>
           <Label style={{ marginTop: 24, marginBottom: 8, marginHorizontal: 2 }}>who has</Label>
           {haves.length ? (
-            <PeopleList people={haves} fill={colors.cream} />
+            <WhoList entries={haves} counted={wanted > 1} />
           ) : (
             <Mono size={12} color={colors.inkSoft} style={{ marginHorizontal: 2, lineHeight: 18 }}>
               {member ? "no one yet. we'll let you know when someone has it." : 'no one yet.'}
@@ -342,7 +344,19 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
         </>
       ) : null}
 
-      {isNew ? <Button label="save" disabled={!draft.title.trim() || !draft.listId} onPress={save} style={{ marginTop: 22 }} /> : null}
+      {/* a gift: who's getting it, the way a borrow ask shows who has it. On a surprise everyone but you is "someone" */}
+      {item && isGift && (member || claimers.length) ? (
+        <>
+          <Label style={{ marginTop: 24, marginBottom: 8, marginHorizontal: 2 }}>who’s getting it</Label>
+          {claimers.length ? (
+            <WhoList entries={claimers} counted={gift.quantity > 1} />
+          ) : (
+            <Mono size={12} color={colors.inkSoft} style={{ marginHorizontal: 2, lineHeight: 18 }}>
+              {gift.claimed ? `${gift.claimed} claimed.` : "no one yet. we'll let you know when someone says they'll get it."}
+            </Mono>
+          )}
+        </>
+      ) : null}
 
       {isNew && picking ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -366,10 +380,10 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
 
 /**
  * "i'll get it" on a friend's gift. Filled once you've said you will; tap again to take it back.
- * When more than one is wanted, a stepper beside it picks how many. Nobody sees who's getting
- * what, only how many are left.
+ * When more than one is wanted, a stepper beside it picks how many. On a surprise nobody sees
+ * who's getting what ("someone"); otherwise everyone who can see the list does.
  */
-function GiftClaim({ itemId, owner, howMany, setHowMany }: { itemId: string; owner: string; howMany: number | null; setHowMany: (n: number) => void }) {
+function GiftClaim({ itemId, owner, surprise, howMany, setHowMany }: { itemId: string; owner: string; surprise: boolean; howMany: number | null; setHowMany: (n: number) => void }) {
   const { quantity, mine, left } = giftOf(itemId);
   if (!canClaimGift(itemId)) {
     return (
@@ -414,7 +428,54 @@ function GiftClaim({ itemId, owner, howMany, setHowMany }: { itemId: string; own
         <View style={{ marginTop: 16 }}>{button}</View>
       )}
       <Mono size={11} color={colors.inkSoft} style={{ marginTop: 8, marginHorizontal: 4, lineHeight: 17 }}>
-        {mine ? `you're getting ${quantity > 1 ? mine : 'it'}. tap again to uncheck.` : `no one sees who's getting it, not even ${owner}. just how many are left.`}
+        {mine
+          ? `you're getting ${quantity > 1 ? mine : 'it'}. tap again to uncheck.`
+          : surprise ? `it's a surprise: no one sees who's getting it, not even ${owner}.` : `not a surprise: ${owner} and everyone else can see who's getting it.`}
+      </Mono>
+    </>
+  );
+}
+
+/**
+ * "i have it" on a friend's borrow ask. When more than one is wanted, a stepper beside it says
+ * how many you have. Tap again to take it back.
+ */
+function HaveIt({ itemId, title, wanted, owner, howMany, setHowMany }: {
+  itemId: string; title: string; wanted: number; owner: string; howMany: number | null; setHowMany: (n: number) => void;
+}) {
+  const mine = howManyIHave(itemId);
+  const n = Math.min(wanted, Math.max(1, howMany ?? (mine || 1)));
+  const button = (
+    <Button
+      label="i have it"
+      tone={mine ? 'bark' : 'outline'}
+      onPress={() => { toggle(!mine); toggleHave(itemId, n); }}
+      accessibilityLabel={mine ? `You said you have ${title}. Tap to take it back` : `I have ${wanted > 1 ? n : title}`}
+      style={wanted > 1 ? { flex: 1 } : undefined}
+    />
+  );
+  return (
+    <>
+      {wanted > 1 ? (
+        <View style={{ marginTop: 16, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <Stepper
+            big
+            value={n}
+            min={1}
+            max={wanted}
+            onChange={(next) => {
+              setHowMany(next);
+              // already said you have some: the new number is how many you have
+              if (mine) setHaveCount(itemId, next);
+            }}
+          />
+          {button}
+        </View>
+      ) : (
+        <View style={{ marginTop: 16 }}>{button}</View>
+      )}
+      <Mono size={11} color={colors.inkSoft} style={{ marginTop: 8, marginHorizontal: 4, lineHeight: 17 }}>
+        {mine ? `${owner} can see you have ${wanted > 1 ? mine : 'it'}. tap again to take it back.` : `${owner} sees who has it and reaches out.`}
       </Mono>
     </>
   );
