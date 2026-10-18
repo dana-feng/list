@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, EventComment, FeedEvent } from '@/api/db';
 import { peopleToTag, tagBeingTyped, textParts } from '@/api/mentions';
@@ -16,6 +16,7 @@ import { Paper } from './Paper';
 import { openProfile } from './PersonRow';
 import { ReportSheet } from './ReportSheet';
 import { Hand, Mono, MonoMedium } from './Text';
+import { useDragToClose } from './dragToClose';
 
 type Post = NonNullable<ReturnType<typeof describePost>>;
 
@@ -36,28 +37,8 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
     onClose();
     setTimeout(to, 0);
   };
-  // Drag the bar at the top down to put the sheet away: past a third of the way, or a flick, and it
-  // goes; otherwise it springs back up. The dim fades as it goes.
-  const [drop] = useState(() => new Animated.Value(0));
-  const [gone, setGone] = useState(false);
-  useEffect(() => {
-    if (gone) onClose();
-  }, [gone, onClose]);
-  const [handle] = useState(() => {
-    const away = () =>
-      Animated.timing(drop, { toValue: Dimensions.get('window').height, duration: 200, useNativeDriver: true }).start(() => setGone(true));
-    const back = () => Animated.spring(drop, { toValue: 0, useNativeDriver: true, friction: 9, tension: 90 }).start();
-    return {
-      away,
-      pan: PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 4,
-        onPanResponderMove: (_, g) => drop.setValue(Math.max(0, g.dy)),
-        onPanResponderRelease: (_, g) => (g.dy > Dimensions.get('window').height / 3 || (g.dy > 30 && g.vy > 0.8) ? away() : back()),
-        onPanResponderTerminate: back,
-      }),
-    };
-  });
+  // Drag the bar at the top down to put the sheet away (or pull the post down past the top).
+  const drag = useDragToClose(onClose);
   // A new comment lands at the bottom; a reply lands in its thread, which is already on screen.
   const posted = (reply: boolean) => {
     setReplyTo(null);
@@ -66,12 +47,12 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: drop.interpolate({ inputRange: [0, 500], outputRange: [1, 0], extrapolate: 'clamp' }) }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: drag.dim }]}>
         <Pressable style={styles.dim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close comments" />
       </Animated.View>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.bottom} pointerEvents="box-none">
-        <Animated.View style={[styles.sheet, { paddingBottom: 10 + insets.bottom, transform: [{ translateY: drop }] }]} accessibilityViewIsModal accessibilityLabel="Comments">
-          <View style={styles.bar} {...handle.pan.panHandlers}>
+        <Animated.View style={[styles.sheet, { paddingBottom: 10 + insets.bottom, transform: [{ translateY: drag.drop }] }]} onLayout={drag.measure} accessibilityViewIsModal accessibilityLabel="Comments">
+          <View style={styles.bar} {...drag.pan.panHandlers}>
             <View style={styles.handle} />
             <Pressable onPress={onClose} hitSlop={8} style={styles.close} accessibilityRole="button" accessibilityLabel="Close comments">
               <Icon name="x" size={18} strokeWidth={2} />
@@ -85,7 +66,7 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
             showsVerticalScrollIndicator={false}
             // on iOS you can also pull the post down past the top to put the sheet away
             onScrollEndDrag={(e) => {
-              if (e.nativeEvent.contentOffset.y < -80) handle.away();
+              if (e.nativeEvent.contentOffset.y < -80) drag.away();
             }}
           >
             <View style={{ gap: 12 }}>

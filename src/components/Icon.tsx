@@ -4,7 +4,7 @@ import { colors } from '@/theme';
 export type IconName =
   | 'home' | 'plus' | 'list' | 'back' | 'right' | 'down' | 'search' | 'sliders' | 'image'
   | 'calendar' | 'people' | 'person' | 'globe' | 'lock' | 'check' | 'x' | 'pencil' | 'folder' | 'more' | 'invite'
-  | 'heart' | 'heartFilled' | 'comment' | 'send' | 'bell';
+  | 'heart' | 'heartFilled' | 'comment' | 'send' | 'bell' | 'gift' | 'borrow';
 
 const HEART = 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z';
 
@@ -15,6 +15,8 @@ export function Icon({ name, size = 22, color = colors.ink, strokeWidth = 1.9 }:
   const s = { stroke: color, strokeWidth, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {name === 'gift' && (<><Rect {...s} x={4} y={9} width={16} height={11} rx={1.5} /><Path {...s} d="M3 9h18M12 9v11M12 9c-1.5-3.5-5.5-4-5.5-1.5S10 9 12 9zM12 9c1.5-3.5 5.5-4 5.5-1.5S14 9 12 9z" /></>)}
+      {name === 'borrow' && <Path {...s} d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5" />}
       {name === 'bell' && (<><Path {...s} d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 2H4.4z" /><Path {...s} d="M10 21a2.2 2.2 0 0 0 4 0" /></>)}
       {name === 'home' && <Path {...s} d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" />}
       {name === 'plus' && <Path {...s} d="M12 5v14M5 12h14" />}

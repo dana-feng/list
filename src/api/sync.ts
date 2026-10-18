@@ -9,7 +9,9 @@
 import { Alert, AppState } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import type { Session, User } from '@supabase/supabase-js';
-import { commit, db, emptyTables } from './db';
+import { commit, db, emptyTables, GiftStatus } from './db';
+import { listenForNotifications, stopListening } from './live';
+import { forgetPushToken } from './push';
 import { supabase } from './supabase';
 
 export const newId = () => randomUUID();
@@ -51,7 +53,7 @@ export function refresh(): Promise<void> {
 async function load() {
   const seen = changes;
   const who = db.me;
-  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events, likes, comments, blocked, unseen] = await Promise.all([
+  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, haves, gifts, events, likes, comments, blocked, unseen] = await Promise.all([
     supabase.from('profiles').select('*'),
     supabase.from('follows').select('*'),
     supabase.from('lists').select('*'),
@@ -61,6 +63,8 @@ async function load() {
     supabase.from('item_photos').select('*'),
     supabase.from('item_invitees').select('*'),
     supabase.from('interests').select('*'),
+    supabase.from('borrow_haves').select('*'),
+    supabase.rpc('gift_status'),
     supabase.from('events').select('*').order('created_at', { ascending: false }).limit(FEED_LIMIT),
     // Only rows on posts you can see come back; trimmed to the loaded posts below.
     supabase.from('event_likes').select('*'),
@@ -70,7 +74,7 @@ async function load() {
     supabase.from('notifications').select('id', { count: 'exact', head: true }).is('seen_at', null),
   ]);
   // blocked accounts and the bell's dot are nice-to-haves here: if those lookups fail, load everything else anyway
-  const failed = [profiles, follows, lists, members, viewers, items, photos, invitees, interests, events, likes, comments].find((r) => r.error);
+  const failed = [profiles, follows, lists, members, viewers, items, photos, invitees, interests, haves, gifts, events, likes, comments].find((r) => r.error);
   if (failed?.error) {
     console.warn('refresh failed', failed.error.message);
     return;
@@ -93,6 +97,8 @@ async function load() {
   db.item_photos = photos.data ?? [];
   db.item_invitees = invitees.data ?? [];
   db.interests = interests.data ?? [];
+  db.borrow_haves = haves.data ?? [];
+  db.gifts = Object.fromEntries(((gifts.data ?? []) as GiftStatus[]).map((g) => [g.item_id, g]));
   db.events = events.data ?? [];
   const loaded = new Set(db.events.map((e) => e.id));
   db.event_likes = (likes.data ?? []).filter((l) => loaded.has(l.event_id));
@@ -190,6 +196,7 @@ export async function signInWithCode(digits: string, code: string): Promise<stri
 async function startSession(session: Session | null) {
   const user: User | undefined = session?.user;
   if (!user) {
+    stopListening();
     Object.assign(db, { status: 'signedOut', me: '', phone: '' }, emptyTables());
     commit();
     return;
@@ -197,6 +204,7 @@ async function startSession(session: Session | null) {
   if (db.me === user.id && db.status !== 'loading' && db.status !== 'signedOut') return;
   db.me = user.id;
   db.phone = user.phone ?? '';
+  listenForNotifications(user.id);
   // Don't guess needsProfile here. At launch that would hide the splash and redirect an
   // already-onboarded person to the profile step before their profile had loaded.
   // Status stays as it is (loading at launch, signedOut mid sign-in) until refresh() decides.
@@ -231,6 +239,8 @@ export function startSync() {
 }
 
 export async function signOut() {
+  // while still signed in, so this phone stops getting the account's pushes
+  await forgetPushToken();
   await supabase.auth.signOut();
   await startSession(null);
 }
