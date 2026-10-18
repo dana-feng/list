@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import type { Item } from '@/api/db';
-import { interestedPeople, isInvitedTo } from '@/api/items';
+import { giftOf, interestedPeople, isInvitedTo } from '@/api/items';
 import { monthDay, shortDay } from '@/lib';
 import { colors, corners, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
@@ -38,7 +38,11 @@ export function OpenRow({ item, member, onDone, onDelete }: OpenProps) {
   // yours: just the title (the invite lives on the item). a friend's: date + open invite in the small line, "interested" on the right
   const sub = member
     ? ''
-    : [item.date ? `due ${shortDay(item.date)}` : 'no due date', invited ? ['open invite', downText(item.id)].filter(Boolean).join(' · ') : null].filter(Boolean).join(' · ');
+    : [
+        item.date ? `due ${shortDay(item.date)}` : 'no due date',
+        invited ? ['open invite', downText(item.id)].filter(Boolean).join(' · ') : null,
+        item.tag === 'gift' ? `gift · ${giftOf(item.id).left} left` : item.tag === 'borrow' ? 'borrow' : null,
+      ].filter(Boolean).join(' · ');
 
   return (
     <SwipeToDelete onDelete={member ? onDelete : undefined} label={item.title}>

@@ -1,4 +1,4 @@
-import { commit, db, InviteAudience, Item, now } from './db';
+import { commit, db, InviteAudience, Item, ItemTag, now, Profile } from './db';
 import { followsSomeoneOn, getList, isListDone, isMember, listProgress } from './lists';
 import { getProfile } from './profiles';
 import { supabase } from './supabase';
@@ -41,6 +41,99 @@ export function isInvitedTo(itemId: string) {
 }
 
 export const isInterested = (itemId: string) => db.interests.some((i) => i.item_id === itemId && i.user_id === db.me);
+
+// ---------------------------------------------------------------------------
+// Tags: invite, gift, borrow
+// ---------------------------------------------------------------------------
+
+/** Everything the tag on an item can be set to, in one go. */
+export type TagChoice = { tag: ItemTag | null; audience: InviteAudience; invitees: string[]; quantity: number };
+
+export const tagChoiceOf = (item: Item): TagChoice => ({
+  tag: item.tag, audience: item.invite_audience, invitees: inviteeIds(item.id), quantity: item.gift_quantity,
+});
+
+export const noTag = (): TagChoice => ({ tag: null, audience: 'followers', invitees: [], quantity: 1 });
+
+/** Changes an item's tag (and its settings) from the item screen. */
+export function setTag(itemId: string, next: TagChoice) {
+  const item = getItem(itemId);
+  if (!item || !isMember(item.list_id)) return;
+  setInvitees(itemId, next.tag === 'invite' && next.audience === 'specific' ? next.invitees : []);
+  const patch = {
+    tag: next.tag,
+    invite_audience: next.tag === 'invite' ? next.audience : item.invite_audience,
+    gift_quantity: next.tag === 'gift' ? next.quantity : item.gift_quantity,
+  };
+  if (patch.tag === item.tag && patch.invite_audience === item.invite_audience && patch.gift_quantity === item.gift_quantity) return;
+  Object.assign(item, patch, { open_invite: patch.tag === 'invite' });
+  const gift = db.gifts[itemId];
+  if (patch.tag === 'gift') db.gifts[itemId] = { item_id: itemId, quantity: patch.gift_quantity, claimed: gift?.claimed ?? 0, mine: 0 };
+  if (patch.tag !== 'borrow') db.borrow_haves = db.borrow_haves.filter((h) => h.item_id !== itemId);
+  commit();
+  write(() => supabase.from('items').update(patch).eq('id', itemId), 'the tag');
+}
+
+/** A gift's counts. `left` is how many nobody has said they'll get yet. Never who. */
+export function giftOf(itemId: string) {
+  const item = getItem(itemId);
+  const g = db.gifts[itemId];
+  const quantity = g?.quantity ?? item?.gift_quantity ?? 1;
+  const claimed = g?.claimed ?? 0;
+  const mine = g?.mine ?? 0;
+  return { quantity, claimed, mine, left: Math.max(0, quantity - claimed) };
+}
+
+/** Someone else's gift you can still say you'll get (or have already). */
+export function canClaimGift(itemId: string) {
+  const item = getItem(itemId);
+  if (!item || item.tag !== 'gift' || isMember(item.list_id)) return false;
+  const { left, mine } = giftOf(itemId);
+  if (mine) return true;
+  return left > 0 && (!item.done_at || item.auto_done);
+}
+
+/** "i'll get it": how many you're getting. 0 takes it back. */
+export function claimGift(itemId: string, quantity: number) {
+  const item = getItem(itemId);
+  if (!item || item.tag !== 'gift' || isMember(item.list_id)) return;
+  const { quantity: wanted, claimed, mine } = giftOf(itemId);
+  const n = Math.max(0, Math.min(quantity, wanted - claimed + mine));
+  if (n === mine) return;
+  db.gifts[itemId] = { item_id: itemId, quantity: wanted, claimed: claimed - mine + n, mine: n };
+  commit();
+  write(() => supabase.rpc('claim_gift', { p_item: itemId, p_quantity: n }), n ? 'that' : 'that undo');
+}
+
+/** Who said they have the thing a borrow ask is for, newest first. */
+export const havesFor = (itemId: string): Profile[] =>
+  db.borrow_haves
+    .filter((h) => h.item_id === itemId)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .map((h) => getProfile(h.user_id))
+    .filter((p): p is Profile => !!p);
+
+export const iHaveIt = (itemId: string) => db.borrow_haves.some((h) => h.item_id === itemId && h.user_id === db.me);
+
+/** Someone else's borrow ask that's still open. */
+export function canSayHave(itemId: string) {
+  const item = getItem(itemId);
+  return !!item && item.tag === 'borrow' && !item.done_at && !isMember(item.list_id);
+}
+
+/** "i have it", or taking it back. */
+export function toggleHave(itemId: string) {
+  if (iHaveIt(itemId)) {
+    db.borrow_haves = db.borrow_haves.filter((h) => !(h.item_id === itemId && h.user_id === db.me));
+    commit();
+    write(() => supabase.from('borrow_haves').delete().eq('item_id', itemId).eq('user_id', db.me), 'that');
+  } else {
+    if (!canSayHave(itemId)) return;
+    db.borrow_haves.push({ item_id: itemId, user_id: db.me, created_at: now() });
+    commit();
+    write(() => supabase.from('borrow_haves').insert({ item_id: itemId, user_id: db.me }), 'that');
+  }
+}
 
 /** Your own star: only on open invites, and never on a list you're on. */
 export function toggleInterest(itemId: string) {
@@ -117,36 +210,24 @@ function setInvitees(itemId: string, userIds: string[]) {
   if (added.length) write(() => supabase.from('item_invitees').insert(added.map((user_id) => ({ item_id: itemId, user_id }))), "who's invited");
 }
 
-/** The open invite and who it goes to, saved together from the edit screen. */
-export function setInvite(itemId: string, invite: { open: boolean; audience: InviteAudience; invitees: string[] }) {
-  const item = getItem(itemId);
-  if (!item || !isMember(item.list_id)) return;
-  setInvitees(itemId, invite.audience === 'specific' ? invite.invitees : []);
-  if (item.open_invite === invite.open && item.invite_audience === invite.audience) return;
-  item.open_invite = invite.open;
-  item.invite_audience = invite.audience;
-  commit();
-  write(() => supabase.from('items').update({ open_invite: invite.open, invite_audience: invite.audience }).eq('id', itemId), 'the open invite');
-}
-
-export type ItemInput = {
-  list_id: string; title: string; notes: string; date: string | null; photos: string[];
-  open_invite: boolean; invite_audience: InviteAudience; invitees: string[];
-};
+export type ItemInput = { list_id: string; title: string; notes: string; date: string | null; photos: string[]; tag: TagChoice };
 
 export function addItem(input: ItemInput) {
   const id = newId();
+  const { tag } = input;
   const item: Item = {
     id, list_id: input.list_id, title: input.title.trim(), notes: input.notes, date: input.date,
-    open_invite: input.open_invite, invite_audience: input.invite_audience, caption: null, done_at: null, done_by: null, position: null, created_at: now(),
+    tag: tag.tag, open_invite: tag.tag === 'invite', invite_audience: tag.audience, gift_quantity: tag.quantity, auto_done: false,
+    caption: null, done_at: null, done_by: null, position: null, created_at: now(),
   };
+  if (tag.tag === 'gift') db.gifts[id] = { item_id: id, quantity: tag.quantity, claimed: 0, mine: 0 };
   db.items.push(item);
   const list = getList(input.list_id);
   if (list) list.completed_at = null;
   commit();
-  const { caption: _c, done_at: _d, done_by: _b, position: _p, created_at: _t, ...row } = item;
+  const { caption: _c, done_at: _d, done_by: _b, position: _p, created_at: _t, auto_done: _a, open_invite: _o, ...row } = item;
   write(() => supabase.from('items').insert(row), 'your thing');
-  if (input.invite_audience === 'specific') setInvitees(id, input.invitees);
+  if (tag.tag === 'invite' && tag.audience === 'specific') setInvitees(id, tag.invitees);
   input.photos.forEach((uri) => addPhoto(id, uri));
   return id;
 }
@@ -169,6 +250,8 @@ export function deleteItem(itemId: string) {
   db.item_photos = db.item_photos.filter((p) => p.item_id !== itemId);
   db.item_invitees = db.item_invitees.filter((v) => v.item_id !== itemId);
   db.interests = db.interests.filter((i) => i.item_id !== itemId);
+  db.borrow_haves = db.borrow_haves.filter((h) => h.item_id !== itemId);
+  delete db.gifts[itemId];
   db.events = db.events.filter((e) => e.item_id !== itemId);
   const list = getList(item.list_id);
   if (list) {
