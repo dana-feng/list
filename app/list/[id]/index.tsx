@@ -124,7 +124,7 @@ export default function ListScreen() {
       }
       scrollEnabled={!dragging}
       folderTabs={<FolderTab label={tabLabel} onPress={!member && owner ? () => router.push(`/user/${owner.username}`) : undefined} />}
-      overlay={celeItem ? <DoneSheet title={celeItem.title} count={`${listProgress(id).done} of ${listProgress(id).total} done`} onCard={() => afterCele(true)} onLater={() => afterCele(false)} /> : null}
+      overlay={celeItem ? <DoneSheet itemId={celeItem.id} title={celeItem.title} count={`${listProgress(id).done} of ${listProgress(id).total} done`} onCard={() => afterCele(true)} onLater={() => afterCele(false)} /> : null}
     >
       <View style={{ paddingHorizontal: 4 }}>
           <EditableTitle value={list.title} onSave={member ? (t) => renameList(id, t) : undefined} size={28} placeholder="untitled list" />
