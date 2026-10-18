@@ -13,6 +13,7 @@ import { tagsToIds, tagsToNames, Unfound } from '@/api/mentions';
 import { getProfile } from '@/api/profiles';
 import { AvatarStack } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DateChip, DateField } from '@/components/DateField';
 import { DidItWith } from '@/components/DidItWith';
 import { DoneSheet } from '@/components/DoneSheet';
@@ -66,6 +67,8 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const [picking, setPicking] = useState(isNew && !listId);
   const [deleted, setDeleted] = useState(false);
   const [reporting, setReporting] = useState(false);
+  // a saved photo whose × was tapped, waiting on "remove photo" (an unsaved one just goes)
+  const [removing, setRemoving] = useState<string | null>(null);
   // just crossed off here: "you did it!" over the screen
   const [cele, setCele] = useState(false);
   const [draft, setDraft] = useState<Draft>(() => ({
@@ -260,7 +263,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       <PhotoStrip
         photos={photos}
         onAdd={member ? addPhotos : undefined}
-        onRemove={member ? (isNew ? removeNew : removePhoto) : undefined}
+        onRemove={member ? (isNew ? removeNew : setRemoving) : undefined}
       />
     </Paper>
   );
@@ -363,6 +366,15 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
             onPick={(l) => { set({ listId: l.id }); setPicking(false); }}
           />
         </View>
+      ) : null}
+      {removing ? (
+        <ConfirmDialog
+          title="remove this photo?"
+          body="it comes off for everyone who can see this."
+          action="remove photo"
+          onConfirm={() => { removePhoto(removing); setRemoving(null); }}
+          onCancel={() => setRemoving(null)}
+        />
       ) : null}
       {reporting && item ? (
         <ReportSheet

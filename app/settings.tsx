@@ -29,6 +29,7 @@ export default function Settings() {
   const [username, setUsername] = useState(person.username);
   const [bio, setBio] = useState(person.bio);
   const [confirming, setConfirming] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [photoMenu, setPhotoMenu] = useState(false);
   const [feedback, setFeedback] = useState(false);
   const masked = db.phone ? `+1 (${db.phone.slice(-10, -7)}) ••• ${db.phone.slice(-4)}` : '';
@@ -149,12 +150,21 @@ export default function Settings() {
       <Row label="help + feedback" onPress={() => setFeedback(true)} />
       <Row label="terms + privacy" />
 
-      <Button label="log out" tone="outline" onPress={leave} style={{ marginTop: 24, height: 48 }} />
+      <Button label="log out" tone="outline" onPress={() => setLoggingOut(true)} style={{ marginTop: 24, height: 48 }} />
       <View style={{ alignItems: 'center', marginTop: 10 }}>
         <LinkText label="delete my account" color={colors.bark} onPress={() => setConfirming(true)} />
         <Mono size={10} color={colors.inkFaint} style={{ marginTop: 8 }}>list v{Constants.expoConfig?.version ?? ''}</Mono>
       </View>
       {feedback ? <FeedbackSheet onClose={() => setFeedback(false)} /> : null}
+      {loggingOut ? (
+        <ConfirmDialog
+          title="log out?"
+          body="your lists stay. sign back in with your phone number any time."
+          action="log out"
+          onConfirm={() => { setLoggingOut(false); leave(); }}
+          onCancel={() => setLoggingOut(false)}
+        />
+      ) : null}
       {confirming ? (
         <ConfirmDialog
           title="delete your account?"

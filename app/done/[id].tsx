@@ -6,6 +6,7 @@ import { addPhoto, getItem, itemsForList, photosFor, removePhoto } from '@/api/i
 import { getList, isListDone, listPeople, listProgress } from '@/api/lists';
 import { AvatarStack } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DidItWith } from '@/components/DidItWith';
 import { BackButton, goBack, Header } from '@/components/Header';
 import { PhotoCarousel } from '@/components/Photo';
@@ -38,6 +39,8 @@ function Nothing() {
 }
 
 function ItemDone({ itemId, onListDone }: { itemId: string; onListDone: (listId: string) => void }) {
+  // the photo whose × was tapped, waiting on "remove photo"
+  const [removing, setRemoving] = useState<string | null>(null);
   const item = getItem(itemId);
   const list = item && getList(item.list_id);
   if (!item || !list) return <Nothing />;
@@ -60,7 +63,7 @@ function ItemDone({ itemId, onListDone }: { itemId: string; onListDone: (listId:
       <View style={{ paddingLeft: 22, marginTop: 6 }}>
         {/* the empty slot is always the last thing to swipe to, so there's always somewhere to add more */}
         {photos.length ? (
-          <PhotoCarousel photos={photos} height={392} peek={70} gap={12} count={false} onRemove={removePhoto} last={(size) => <AddPhotos onPress={add} style={size} />} />
+          <PhotoCarousel photos={photos} height={392} peek={70} gap={12} count={false} onRemove={setRemoving} last={(size) => <AddPhotos onPress={add} style={size} />} />
         ) : (
           <AddPhotos onPress={add} style={{ height: 392, marginRight: 22 }} />
         )}
@@ -74,6 +77,15 @@ function ItemDone({ itemId, onListDone }: { itemId: string; onListDone: (listId:
         <DidItWith itemId={item.id} onDark />
         <Mono size={10.5} color={colors.onDarkSoft}>{list.title}</Mono>
       </View>
+      {removing ? (
+        <ConfirmDialog
+          title="remove this photo?"
+          body="it comes off for everyone who can see this."
+          action="remove photo"
+          onConfirm={() => { removePhoto(removing); setRemoving(null); }}
+          onCancel={() => setRemoving(null)}
+        />
+      ) : null}
     </Screen>
   );
 }

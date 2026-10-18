@@ -47,8 +47,10 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
   const [viewers, setViewerDraft] = useState(() => viewerIds(listId));
   const [addingOwners, setAddingOwners] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  // your × was tapped: leaving waits on "yes". Taking back an invite doesn't ask.
+  // your × was tapped: leaving waits on "leave list"
   const [leaving, setLeaving] = useState(false);
+  // an invite whose × was tapped, waiting on "take back invite"
+  const [unInviting, setUnInviting] = useState<Profile | null>(null);
   // everyone else on the list, joined or still invited
   const others = db.list_members.filter((m) => m.list_id === listId && m.user_id !== db.me);
   // just you on it: "owners" would mean you
@@ -93,6 +95,14 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
             onConfirm={onLeave}
             onCancel={() => setLeaving(false)}
           />
+        ) : unInviting ? (
+          <ConfirmCard
+            title={`take back ${unInviting.name}’s invite?`}
+            body="they won’t be able to join this list unless someone invites them again."
+            action="take back invite"
+            onConfirm={() => { cancelInvite(listId, unInviting.id); setUnInviting(null); }}
+            onCancel={() => setUnInviting(null)}
+          />
         ) : null
       }
     >
@@ -130,7 +140,7 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
                   key={m.user_id}
                   person={p}
                   note={invited ? 'invited' : undefined}
-                  onRemove={invited ? () => cancelInvite(listId, m.user_id) : undefined}
+                  onRemove={invited ? () => setUnInviting(p) : undefined}
                   removeLabel={`Take back ${p.name}'s invite`}
                 />
               );
