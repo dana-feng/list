@@ -45,7 +45,7 @@ const editableNotes = (saved: string) => {
 
 /**
  * What's typed but not saved yet. For a new item that's everything, until "save".
- * For an existing one it's only the notes, which save as you type (and when you tap away).
+ * For an existing one it's only the notes, which save when you tap away from them or leave the screen.
  */
 type Draft = {
   /** notes are the typed text here: tags as @username, turned into ids on save. unfound: tagged people who can't be found, to keep their tags */
@@ -108,7 +108,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     else set({ photos: [...draft.photos, ...uris] });
   };
   const removeNew = (photoId: string) => set({ photos: draft.photos.filter((_, i) => `new${i}` !== photoId) });
-  // notes save themselves as you type, and when you tap away (only if they changed)
+  // notes save themselves when you tap away or leave the screen (only if they changed)
   const saveNotes = () => {
     if (!item) return;
     const notes = tagsToIds(draft.notes, draft.unfound);
@@ -319,7 +319,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
           <NotesField
             value={member ? draft.notes : item!.notes}
             onChange={(notes) => set({ notes })}
-            onPause={isNew ? undefined : saveNotes}
+            onLeave={isNew ? undefined : saveNotes}
             onBlur={isNew ? undefined : saveNotes}
             editing={member}
             listId={draft.listId}
