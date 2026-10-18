@@ -94,8 +94,12 @@ const styles = StyleSheet.create({
   },
   dim: { ...StyleSheet.absoluteFill, backgroundColor: colors.dim },
   menu: { position: 'absolute', left: 34, right: 34 },
-  menuTab: { alignSelf: 'flex-start', height: 36, paddingHorizontal: 18, justifyContent: 'center', borderBottomWidth: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: -2, zIndex: 2 },
-  menuBody: { padding: 8, borderTopLeftRadius: 0 },
+  // the same corners as Home's folder tabs and folder (FolderTab, FolderScreen)
+  menuTab: {
+    alignSelf: 'flex-start', height: 36, paddingHorizontal: 18, justifyContent: 'center', borderBottomWidth: 0, marginBottom: -2, zIndex: 2,
+    borderTopLeftRadius: 10, borderTopRightRadius: 13, borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
+  },
+  menuBody: { padding: 8, borderTopLeftRadius: 0, borderTopRightRadius: 18, borderBottomRightRadius: 20, borderBottomLeftRadius: 15 },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 10 },
   dash: { marginHorizontal: 10, borderTopWidth: 1.3, borderStyle: 'dashed', borderColor: colors.rule },
 });
