@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useDb } from '@/api/db';
 import { followCounts, followersOf, followingOf, getProfileByUsername } from '@/api/profiles';
+import { Pill } from '@/components/Button';
 import { FolderTab } from '@/components/FolderTab';
 import { Header } from '@/components/Header';
 import { PeopleList } from '@/components/PeopleList';
@@ -33,7 +34,7 @@ export default function Follows() {
     const empty = !person
       ? `@${username} doesn't exist.`
       : s
-        ? 'no results'
+        ? `no one called “${q.trim()}” here.`
         : m === 'following'
           ? `${own ? "you aren't" : `${person.name} isn't`} following anyone yet.`
           : `no one follows ${own ? 'you' : person.name} yet.`;
@@ -41,6 +42,12 @@ export default function Follows() {
       <>
         <PeopleList people={people} fill={colors.cream} />
         {!people.length ? <Mono size={12} color={colors.inkSoft} style={{ marginTop: 12 }}>{empty}</Mono> : null}
+        {/* your own empty "following": the way to fix it */}
+        {!people.length && !s && own && m === 'following' ? (
+          <View style={{ alignItems: 'flex-start', marginTop: 12 }}>
+            <Pill label="find people" onPress={() => router.push('/search')} height={38} />
+          </View>
+        ) : null}
       </>
     );
   };

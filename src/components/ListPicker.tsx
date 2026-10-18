@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
 import type { List } from '@/api/db';
 import { listProgress, myLists } from '@/api/lists';
 import { colors } from '@/theme';
@@ -34,7 +35,15 @@ export function ListPicker({ value, onPick }: { value?: string; onPick: (list: L
           </Pressable>
         );
       })}
-      {!lists.length ? <Mono size={12} color={colors.inkSoft} style={{ padding: 10 }}>no lists yet.</Mono> : null}
+      {/* nowhere to put it yet: start a list first */}
+      {!lists.length ? (
+        <Pressable onPress={() => router.push('/list/new')} style={styles.row} accessibilityRole="button" accessibilityLabel="No lists yet. Start a list">
+          <View style={{ flex: 1, gap: 1 }}>
+            <Mono size={12.5}>no lists yet</Mono>
+            <MonoMedium size={11}>start one first →</MonoMedium>
+          </View>
+        </Pressable>
+      ) : null}
     </Paper>
   );
 }

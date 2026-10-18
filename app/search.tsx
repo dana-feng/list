@@ -75,7 +75,14 @@ export default function Search() {
         {section('lists', shown('lists').map((l, i) => <ListResult key={l.id} list={l} index={i} />))}
         {section('items', shown('items').map((it, i) => <ItemResult key={it.id} item={it} index={i} />))}
       </View>
-      {nothing ? <Mono size={12} center color={colors.inkSoft} style={{ marginTop: 24 }}>no results</Mono> : null}
+      {nothing ? (
+        <View style={{ marginTop: 24, alignItems: 'center', gap: 6 }}>
+          <Hand size={20}>{`no ${tab === 'all' ? 'people, lists or items' : tab} called “${term}”`}</Hand>
+          <Mono size={12} center color={colors.inkSoft} style={{ maxWidth: 270, lineHeight: 18 }}>
+            {tab !== 'all' && count ? 'there are matches on the other tabs.' : 'try part of a name, or check the spelling. lists and items only show if you can open them.'}
+          </Mono>
+        </View>
+      ) : null}
     </FolderScreen>
   );
 }
