@@ -3,6 +3,7 @@ import { canViewList, followsSomeoneOn, getList, isListDone, isMember, listPeopl
 import { getProfile } from './profiles';
 import { supabase } from './supabase';
 import { isLocal, newId, uploadImage, write } from './sync';
+import { ITEMS_PER_LIST, PHOTOS_PER_ITEM } from '@/limits';
 
 export const getItem = (id: string) => db.items.find((i) => i.id === id);
 
@@ -330,6 +331,12 @@ function setInvitees(itemId: string, userIds: string[]) {
 
 export type ItemInput = { list_id: string; title: string; notes: string; date: string | null; photos: string[]; tag: TagChoice };
 
+/** How many more items a list can take (ITEMS_PER_LIST in all). */
+export const itemsLeft = (listId: string) => Math.max(0, ITEMS_PER_LIST - db.items.filter((i) => i.list_id === listId).length);
+
+/** How many more photos an item can take (PHOTOS_PER_ITEM in all). */
+export const photosLeft = (itemId: string) => Math.max(0, PHOTOS_PER_ITEM - db.item_photos.filter((p) => p.item_id === itemId).length);
+
 export function addItem(input: ItemInput) {
   const id = newId();
   const { tag } = input;
@@ -392,7 +399,7 @@ export function deleteItem(itemId: string) {
 /** Adds a picked photo (local file uri): shows it right away, uploads it, then saves the row. */
 export function addPhoto(itemId: string, uri: string) {
   const item = getItem(itemId);
-  if (!item) return;
+  if (!item || !photosLeft(itemId)) return;
   const id = newId();
   const position = db.item_photos.filter((p) => p.item_id === itemId).length;
   db.item_photos.push({ id, item_id: itemId, path: uri, position, added_by: db.me, created_at: now() });
