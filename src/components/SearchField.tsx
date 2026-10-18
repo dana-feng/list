@@ -29,8 +29,9 @@ export function SearchField({ value, onChange, placeholder, autoFocus, tone = 'd
         autoCorrect={false}
         accessibilityLabel={placeholder ?? 'Search'}
         // The mono font's line box sits low, so its lowercase letters land below the middle of the
-        // field and below the icon: about 2pt in a browser, 3.5pt on iOS (measured). Bottom padding lifts them.
-        style={[{ flex: 1, alignSelf: 'stretch', fontFamily: fonts.mono, fontSize: paper ? 15 : 13, color: colors.ink, paddingTop: 0, paddingBottom: Platform.OS === 'web' ? 4 : 7 }, noOutline]}
+        // field: about 2pt in a browser, and on iOS 3.5pt in the big field, 1.5pt in the small one
+        // (measured from simulator screenshots). Bottom padding lifts them by half its height.
+        style={[{ flex: 1, alignSelf: 'stretch', fontFamily: fonts.mono, fontSize: paper ? 15 : 13, color: colors.ink, paddingTop: 0, paddingBottom: Platform.OS === 'web' ? 4 : paper ? 7 : 3 }, noOutline]}
       />
       {value ? (
         <Pressable onPress={() => onChange('')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel="Clear search">

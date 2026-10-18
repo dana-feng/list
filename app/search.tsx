@@ -51,7 +51,7 @@ export default function Search() {
     ) : null;
 
   return (
-    <FolderScreen header={<Header />} folderTabs={<FolderTab label={term ? `search · “${term}”` : 'search'} />}>
+    <FolderScreen header={<Header />} folderTabs={<FolderTab label="search" />}>
       <View style={{ marginBottom: 14 }}>
         <SearchField value={q} onChange={type} placeholder="search people, lists, items" autoFocus />
       </View>
