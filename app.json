@@ -33,11 +33,19 @@
         {
           "contactsPermission": "list uses your contacts to find friends who are already here."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "scheme": "list",
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0760a3a1-2874-4aa6-8198-4274e37186f2"
+      }
+    },
+    "owner": "dfeng21"
   }
 }

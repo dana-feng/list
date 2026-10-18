@@ -69,12 +69,49 @@ The tables live in `supabase/migrations/` as SQL files, applied in order:
 - `…_item_tags.sql`: one tag per item (`items.tag`: invite, gift or borrow), `gift_quantity`, and two tables: `gift_claims` (readable only by whoever made the claim; counts come from `gift_status()`, claiming goes through `claim_gift()`) and `borrow_haves`. `open_invite` stays and is kept in step with the tag. **Apply this before shipping the app from that branch**: the app loads `borrow_haves` and `gift_status` on every refresh and saves new items with a `tag`.
 - `…_borrow_has_notification.sql`: tells a list's people when someone says they have the thing a borrow ask is for (`borrow_has`). Gift claims never notify anyone.
 - `…_notifications_realtime.sql`: puts `notifications` on the `supabase_realtime` publication so the bell's dot updates live. The table's read rule means each person only hears about their own rows. Until it's applied, the dot still updates on the one-minute refresh.
+- `…_push_notifications.sql`: push notifications off the same table. `push_tokens` (each person's phones, saved with `save_push_token` / removed with `forget_push_token`), a `notifications_push` trigger that asks the `push` Edge Function to send (through `pg_net`, only once the two Vault secrets below exist), and `claim_push()`, which decides what buzzes. Safe to apply before push is set up: without the secrets the trigger does nothing.
+- `…_feedback.sql`: the `feedback` table (write-only from the app) and a trigger that copies each new row to the team's Google Sheet. The sheet needs a one-time setup: see [docs/FEEDBACK.md](docs/FEEDBACK.md).
 
 Phone sign-in settings on the hosted project (Authentication > Sign In / Providers > Phone): provider on, **Enable phone confirmations off**. The Twilio fields hold placeholders; nothing is sent while confirmations are off. To turn on real texts later: put in real Twilio details, turn confirmations on, and switch `signInWithCode` in `src/api/sync.ts` to `signInWithOtp` / `verifyOtp`.
+
+### Push notifications
+
+What buzzes is decided in `claim_push()` (`…_push_notifications.sql`):
+
+| | kinds |
+|---|---|
+| right away | invites, sharing, tags, comments, replies, someone joined, interested, "has one you can borrow", a list finished |
+| at most every 30 min | likes, things crossed off (the next push rolls them up: "jo, tochi and 3 others liked…") |
+| never | things added to a list (still in the bell) |
+
+10pm to 8am on the phone's clock, pushes still arrive but silently (iOS "passive": no sound, the screen doesn't light up). Opening the bell or taking something back never pushes. No badge numbers, same as the bell.
+
+The flow: a notification row is added or merged into → `notifications_push` trigger → `pg_net` POST to the `push` Edge Function (`supabase/functions/push`) → `claim_push()` → Expo's push service → the phone. Tapping it opens the item or list, like tapping the row in the bell.
+
+To turn it on (none of this is needed for the rest of the app to work):
+
+1. **EAS project** (a free Expo account is enough): `npx eas-cli@latest init` adds `extra.eas.projectId` to `app.json`. Without it the app skips push setup.
+2. **Testing now, no Apple account:** on an iPhone, Expo Go can receive pushes (it uses Expo's own push key). Run `npx expo start`, open in Expo Go and say yes to notifications. (Android dropped push from Expo Go in SDK 53.)
+3. **For TestFlight / the App Store** (needs the Apple developer account): `npx eas-cli@latest credentials` → iOS → Push Notifications → let EAS create the key, then `npx eas-cli@latest build`. Android needs an FCM key instead, whenever Android happens.
+4. **The function**, with a long random secret:
+   ```bash
+   npx supabase secrets set PUSH_SECRET=<random string>
+   npx supabase functions deploy push
+   ```
+5. **Vault secrets** so the database can call it (SQL editor on the hosted project):
+   ```sql
+   select vault.create_secret('https://fljsphilewtthjcqkmmn.supabase.co/functions/v1/push', 'push_function_url');
+   select vault.create_secret('<the same random string>', 'push_secret');
+   ```
+6. Sign in on a phone, say yes to notifications, and have someone comment on your post.
+
+Tests for the message wording: `node --experimental-strip-types --test supabase/functions/push/message.test.ts`.
 
 ### Updating the database
 
 The app talks to the hosted Supabase project, so a database change only takes effect once it is pushed there. Never edit a migration that has already been pushed; add a new one.
+
+On a Mac whose processor lacks AVX (older Intel), Supabase CLI 2.99 and later crash on start ("Illegal instruction"). Use `npm run supabase -- <command>` instead of `npx supabase <command>`; it runs 2.98.0, the last version that works there.
 
 One-time setup on a new machine:
 
