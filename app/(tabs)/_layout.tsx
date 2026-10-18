@@ -14,7 +14,7 @@ export default function TabsLayout() {
           active={state.routes[state.index].name === 'me' ? 'lists' : 'home'}
           onTab={(tab) => {
             const route = state.routes.find((r) => r.name === (tab === 'home' ? 'index' : 'me'))!;
-            // lets a screen react to its own tab being tapped (Home goes back to the feed)
+            // lets a screen react to its own tab being tapped (Home goes back to activity)
             navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
             navigation.navigate(route.name);
           }}

@@ -23,7 +23,7 @@ export default function Me() {
   const [tab, setTab] = useState<ProfileTab>('lists');
   const tracking = useTabPosition(0);
   const navigation = useNavigation();
-  // tapping the lists tab always lands back on your lists, the way Home lands back on the feed
+  // tapping the lists tab always lands back on your lists, the way Home lands back on activity
   useEffect(() => navigation.addListener('tabPress' as never, () => setTab('lists')), [navigation]);
   return (
     <Screen

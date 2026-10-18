@@ -6,7 +6,7 @@ import { Notification, useDb } from '@/api/db';
 import { onNewNotification } from '@/api/live';
 import { describeNotification, loadNotifications, markNotificationsRead } from '@/api/notifications';
 import { refresh } from '@/api/sync';
-import { Avatar } from '@/components/Avatar';
+import { Avatar, SomeoneAvatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { Hand, Mono, MonoMedium } from '@/components/Text';
 import { timeAgo } from '@/lib';
@@ -100,6 +100,9 @@ function Row({ n }: { n: Notification }) {
           </>
         ) : a ? (
           <Avatar person={a} size={32} edge={colors.paper} />
+        ) : n.kind === 'gift_claim' ? (
+          // a surprise gift: nobody's face, just "someone"
+          <SomeoneAvatar seed={n.id} size={32} />
         ) : null}
       </View>
       <View style={{ flex: 1, gap: 3 }}>

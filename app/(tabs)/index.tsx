@@ -21,7 +21,7 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>('all');
   const tracking = useTabPosition(0);
   const navigation = useNavigation();
-  // tapping Home always lands back on the feed
+  // tapping Home always lands back on activity
   useEffect(() => navigation.addListener('tabPress' as never, () => setTab('all')), [navigation]);
   const posts = feedAll();
   return (
@@ -42,7 +42,7 @@ export default function Home() {
       }
       folderTabs={
         <>
-          <FolderTab tab label="feed" on={tab === 'all'} onPress={() => setTab('all')} open={tracking.position.interpolate({ inputRange: [0, 1], outputRange: [1, 0], extrapolate: 'clamp' })} />
+          <FolderTab tab label="activity" on={tab === 'all'} onPress={() => setTab('all')} open={tracking.position.interpolate({ inputRange: [0, 1], outputRange: [1, 0], extrapolate: 'clamp' })} />
           <FolderTab tab label="asks" on={tab === 'asks'} onPress={() => setTab('asks')} open={tracking.position.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' })} />
         </>
       }

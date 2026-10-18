@@ -26,6 +26,18 @@ export function Avatar({ person, size = 24, edge = colors.ink, fill }: Props) {
   );
 }
 
+/** "someone" on a surprise gift: a pastel square with a ? and no outline. `seed` picks the pastel. */
+export function SomeoneAvatar({ seed = 'someone', size = 24 }: { seed?: string; size?: number }) {
+  return (
+    <View
+      style={{ width: size, height: size, borderRadius: Math.round(size * 0.3), alignItems: 'center', justifyContent: 'center', backgroundColor: tintFor(seed) }}
+      accessibilityLabel="Someone"
+    >
+      <Hand size={size * 0.46} style={{ lineHeight: size * 0.6, fontFamily: fonts.hand }}>?</Hand>
+    </View>
+  );
+}
+
 /** Overlapping faces. */
 export function AvatarStack({ people, size = 22, max = 4 }: { people: Profile[]; size?: number; max?: number }) {
   return (

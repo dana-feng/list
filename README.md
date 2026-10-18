@@ -67,10 +67,12 @@ The tables live in `supabase/migrations/` as SQL files, applied in order:
 - `…_item_order.sql`: `items.position` and `reorder_items`, so a list's to-dos keep the order they're dragged into. Until it's applied, dragging a row shows "Couldn't save the new order" and the row goes back.
 - `…_notifications.sql`: the `notifications` table behind the bell on Home, written only by triggers (invites, sharing, tags, comments, replies, likes, interested, things added / crossed off / finished), plus `mark_notifications_read`. Until it's applied, the bell never shows a dot and the notifications screen says it couldn't load.
 - `…_item_tags.sql`: one tag per item (`items.tag`: invite, gift or borrow), `gift_quantity`, and two tables: `gift_claims` (readable only by whoever made the claim; counts come from `gift_status()`, claiming goes through `claim_gift()`) and `borrow_haves`. `open_invite` stays and is kept in step with the tag. **Apply this before shipping the app from that branch**: the app loads `borrow_haves` and `gift_status` on every refresh and saves new items with a `tag`.
-- `…_borrow_has_notification.sql`: tells a list's people when someone says they have the thing a borrow ask is for (`borrow_has`). Gift claims never notify anyone.
+- `…_borrow_has_notification.sql`: tells a list's people when someone says they have the thing a borrow ask is for (`borrow_has`). (Gift claims got their own notification later, in `…_gift_surprise_borrow_quantity.sql`.)
 - `…_notifications_realtime.sql`: puts `notifications` on the `supabase_realtime` publication so the bell's dot updates live. The table's read rule means each person only hears about their own rows. Until it's applied, the dot still updates on the one-minute refresh.
 - `…_push_notifications.sql`: push notifications off the same table. `push_tokens` (each person's phones, saved with `save_push_token` / removed with `forget_push_token`), a `notifications_push` trigger that asks the `push` Edge Function to send (through `pg_net`, only once the two Vault secrets below exist), and `claim_push()`, which decides what buzzes. Safe to apply before push is set up: without the secrets the trigger does nothing.
 - `…_feedback.sql`: the `feedback` table (write-only from the app) and a trigger that copies each new row to the team's Google Sheet. The sheet needs a one-time setup: see [docs/FEEDBACK.md](docs/FEEDBACK.md).
+- `…_gift_surprise_borrow_quantity.sql`: `items.gift_surprise` (on by default: who's getting a gift shows as "someone", except to themselves; can't be turned off once anyone's claimed), `gift_claimers()` (each claim, with who only when it isn't a surprise or it's yours), a `gift_claim` notification to the list's people ("someone is getting…"; on a surprise the row holds no names), and `borrow_haves.quantity` (`gift_quantity` is now how many a gift *or* borrow ask wants). **Apply before shipping**: the item screen saves `gift_surprise` when it's changed.
+- `…_push_opens_post.sql`: `claim_push()` also sends the post a notification is about, so tapping a like / comment / "did" push opens the post (the comments sheet), like the bell does.
 
 Phone sign-in settings on the hosted project (Authentication > Sign In / Providers > Phone): provider on, **Enable phone confirmations off**. The Twilio fields hold placeholders; nothing is sent while confirmations are off. To turn on real texts later: put in real Twilio details, turn confirmations on, and switch `signInWithCode` in `src/api/sync.ts` to `signInWithOtp` / `verifyOtp`.
 
@@ -80,13 +82,13 @@ What buzzes is decided in `claim_push()` (`…_push_notifications.sql`):
 
 | | kinds |
 |---|---|
-| right away | invites, sharing, tags, comments, replies, someone joined, interested, "has one you can borrow", a list finished |
+| right away | invites, sharing, tags, comments, replies, someone joined, interested, "has one you can borrow", "someone is getting", a list finished |
 | at most every 30 min | likes, things crossed off (the next push rolls them up: "jo, tochi and 3 others liked…") |
 | never | things added to a list (still in the bell) |
 
 10pm to 8am on the phone's clock, pushes still arrive but silently (iOS "passive": no sound, the screen doesn't light up). Opening the bell or taking something back never pushes. No badge numbers, same as the bell.
 
-The flow: a notification row is added or merged into → `notifications_push` trigger → `pg_net` POST to the `push` Edge Function (`supabase/functions/push`) → `claim_push()` → Expo's push service → the phone. Tapping it opens the item or list, like tapping the row in the bell.
+The flow: a notification row is added or merged into → `notifications_push` trigger → `pg_net` POST to the `push` Edge Function (`supabase/functions/push`) → `claim_push()` → Expo's push service → the phone. Tapping it opens the post (likes, comments, "did"), the item or the list, like tapping the row in the bell.
 
 To turn it on (none of this is needed for the rest of the app to work):
 

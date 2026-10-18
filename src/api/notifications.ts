@@ -38,6 +38,43 @@ export type NotificationView = {
   href: string | null;
 };
 
+/** The newest post of this kind about an item, if it's loaded and still up. */
+function postAbout(itemId: string, kind: 'item_added' | 'item_done') {
+  return db.events
+    .filter((e) => e.item_id === itemId && e.kind === kind)
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0];
+}
+
+/**
+ * Where tapping a notification goes. Anything about a post (likes, comments, replies, tags in a
+ * comment, "did", "added", "did it with you") opens the post with its comments; the item screen
+ * is the fallback when the post isn't loaded. Invites, gifts, borrows and interest open the item,
+ * where the thing to do is. Several things at once open the list.
+ */
+function linkFor(n: Notification): string | null {
+  const item = n.item_id ? getItem(n.item_id) : undefined;
+  const list = n.list_id ? getList(n.list_id) : undefined;
+  const itemHref = item ? `/item/${item.id}` : list ? `/list/${list.id}` : null;
+  const post = (eventId: string | undefined) => (eventId ? `/post/${eventId}${item ? `?item=${item.id}` : ''}` : itemHref);
+  switch (n.kind) {
+    case 'like':
+    case 'comment':
+    case 'reply':
+    case 'mention':
+      return n.event_id ? post(n.event_id) : itemHref;
+    case 'item_done':
+    case 'item_added':
+      if (n.count > 1) return list ? `/list/${list.id}` : itemHref;
+      return post(item ? postAbout(item.id, n.kind)?.id : undefined);
+    case 'done_with':
+      return post(item ? postAbout(item.id, 'item_done')?.id : undefined);
+    case 'list_done':
+      return list ? `/list/${list.id}` : itemHref;
+    default:
+      return itemHref;
+  }
+}
+
 const s = (text: string): Part => ({ text, strong: true });
 const p = (text: string): Part => ({ text });
 
@@ -56,7 +93,7 @@ export function describeNotification(n: Notification): NotificationView {
   const list = n.list_id ? getList(n.list_id) : undefined;
   const thing = item?.title ?? list?.title ?? 'a post';
   const listName = list?.title ?? 'a list';
-  const href = item ? `/item/${item.id}` : list ? `/list/${list.id}` : null;
+  const href = linkFor(n);
   const many = n.count > 1;
   const by = who(people);
   const quote = n.body ? `“${n.body}”` : undefined;
@@ -82,17 +119,22 @@ export function describeNotification(n: Notification): NotificationView {
       return { people, href, parts: [...by, p(people.length > 1 ? ' are interested in ' : ' is interested in '), s(thing)] };
     case 'item_added':
       return many
-        ? { people, href: list ? `/list/${list.id}` : href, parts: [...by, p(` added ${n.count} things to `), s(listName)] }
+        ? { people, href, parts: [...by, p(` added ${n.count} things to `), s(listName)] }
         : { people, href, parts: [...by, p(' added '), s(thing), p(' to '), s(listName)] };
     case 'item_done':
       return many
-        ? { people, href: list ? `/list/${list.id}` : href, parts: [...by, p(` crossed off ${n.count} things on `), s(listName)] }
+        ? { people, href, parts: [...by, p(` crossed off ${n.count} things on `), s(listName)] }
         : { people, href, parts: [...by, p(' crossed off '), s(thing)] };
     case 'borrow_has':
       return { people, href, parts: [...by, p(people.length > 1 ? ' have ' : ' has '), s(thing), p(' you can borrow')] };
     case 'done_with':
       return { people, href, parts: [...by, p(' did '), s(thing), p(' with you')] };
     case 'list_done':
-      return { people, href: list ? `/list/${list.id}` : href, parts: [s(listName), p(' is finished')] };
+      return { people, href, parts: [s(listName), p(' is finished')] };
+    case 'gift_claim': {
+      // a surprise has no faces: "someone", or how many people
+      const getting = people.length ? [...by, p(people.length > 1 ? ' are getting ' : ' is getting ')] : [s(many ? `${n.count} people` : 'someone'), p(many ? ' are getting ' : ' is getting ')];
+      return { people, href, parts: [...getting, s(thing)] };
+    }
   }
 }

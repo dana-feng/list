@@ -48,6 +48,8 @@ export default function RootLayout() {
         <Stack.Screen name="done/[id]" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="list/new" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="item/new" options={{ animation: 'slide_from_bottom' }} />
+        {/* just the comments sheet (it slides itself up), over the screen you came from */}
+        <Stack.Screen name="post/[id]" options={{ presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } }} />
         {/* iOS 26 goes back on a sideways drag anywhere, which would take drags meant for the tabs
             (SwipeTabs); on these, going back is from the left edge only */}
         <Stack.Screen name="user/[username]/index" options={{ fullScreenGestureEnabled: false }} />
