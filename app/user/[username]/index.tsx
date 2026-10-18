@@ -78,7 +78,8 @@ export default function User() {
                 {
                   label: 'block',
                   confirm: true,
-                  confirmText: `block ${person.username}? you won’t see each other’s profiles, lists or posts, and you’ll both stop following. they aren’t told.`,
+                  confirmTitle: `block @${person.username}?`,
+                  confirmText: 'you won’t see each other’s profiles, lists or posts, and you’ll both stop following. they aren’t told.',
                   onPress: () => block(person),
                 },
               ]}

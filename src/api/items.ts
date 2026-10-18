@@ -3,6 +3,7 @@ import { canViewList, followsSomeoneOn, getList, isListDone, isMember, listPeopl
 import { getProfile } from './profiles';
 import { supabase } from './supabase';
 import { isLocal, newId, uploadImage, write } from './sync';
+import { ITEMS_PER_LIST, PHOTOS_PER_ITEM } from '@/limits';
 
 export const getItem = (id: string) => db.items.find((i) => i.id === id);
 
@@ -114,10 +115,23 @@ export function claimGift(itemId: string, quantity: number) {
   const { quantity: wanted, claimed, mine } = giftOf(itemId);
   const n = Math.max(0, Math.min(quantity, wanted - claimed + mine));
   if (n === mine) return;
-  db.gifts[itemId] = { item_id: itemId, quantity: wanted, claimed: claimed - mine + n, mine: n };
+  const total = claimed - mine + n;
+  db.gifts[itemId] = { item_id: itemId, quantity: wanted, claimed: total, mine: n };
   const kept = db.gift_claims.filter((c) => !(c.item_id === itemId && c.user_id === db.me));
   const was = db.gift_claims.find((c) => c.item_id === itemId && c.user_id === db.me);
   db.gift_claims = n ? [...kept, { item_id: itemId, user_id: db.me, quantity: n, created_at: was?.created_at ?? now() }] : kept;
+  // claim_gift crosses a gift off once every one is claimed and opens it back up when a claim is
+  // taken back. Do the same here, or the old done state shows until the next sync.
+  if (total >= wanted && !item.done_at) {
+    item.done_at = now();
+    item.auto_done = true;
+  } else if (total < wanted && item.done_at && item.auto_done) {
+    item.done_at = null;
+    item.done_by = null;
+    item.auto_done = false;
+    const list = getList(item.list_id);
+    if (list) list.completed_at = null;
+  }
   commit();
   write(() => supabase.rpc('claim_gift', { p_item: itemId, p_quantity: n }), n ? 'that' : 'that undo');
 }
@@ -317,6 +331,12 @@ function setInvitees(itemId: string, userIds: string[]) {
 
 export type ItemInput = { list_id: string; title: string; notes: string; date: string | null; photos: string[]; tag: TagChoice };
 
+/** How many more items a list can take (ITEMS_PER_LIST in all). */
+export const itemsLeft = (listId: string) => Math.max(0, ITEMS_PER_LIST - db.items.filter((i) => i.list_id === listId).length);
+
+/** How many more photos an item can take (PHOTOS_PER_ITEM in all). */
+export const photosLeft = (itemId: string) => Math.max(0, PHOTOS_PER_ITEM - db.item_photos.filter((p) => p.item_id === itemId).length);
+
 export function addItem(input: ItemInput) {
   const id = newId();
   const { tag } = input;
@@ -379,7 +399,7 @@ export function deleteItem(itemId: string) {
 /** Adds a picked photo (local file uri): shows it right away, uploads it, then saves the row. */
 export function addPhoto(itemId: string, uri: string) {
   const item = getItem(itemId);
-  if (!item) return;
+  if (!item || !photosLeft(itemId)) return;
   const id = newId();
   const position = db.item_photos.filter((p) => p.item_id === itemId).length;
   db.item_photos.push({ id, item_id: itemId, path: uri, position, added_by: db.me, created_at: now() });

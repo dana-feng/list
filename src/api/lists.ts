@@ -2,6 +2,7 @@ import { commit, db, List, now, Visibility } from './db';
 import { getProfile, isFollowing } from './profiles';
 import { supabase } from './supabase';
 import { isLocal, newId, write } from './sync';
+import { LISTS_PER_PERSON } from '@/limits';
 
 export const getList = (id: string) => db.lists.find((l) => l.id === id);
 
@@ -53,8 +54,11 @@ export function progressLabel(listId: string) {
   return total > 0 && done === total ? '' : `${done}/${total} done`;
 }
 
+/** Everyone on a list or invited to own it. One means it's yours alone. */
+export const ownerCount = (listId: string) => db.list_members.filter((m) => m.list_id === listId).length;
+
 export function visibilityLabel(list: List) {
-  if (list.visibility === 'just_me') return 'owners';
+  if (list.visibility === 'just_me') return ownerCount(list.id) > 1 ? 'owners' : 'you';
   if (list.visibility !== 'specific') return list.visibility;
   const n = db.list_viewers.filter((v) => v.list_id === list.id).length;
   return `${n} ${n === 1 ? 'person' : 'people'}`;
@@ -114,6 +118,9 @@ export function cancelInvite(listId: string, userId: string) {
   commit();
   write(() => supabase.from('list_members').delete().eq('list_id', listId).eq('user_id', userId).eq('status', 'invited'), 'that');
 }
+
+/** How many more lists you can be on before starting one is refused (LISTS_PER_PERSON in all). */
+export const listsLeft = () => Math.max(0, LISTS_PER_PERSON - db.list_members.filter((m) => m.user_id === db.me && m.status === 'joined').length);
 
 export function createList(input: { title: string; visibility: Visibility; viewers: string[]; invites: string[] }) {
   const id = newId();

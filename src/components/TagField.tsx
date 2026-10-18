@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import type { ItemTag, Profile } from '@/api/db';
 import { TagChoice } from '@/api/items';
 import { getProfile } from '@/api/profiles';
-import { colors } from '@/theme';
+import { colors, fonts, noOutline } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { LinkText } from './Button';
 import { Icon, IconName } from './Icon';
@@ -200,15 +200,36 @@ function BorrowSheet({ quantity, onDone, onClear }: { quantity: number; onDone: 
   );
 }
 
-/** – n + */
+/** – n +. Tap the number to type one; it's kept between `min` and `max` once you're done. */
 export function Stepper({ value, min, max, onChange, big }: { value: number; min: number; max: number; onChange: (n: number) => void; big?: boolean }) {
   const h = big ? 52 : 40;
+  // what's in the box while you type; null when it just shows `value`
+  const [typed, setTyped] = useState<string | null>(null);
+  const done = () => {
+    if (typed === null) return;
+    const n = parseInt(typed, 10);
+    setTyped(null);
+    if (Number.isNaN(n)) return;
+    const next = Math.min(max, Math.max(min, n));
+    if (next !== value) onChange(next);
+  };
   return (
     <Paper fill={big ? undefined : colors.cream} edge="ink" edgeWidth={big ? 1.5 : 1.3} shape={big ? 4 : 2} style={{ height: h, flexDirection: 'row', alignItems: 'center' }}>
       <Pressable onPress={() => onChange(value - 1)} disabled={value <= min} style={[styles.step, { height: h - 2, opacity: value <= min ? 0.3 : 1 }]} accessibilityRole="button" accessibilityLabel="One fewer">
         <Mono size={17}>–</Mono>
       </Pressable>
-      {big ? <MonoMedium size={18} style={{ minWidth: 22, textAlign: 'center' }}>{value}</MonoMedium> : <MonoMedium size={14} style={{ minWidth: 20, textAlign: 'center' }}>{value}</MonoMedium>}
+      <TextInput
+        value={typed ?? String(value)}
+        onChangeText={(t) => setTyped(t.replace(/[^0-9]/g, '').slice(0, String(max).length))}
+        onFocus={() => setTyped(String(value))}
+        onBlur={done}
+        onSubmitEditing={done}
+        keyboardType="number-pad"
+        returnKeyType="done"
+        selectTextOnFocus
+        accessibilityLabel="How many"
+        style={[{ minWidth: big ? 30 : 26, height: h - 2, paddingVertical: 0, paddingHorizontal: 2, textAlign: 'center', fontFamily: fonts.monoMedium, fontSize: big ? 18 : 14, color: colors.ink }, noOutline]}
+      />
       <Pressable onPress={() => onChange(value + 1)} disabled={value >= max} style={[styles.step, { height: h - 2, opacity: value >= max ? 0.3 : 1 }]} accessibilityRole="button" accessibilityLabel="One more">
         <Mono size={17}>+</Mono>
       </Pressable>

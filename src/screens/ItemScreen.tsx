@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, useDb } from '@/api/db';
 import {
-  addItem, addPhoto, canClaimGift, canSayHave, claimGift, deleteItem, getItem, giftClaimers, giftOf, havesFor, howManyIHave, interestedPeople,
+  addItem, addPhoto, canClaimGift, itemsLeft, photosLeft, canSayHave, claimGift, deleteItem, getItem, giftClaimers, giftOf, havesFor, howManyIHave, interestedPeople,
   isInterested, isInvitedTo, isSurprise, markDone, noTag, photosFor, removePhoto, setHaveCount, setTag, TagChoice, tagChoiceOf, toggleHave, toggleInterest,
   undoDone, updateItem,
 } from '@/api/items';
@@ -12,7 +12,8 @@ import { getList, isListDone, isMember, listPeople, listProgress } from '@/api/l
 import { tagsToIds, tagsToNames, Unfound } from '@/api/mentions';
 import { getProfile } from '@/api/profiles';
 import { AvatarStack } from '@/components/Avatar';
-import { Button, LinkText } from '@/components/Button';
+import { Button } from '@/components/Button';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DateChip, DateField } from '@/components/DateField';
 import { DidItWith } from '@/components/DidItWith';
 import { DoneSheet } from '@/components/DoneSheet';
@@ -34,6 +35,7 @@ import { Hand, Label, Mono, MonoMedium } from '@/components/Text';
 import { WhoList } from '@/components/WhoList';
 import { success, tap, toggle } from '@/haptics';
 import { monthDay, names, toDay } from '@/lib';
+import { ITEM_TITLE_MAX, ITEMS_PER_LIST, PHOTOS_PER_ITEM } from '@/limits';
 import { pickPhotos } from '@/pickPhotos';
 import { colors } from '@/theme';
 
@@ -66,6 +68,8 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const [picking, setPicking] = useState(isNew && !listId);
   const [deleted, setDeleted] = useState(false);
   const [reporting, setReporting] = useState(false);
+  // a saved photo whose × was tapped, waiting on "remove photo" (an unsaved one just goes)
+  const [removing, setRemoving] = useState<string | null>(null);
   // just crossed off here: "you did it!" over the screen
   const [cele, setCele] = useState(false);
   const [draft, setDraft] = useState<Draft>(() => ({
@@ -102,11 +106,15 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   // ---- changes: straight to the item, or into the draft for a new one ----
   const setDate = (date: string | null) => (item ? updateItem(item.id, { date }) : set({ date }));
   const changeTag = (next: TagChoice) => (item ? setTag(item.id, next) : set({ tag: next }));
+  // photos still allowed: up to PHOTOS_PER_ITEM in all
+  const roomForPhotos = item ? photosLeft(item.id) : Math.max(0, PHOTOS_PER_ITEM - draft.photos.length);
   const addPhotos = async () => {
-    const uris = await pickPhotos();
+    const uris = await pickPhotos(true, roomForPhotos);
     if (item) uris.forEach((uri) => addPhoto(item.id, uri));
-    else set({ photos: [...draft.photos, ...uris] });
+    else set({ photos: [...draft.photos, ...uris].slice(0, PHOTOS_PER_ITEM) });
   };
+  // a new item's list is already full
+  const listFull = isNew && !!draft.listId && !itemsLeft(draft.listId);
   const removeNew = (photoId: string) => set({ photos: draft.photos.filter((_, i) => `new${i}` !== photoId) });
   // notes save themselves when you tap away or leave the screen (only if they changed)
   const saveNotes = () => {
@@ -145,13 +153,13 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   let tab;
   if (isNew) {
     // save up top, where the keyboard can't cover it
-    header = <Header left={<TextAction label="cancel" onPress={goBack} />} title="new item" right={<SaveAction onPress={save} disabled={!draft.title.trim() || !draft.listId} />} />;
+    header = <Header left={<TextAction label="cancel" onPress={goBack} />} title="new item" right={<SaveAction onPress={save} disabled={!draft.title.trim() || !draft.listId || listFull} />} />;
     tab = <FolderTab label={<ListPickerTab list={list} open={picking} onPress={() => setPicking(!picking)} />} />;
   } else {
     header = (
       <Header
         right={member ? (
-          <MoreMenu label="More: delete" actions={[{ label: 'delete item', confirm: true, onPress: destroy }]} />
+          <MoreMenu label="More: delete" actions={[{ label: 'delete item', confirm: true, confirmText: 'its photos, comments and stars go with it, for everyone.', onPress: destroy }]} />
         ) : addedBy?.id !== db.me ? (
           <MoreMenu label="More: report item" actions={[{ label: 'report item', danger: true, onPress: () => setReporting(true) }]} />
         ) : undefined}
@@ -189,16 +197,21 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const card = (
     <Paper fill={done ? colors.gold : colors.sage} edge="ink" edgeWidth={1.5} shape={4} lean={0} style={styles.card}>
       {isNew ? (
-        <TitleInput value={draft.title} onChange={(title) => set({ title })} placeholder="untitled item" size={28} autoFocus={!picking} />
+        <TitleInput value={draft.title} onChange={(title) => set({ title })} placeholder="untitled item" max={ITEM_TITLE_MAX} size={28} autoFocus={!picking} />
       ) : (
         <View style={styles.titleRow}>
           <View style={{ flex: 1 }}>
-            <EditableTitle value={item!.title} onSave={member ? (title) => updateItem(item!.id, { title }) : undefined} size={28} color={done ? colors.inkSoft : colors.ink} placeholder="untitled item" />
+            <EditableTitle value={item!.title} onSave={member ? (title) => updateItem(item!.id, { title }) : undefined} max={ITEM_TITLE_MAX} size={28} color={done ? colors.inkSoft : colors.ink} placeholder="untitled item" />
           </View>
-          {/* crossing it off (yours) */}
+          {/* crossing it off (yours), and filled in once it is: tap again to un-cross, like a row on the list */}
           {member && !done ? (
             <Pressable onPress={finish} hitSlop={8} style={styles.close} accessibilityRole="button" accessibilityLabel={`Mark ${item!.title} done`}>
               <Circle size={30} />
+              <Mono size={10.5}>done</Mono>
+            </Pressable>
+          ) : member && done ? (
+            <Pressable onPress={() => { tap(); undoDone(item!.id); }} hitSlop={8} style={styles.close} accessibilityRole="button" accessibilityLabel={`Done: ${item!.title}. Tap to un-cross`}>
+              <Circle size={30} filled />
               <Mono size={10.5}>done</Mono>
             </Pressable>
           ) : null}
@@ -254,8 +267,9 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
 
       <PhotoStrip
         photos={photos}
-        onAdd={member ? addPhotos : undefined}
-        onRemove={member ? (isNew ? removeNew : removePhoto) : undefined}
+        // the add tile goes away at PHOTOS_PER_ITEM
+        onAdd={member && roomForPhotos ? addPhotos : undefined}
+        onRemove={member ? (isNew ? removeNew : setRemoving) : undefined}
       />
     </Paper>
   );
@@ -273,9 +287,6 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       {member && item && done ? (
         <View style={styles.doneRow}>
           <View style={styles.doneChip}><MonoMedium size={11.5} color={colors.paper}>done · {dayOf(item.done_at!)}</MonoMedium></View>
-          <View style={{ marginLeft: 'auto' }}>
-            <LinkText label="undo" onPress={() => { tap(); undoDone(item.id); }} />
-          </View>
         </View>
       ) : null}
 
@@ -306,7 +317,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       {/* your gift: how many are left shows on the card; who's getting them only when it isn't a surprise */}
       {member && item && isGift ? (
         <Mono size={11} color={colors.inkSoft} style={{ marginTop: 12, marginHorizontal: 4, lineHeight: 17 }}>
-          {item.auto_done && done ? `all ${gift.quantity} are covered, so it's marked done. tap undo to open it back up.` : surprise ? "it's a surprise: you'll see how many are left, never who's getting them." : "not a surprise: everyone sees who's getting it."}
+          {item.auto_done && done ? `all ${gift.quantity} are covered, so it's marked done. tap the circle to open it back up.` : surprise ? "it's a surprise: you'll see how many are left, never who's getting them." : "not a surprise: everyone sees who's getting it."}
         </Mono>
       ) : null}
 
@@ -353,6 +364,9 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
           )}
         </>
       ) : null}
+      {isNew && listFull ? (
+        <Mono size={11} color={colors.inkSoft} style={{ marginTop: 18, marginHorizontal: 4, lineHeight: 17 }}>that list is full: lists hold up to {ITEMS_PER_LIST} items. pick another, or delete some first.</Mono>
+      ) : null}
 
       {isNew && picking ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -361,6 +375,15 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
             onPick={(l) => { set({ listId: l.id }); setPicking(false); }}
           />
         </View>
+      ) : null}
+      {removing ? (
+        <ConfirmDialog
+          title="remove this photo?"
+          body="it comes off for everyone who can see this."
+          action="remove photo"
+          onConfirm={() => { removePhoto(removing); setRemoving(null); }}
+          onCancel={() => setRemoving(null)}
+        />
       ) : null}
       {reporting && item ? (
         <ReportSheet

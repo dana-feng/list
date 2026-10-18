@@ -11,6 +11,7 @@ import { Label, Mono } from '@/components/Text';
 import { UsernameField, usernameStatus } from '@/components/UsernameField';
 import { AuthStep } from '@/screens/AuthStep';
 import { pickPhotos } from '@/pickPhotos';
+import { NAME_MAX } from '@/limits';
 import { colors, fonts, noOutline } from '@/theme';
 
 export default function ProfileStep() {
@@ -58,6 +59,7 @@ export default function ProfileStep() {
         <TextInput
           value={name}
           onChangeText={setName}
+          maxLength={NAME_MAX}
           placeholder="your name"
           placeholderTextColor={colors.inkFaint}
           textContentType="givenName"

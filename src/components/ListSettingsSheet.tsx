@@ -3,10 +3,12 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { db, Profile, Visibility } from '@/api/db';
 import { canLeaveList, cancelInvite, getList, inviteMembers, renameList, setViewers, setVisibility, viewerIds } from '@/api/lists';
 import { getProfile, me } from '@/api/profiles';
+import { LIST_TITLE_MAX } from '@/limits';
 import { colors, fonts, noOutline } from '@/theme';
 import { AudienceOption, AudiencePicker } from './AudiencePicker';
 import { Avatar } from './Avatar';
 import { Button, LinkText } from './Button';
+import { ConfirmCard } from './ConfirmDialog';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
 import { PersonPicker } from './PersonPicker';
@@ -46,10 +48,14 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
   const [viewers, setViewerDraft] = useState(() => viewerIds(listId));
   const [addingOwners, setAddingOwners] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  // your × was tapped: leaving waits on "yes". Taking back an invite doesn't ask.
+  // your × was tapped: leaving waits on "leave list"
   const [leaving, setLeaving] = useState(false);
+  // an invite whose × was tapped, waiting on "take back invite"
+  const [unInviting, setUnInviting] = useState<Profile | null>(null);
   // everyone else on the list, joined or still invited
   const others = db.list_members.filter((m) => m.list_id === listId && m.user_id !== db.me);
+  // just you on it: "owners" would mean you
+  const options = others.length ? OPTIONS : OPTIONS.map((o) => (o.value === 'just_me' ? { ...o, title: 'you' } : o));
 
   const close = () => {
     renameList(listId, title);
@@ -69,17 +75,36 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
       onClose={close}
       footer={
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          {confirmingDelete ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Mono size={12} color={colors.inkSoft}>delete it?</Mono>
-              <LinkText label="yes" color={colors.bark} onPress={onDelete} />
-              <LinkText label="no" onPress={() => setConfirmingDelete(false)} />
-            </View>
-          ) : (
-            <LinkText label="delete list" color={colors.bark} onPress={() => setConfirmingDelete(true)} />
-          )}
+          <LinkText label="delete list" color={colors.bark} onPress={() => setConfirmingDelete(true)} />
           <Button label="done" onPress={close} style={{ minWidth: 130 }} />
         </View>
+      }
+      overlay={
+        confirmingDelete ? (
+          <ConfirmCard
+            title={`delete “${list.title}”?`}
+            body="everything on it goes too, for everyone on it. this can’t be undone."
+            action="delete list"
+            onConfirm={onDelete}
+            onCancel={() => setConfirmingDelete(false)}
+          />
+        ) : leaving ? (
+          <ConfirmCard
+            title="leave this list?"
+            body="it stays with the other owners. to come back, one of them has to invite you again."
+            action="leave list"
+            onConfirm={onLeave}
+            onCancel={() => setLeaving(false)}
+          />
+        ) : unInviting ? (
+          <ConfirmCard
+            title={`take back ${unInviting.name}’s invite?`}
+            body="they won’t be able to join this list unless someone invites them again."
+            action="take back invite"
+            onConfirm={() => { cancelInvite(listId, unInviting.id); setUnInviting(null); }}
+            onCancel={() => setUnInviting(null)}
+          />
+        ) : null
       }
     >
       <View style={{ gap: 20 }}>
@@ -89,6 +114,7 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
             <TextInput
               value={title}
               onChangeText={setTitle}
+              maxLength={LIST_TITLE_MAX}
               placeholder="untitled list"
               placeholderTextColor={colors.inkFaint}
               accessibilityLabel="List name"
@@ -116,7 +142,7 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
                   key={m.user_id}
                   person={p}
                   note={invited ? 'invited' : undefined}
-                  onRemove={invited ? () => cancelInvite(listId, m.user_id) : undefined}
+                  onRemove={invited ? () => setUnInviting(p) : undefined}
                   removeLabel={`Take back ${p.name}'s invite`}
                 />
               );
@@ -125,18 +151,11 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
               <Mono size={12.5}>+ add</Mono>
             </Paper>
           </View>
-          {leaving ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Mono size={12} color={colors.inkSoft}>leave this list?</Mono>
-              <LinkText label="yes" color={colors.bark} onPress={onLeave} />
-              <LinkText label="no" onPress={() => setLeaving(false)} />
-            </View>
-          ) : null}
         </View>
 
         <View style={{ gap: 8 }}>
           <Label>who can see it</Label>
-          <AudiencePicker options={OPTIONS} value={choice} people={viewers} onChange={(c, v) => { setChoice(c); setViewerDraft(v); }} />
+          <AudiencePicker options={options} value={choice} people={viewers} onChange={(c, v) => { setChoice(c); setViewerDraft(v); }} />
         </View>
       </View>
 

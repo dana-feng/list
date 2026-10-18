@@ -8,9 +8,10 @@ import { Mono, MonoMedium } from './Text';
 /** Who can see a list: followers, specific people, anyone, or just the people on it. */
 export type Choice = Visibility;
 
-export function choiceLabel(choice: Choice, viewers: number) {
+/** `solo`: you're the only owner, so "just the owners" is just you. */
+export function choiceLabel(choice: Choice, viewers: number, solo = false) {
   if (choice === 'specific') return `${viewers} ${viewers === 1 ? 'person' : 'people'}`;
-  if (choice === 'just_me') return 'owners';
+  if (choice === 'just_me') return solo ? 'you' : 'owners';
   return choice;
 }
 
@@ -27,6 +28,10 @@ const OPTIONS: Option<Choice>[] = [
   { value: 'anyone', title: 'anyone' },
   { value: 'just_me', title: 'owners' },
 ];
+
+/** The "who can see a list" choices, with "owners" saying "you" while you're the only one. */
+export const visibilityOptions = (solo: boolean): Option<Choice>[] =>
+  OPTIONS.map((o) => (o.value === 'just_me' && solo ? { ...o, title: 'you' } : o));
 
 /** Who an open invite goes to. Its own choice, whatever the list is set to. */
 export const INVITE_OPTIONS: Option<InviteAudience>[] = [

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { peopleToTag, tagBeingTyped, textParts } from '@/api/mentions';
+import { NOTES_MAX } from '@/limits';
 import { colors, fonts, noOutline } from '@/theme';
 import { Avatar } from './Avatar';
 import { Paper } from './Paper';
 import { openProfile } from './PersonRow';
 import { useReveal } from './Screen';
-import { Hand, Mono } from './Text';
+import { CharsLeft, Hand, Mono } from './Text';
 
 type Props = {
   value: string;
@@ -106,6 +107,7 @@ export function NotesField({ value, onChange, onBlur, onFocus, onLeave, editing,
             setFocused(false);
             onBlur?.();
           }}
+          maxLength={NOTES_MAX}
           multiline
           placeholder={placeholder}
           placeholderTextColor={colors.inkFaint}
@@ -113,6 +115,7 @@ export function NotesField({ value, onChange, onBlur, onFocus, onLeave, editing,
           textAlignVertical="top"
           style={[{ fontFamily: fonts.hand, fontSize: 16, lineHeight: 23, color: colors.ink, minHeight: 92, padding: 0 }, noOutline]}
         />
+        <CharsLeft value={value} max={NOTES_MAX} />
         {people.length ? (
           <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: colors.rule, paddingTop: 4 }}>
             {people.map((p) => (
