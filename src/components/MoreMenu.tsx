@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme';
+import { ConfirmCard } from './ConfirmDialog';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
-import { Mono, MonoMedium } from './Text';
+import { MonoMedium } from './Text';
 
 export type MoreAction = {
   label: string;
   onPress: () => void;
-  /** Deleting and the like: asks "are you sure?" in the menu before doing it. */
+  /** Deleting and the like: asks first, in a popup ("delete item?"). */
   confirm?: boolean;
-  /** Said instead of "are you sure?", for when it's worth spelling out what happens. */
+  /** The question, when "<label>?" isn't enough: "block @dana?" */
+  confirmTitle?: string;
+  /** Under the question, for when it's worth spelling out what happens. */
   confirmText?: string;
   /** In red, like delete; on by default for anything that asks first. */
   danger?: boolean;
@@ -38,31 +41,30 @@ export function MoreMenu({ actions, label = 'More' }: { actions: MoreAction[]; l
       </Pressable>
       {open ? (
         <Modal visible transparent animationType="fade" onRequestClose={close}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityRole="button" accessibilityLabel="Close menu" />
-          <Paper fill={colors.cream} edge="ink" shape={3} style={[styles.menu, { top: insets.top + 50 }]}>
-            {confirming ? (
-              <View style={{ padding: 8, gap: 4 }}>
-                <Mono size={12} color={colors.inkSoft} style={{ maxWidth: 240, lineHeight: 18 }}>{confirming.confirmText ?? `${confirming.label}: are you sure?`}</Mono>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  <Pressable onPress={() => run(confirming)} style={styles.item} accessibilityRole="button">
-                    <MonoMedium size={13} color={colors.bark} style={{ textDecorationLine: 'underline' }}>yes</MonoMedium>
-                  </Pressable>
-                  <Pressable onPress={() => setConfirming(null)} style={styles.item} accessibilityRole="button">
-                    <MonoMedium size={13}>no</MonoMedium>
-                  </Pressable>
-                </View>
-              </View>
-            ) : (
-              actions.map((a) => {
-                const tone = (a.danger ?? a.confirm) ? colors.bark : colors.ink;
-                return (
-                  <Pressable key={a.label} onPress={() => run(a)} style={styles.item} accessibilityRole="button">
-                    <MonoMedium size={13} color={tone}>{a.label}</MonoMedium>
-                  </Pressable>
-                );
-              })
-            )}
-          </Paper>
+          {/* asking first: the menu gives way to the "are you sure?" card, in the same popup */}
+          {confirming ? (
+            <ConfirmCard
+              title={confirming.confirmTitle ?? `${confirming.label}?`}
+              body={confirming.confirmText}
+              action={confirming.label}
+              onConfirm={() => run(confirming)}
+              onCancel={close}
+            />
+          ) : (
+            <>
+              <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityRole="button" accessibilityLabel="Close menu" />
+              <Paper fill={colors.cream} edge="ink" shape={3} style={[styles.menu, { top: insets.top + 50 }]}>
+                {actions.map((a) => {
+                  const tone = (a.danger ?? a.confirm) ? colors.bark : colors.ink;
+                  return (
+                    <Pressable key={a.label} onPress={() => run(a)} style={styles.item} accessibilityRole="button">
+                      <MonoMedium size={13} color={tone}>{a.label}</MonoMedium>
+                    </Pressable>
+                  );
+                })}
+              </Paper>
+            </>
+          )}
         </Modal>
       ) : null}
     </>

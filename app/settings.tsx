@@ -8,6 +8,7 @@ import { deleteAccount, signOut } from '@/api/sync';
 import { Avatar } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { FolderTab } from '@/components/FolderTab';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { FeedbackSheet } from '@/components/FeedbackSheet';
 import { Header, SaveAction, TextAction } from '@/components/Header';
 import { Icon } from '@/components/Icon';
@@ -28,6 +29,7 @@ export default function Settings() {
   const [username, setUsername] = useState(person.username);
   const [bio, setBio] = useState(person.bio);
   const [confirming, setConfirming] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [photoMenu, setPhotoMenu] = useState(false);
   const [feedback, setFeedback] = useState(false);
   const masked = db.phone ? `+1 (${db.phone.slice(-10, -7)}) ••• ${db.phone.slice(-4)}` : '';
@@ -148,22 +150,31 @@ export default function Settings() {
       <Row label="help + feedback" onPress={() => setFeedback(true)} />
       <Row label="terms + privacy" />
 
-      <Button label="log out" tone="outline" onPress={leave} style={{ marginTop: 24, height: 48 }} />
+      <Button label="log out" tone="outline" onPress={() => setLoggingOut(true)} style={{ marginTop: 24, height: 48 }} />
       <View style={{ alignItems: 'center', marginTop: 10 }}>
-        {confirming ? (
-          <View style={{ alignItems: 'center', gap: 2 }}>
-            <Mono size={12} center color={colors.inkSoft} style={{ maxWidth: 260, lineHeight: 18 }}>this deletes your lists, photos and everything you’re interested in, for good.</Mono>
-            <View style={{ flexDirection: 'row', gap: 18 }}>
-              <LinkText label="delete everything" color={colors.bark} onPress={destroy} />
-              <LinkText label="keep my account" onPress={() => setConfirming(false)} />
-            </View>
-          </View>
-        ) : (
-          <LinkText label="delete my account" color={colors.bark} onPress={() => setConfirming(true)} />
-        )}
+        <LinkText label="delete my account" color={colors.bark} onPress={() => setConfirming(true)} />
         <Mono size={10} color={colors.inkFaint} style={{ marginTop: 8 }}>list v{Constants.expoConfig?.version ?? ''}</Mono>
       </View>
       {feedback ? <FeedbackSheet onClose={() => setFeedback(false)} /> : null}
+      {loggingOut ? (
+        <ConfirmDialog
+          title="log out?"
+          body="your lists stay. sign back in with your phone number any time."
+          action="log out"
+          onConfirm={() => { setLoggingOut(false); leave(); }}
+          onCancel={() => setLoggingOut(false)}
+        />
+      ) : null}
+      {confirming ? (
+        <ConfirmDialog
+          title="delete your account?"
+          body="this deletes your lists, photos and everything you’re interested in, for good."
+          action="delete everything"
+          cancel="keep my account"
+          onConfirm={() => { setConfirming(false); destroy(); }}
+          onCancel={() => setConfirming(false)}
+        />
+      ) : null}
     </FolderScreen>
   );
 }

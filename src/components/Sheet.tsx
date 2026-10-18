@@ -13,13 +13,15 @@ type Props = {
   children: ReactNode;
   /** Pinned under the scrolling part: "done", and anything that goes with it. */
   footer?: ReactNode;
+  /** Shown over the whole sheet and the dimmed screen, like a ConfirmCard asking first. */
+  overlay?: ReactNode;
 };
 
 /**
  * A sheet that slides up from the bottom over a dimmed screen. Render it only while it's open.
  * There's no cancel: whatever was picked counts, however the sheet goes away.
  */
-export function Sheet({ title, onClose, children, footer }: Props) {
+export function Sheet({ title, onClose, children, footer, overlay }: Props) {
   const insets = useSafeAreaInsets();
   // drag the bar or the title down to put it away
   const drag = useDragToClose(onClose);
@@ -54,6 +56,7 @@ export function Sheet({ title, onClose, children, footer }: Props) {
           {footer ? <View style={{ marginTop: 14 }}>{footer}</View> : null}
         </Animated.View>
       </KeyboardAvoidingView>
+      {overlay}
     </Modal>
   );
 }
