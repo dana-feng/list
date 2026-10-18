@@ -114,10 +114,23 @@ export function claimGift(itemId: string, quantity: number) {
   const { quantity: wanted, claimed, mine } = giftOf(itemId);
   const n = Math.max(0, Math.min(quantity, wanted - claimed + mine));
   if (n === mine) return;
-  db.gifts[itemId] = { item_id: itemId, quantity: wanted, claimed: claimed - mine + n, mine: n };
+  const total = claimed - mine + n;
+  db.gifts[itemId] = { item_id: itemId, quantity: wanted, claimed: total, mine: n };
   const kept = db.gift_claims.filter((c) => !(c.item_id === itemId && c.user_id === db.me));
   const was = db.gift_claims.find((c) => c.item_id === itemId && c.user_id === db.me);
   db.gift_claims = n ? [...kept, { item_id: itemId, user_id: db.me, quantity: n, created_at: was?.created_at ?? now() }] : kept;
+  // claim_gift crosses a gift off once every one is claimed and opens it back up when a claim is
+  // taken back. Do the same here, or the old done state shows until the next sync.
+  if (total >= wanted && !item.done_at) {
+    item.done_at = now();
+    item.auto_done = true;
+  } else if (total < wanted && item.done_at && item.auto_done) {
+    item.done_at = null;
+    item.done_by = null;
+    item.auto_done = false;
+    const list = getList(item.list_id);
+    if (list) list.completed_at = null;
+  }
   commit();
   write(() => supabase.rpc('claim_gift', { p_item: itemId, p_quantity: n }), n ? 'that' : 'that undo');
 }

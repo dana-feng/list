@@ -11,6 +11,7 @@ import { Icon } from './Icon';
 import { ListPeek } from './ListPeek';
 import { Pill } from './Button';
 import { ProgressBar } from './ProgressBar';
+import { choiceIcon } from './VisibilityPicker';
 import { Hand, Mono, MonoMedium } from './Text';
 
 /** Open invites on the list that include you. */
@@ -78,7 +79,10 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
                 <AvatarStack people={listPeople(list.id)} size={22} max={3} />
                 {own ? (
-                  <Mono size={10}>{visibilityLabel(list)}</Mono>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }} accessibilityLabel={`Who can see it: ${visibilityLabel(list)}`}>
+                    <Icon name={choiceIcon(list.visibility)} size={12} strokeWidth={1.8} />
+                    <Mono size={10} numberOfLines={1} style={{ flexShrink: 1 }}>{visibilityLabel(list)}</Mono>
+                  </View>
                 ) : invites ? (
                   <View style={styles.chip}>
                     <Mono size={10} color={colors.paper}>{invites} open invite{invites > 1 ? 's' : ''}</Mono>

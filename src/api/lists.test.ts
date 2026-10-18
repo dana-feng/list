@@ -78,9 +78,12 @@ describe('progress', () => {
 });
 
 describe('visibilityLabel', () => {
-  it('names the choice, and counts people for "specific"', () => {
+  it('names the choice, says "you" for a list that\'s yours alone, and counts people for "specific"', () => {
     expect(visibilityLabel(list({ visibility: 'followers' }))).toBe('followers');
-    expect(visibilityLabel(list({ visibility: 'just_me' }))).toBe('owners');
+    const solo = list({ visibility: 'just_me' });
+    expect(visibilityLabel(solo)).toBe('you');
+    member(solo, person().id, 'invited');
+    expect(visibilityLabel(solo)).toBe('owners');
     const l = list({ visibility: 'specific' });
     db.list_viewers.push({ list_id: l.id, user_id: 'a' }, { list_id: l.id, user_id: 'b' });
     expect(visibilityLabel(l)).toBe('2 people');

@@ -128,6 +128,16 @@ describe('gifts', () => {
     expect((await savedCalls())[0]).toMatchObject({ rpc: 'claim_gift', args: { p_item: g.id, p_quantity: 1 } });
   });
 
+  it('claiming the last one crosses it off here straight away, and taking it back opens it again', () => {
+    const l = theirList();
+    const g = gift(l, 2, 1);
+    claimGift(g.id, 1);
+    expect(g).toMatchObject({ auto_done: true });
+    expect(g.done_at).toBeTruthy();
+    claimGift(g.id, 0);
+    expect(g).toMatchObject({ done_at: null, auto_done: false });
+  });
+
   it('0 takes your claim back', () => {
     const g = gift(theirList(), 2, 0, 2);
     claimGift(g.id, 0);

@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { db, useDb } from '@/api/db';
 import { deleteItem, itemsForList, markDone, reorderItems, undoDone } from '@/api/items';
 import {
   canViewList, deleteList, getList, invitedBy, isListDone, isMember, leaveList, listPeople, listProgress, membership,
-  renameList, respondInvite,
+  renameList, respondInvite, visibilityLabel,
 } from '@/api/lists';
 import { AvatarStack } from '@/components/Avatar';
 import { Pill } from '@/components/Button';
 import { DoneSheet } from '@/components/DoneSheet';
+import { Icon } from '@/components/Icon';
 import { FolderTab } from '@/components/FolderTab';
 import { goBack, Header } from '@/components/Header';
 import { DoneRow, OpenRow } from '@/components/ItemRow';
@@ -22,6 +23,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { Reorderable } from '@/components/Reorderable';
 import { ReportSheet } from '@/components/ReportSheet';
 import { FolderScreen } from '@/components/Screen';
+import { choiceIcon } from '@/components/VisibilityPicker';
 import { Hand, Label, Mono } from '@/components/Text';
 import { success, tap, toggle } from '@/haptics';
 import { names } from '@/lib';
@@ -132,6 +134,13 @@ export default function ListScreen() {
             <AvatarStack people={people} size={22} />
             <Mono size={11}>{names(people)}</Mono>
           </PeoplePress>
+          {/* who can see it, for the people on it: tap to change it in list settings */}
+          {member ? (
+            <Pressable onPress={() => setSettings(true)} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, alignSelf: 'flex-start' }} accessibilityRole="button" accessibilityLabel={`Who can see it: ${visibilityLabel(list)}. Change it`}>
+              <Icon name={choiceIcon(list.visibility)} size={15} strokeWidth={1.8} />
+              <Mono size={11}>{list.visibility === 'just_me' ? `only ${visibilityLabel(list)} can see it` : `${visibilityLabel(list)} can see it`}</Mono>
+            </Pressable>
+          ) : null}
           {!member && whole ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }}>
               <ProgressBar done={done} total={total} height={9} outlined />

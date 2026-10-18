@@ -53,8 +53,11 @@ export function progressLabel(listId: string) {
   return total > 0 && done === total ? '' : `${done}/${total} done`;
 }
 
+/** Everyone on a list or invited to own it. One means it's yours alone. */
+export const ownerCount = (listId: string) => db.list_members.filter((m) => m.list_id === listId).length;
+
 export function visibilityLabel(list: List) {
-  if (list.visibility === 'just_me') return 'owners';
+  if (list.visibility === 'just_me') return ownerCount(list.id) > 1 ? 'owners' : 'you';
   if (list.visibility !== 'specific') return list.visibility;
   const n = db.list_viewers.filter((v) => v.list_id === list.id).length;
   return `${n} ${n === 1 ? 'person' : 'people'}`;
