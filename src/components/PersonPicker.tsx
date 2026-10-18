@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { myFollowers } from '@/api/profiles';
+import { db, Profile } from '@/api/db';
+import { followingOf, getProfile, myFollowers, searchPeople } from '@/api/profiles';
 import { colors } from '@/theme';
 import { Avatar } from './Avatar';
 import { Pill } from './Button';
@@ -17,22 +18,39 @@ type Props = {
   initial: string[];
   /** Already on the list: left out of the choices. */
   locked?: string[];
+  /** followers (the default): only people who follow you. anyone: search everyone; with nothing typed, `suggested` first, then people you follow and who follow you. */
+  pool?: 'followers' | 'anyone';
+  /** For pool="anyone": who to show first before anything's typed. */
+  suggested?: string[];
+  /** The most that can be ticked. */
+  max?: number;
   onDone: (ids: string[]) => void;
   onClose: () => void;
 };
 
+/** For pool="anyone" with nothing typed: who's ticked, who's suggested, then your people. Once each. */
+function nearby(picked: string[], suggested: string[]): Profile[] {
+  const ids = [...picked, ...suggested, ...followingOf(db.me).map((p) => p.id), ...myFollowers().map((p) => p.id)];
+  return [...new Set(ids)].map((id) => getProfile(id)).filter((p): p is Profile => !!p && p.id !== db.me);
+}
+
 /**
- * A sheet over the screen: search your followers and tick people. Used for "owners" and for "specific people".
+ * A sheet over the screen: search people and tick them. Used for "owners", for "specific people"
+ * (both from your followers), and for who you did something with (anyone).
  * Render it only while it's open, so it starts fresh from `initial` each time.
  */
-export function PersonPicker({ title, initial, locked = [], onDone, onClose }: Props) {
+export function PersonPicker({ title, initial, locked = [], pool = 'followers', suggested = [], max, onDone, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const [q, setQ] = useState('');
   const [picked, setPicked] = useState<string[]>(initial);
   const s = q.trim().toLowerCase().replace(/^@/, '');
-  const people = myFollowers().filter((p) => !locked.includes(p.id) && (p.name.toLowerCase().includes(s) || p.username.includes(s)));
+  const choices = pool === 'anyone'
+    ? (s ? searchPeople(s) : nearby(picked, suggested))
+    : myFollowers().filter((p) => p.name.toLowerCase().includes(s) || p.username.includes(s));
+  const people = choices.filter((p) => !locked.includes(p.id));
+  const full = max !== undefined && picked.length >= max;
   const drag = useDragToClose(onClose);
-  const toggle = (id: string) => setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+  const toggle = (id: string) => setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : full ? cur : [...cur, id]));
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: drag.dim }]}>
@@ -53,7 +71,7 @@ export function PersonPicker({ title, initial, locked = [], onDone, onClose }: P
             {people.map((p) => {
               const on = picked.includes(p.id);
               return (
-                <Pressable key={p.id} onPress={() => toggle(p.id)} style={styles.row} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={p.name}>
+                <Pressable key={p.id} onPress={() => toggle(p.id)} disabled={!on && full} style={[styles.row, !on && full && { opacity: 0.4 }]} accessibilityRole="checkbox" accessibilityState={{ checked: on, disabled: !on && full }} accessibilityLabel={p.name}>
                   <Avatar person={p} size={34} />
                   <View style={{ flex: 1, gap: 1 }}>
                     <Hand size={17}>{p.name}</Hand>
@@ -65,10 +83,11 @@ export function PersonPicker({ title, initial, locked = [], onDone, onClose }: P
             })}
             {!people.length ? (
               <Mono size={12} color={colors.inkSoft} style={{ marginTop: 16, lineHeight: 18 }}>
-                {s ? 'no one by that name.' : 'once people follow you, you can add them here.'}
+                {s ? 'no one by that name.' : pool === 'anyone' ? 'search for anyone by name or @username.' : 'once people follow you, you can add them here.'}
               </Mono>
             ) : null}
           </ScrollView>
+          {full ? <Mono size={11} color={colors.inkSoft} style={{ marginTop: 6 }}>that’s as many as one thing can have.</Mono> : null}
         </Paper>
       </Animated.View>
     </Modal>

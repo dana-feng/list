@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import type { Item } from '@/api/db';
-import { giftOf, interestedPeople, isInvitedTo } from '@/api/items';
-import { monthDay, shortDay } from '@/lib';
+import { companionsFor, giftOf, interestedPeople, isInvitedTo } from '@/api/items';
+import { monthDay, names, shortDay } from '@/lib';
 import { colors, corners, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { DownButton, downText } from './Down';
@@ -89,8 +89,9 @@ export function OpenRow({ item, member, onDone, onDelete }: OpenProps) {
   );
 }
 
-/** Something crossed off: gold, struck through, when. Tap the circle to un-cross (if it's yours). */
+/** Something crossed off: gold, struck through, who it was done with, when. Tap the circle to un-cross (if it's yours). */
 export function DoneRow({ item, index, onUndo, onDelete }: { item: Item; index: number; onUndo?: () => void; onDelete?: () => void }) {
+  const withPeople = companionsFor(item.id);
   return (
     <SwipeToDelete onDelete={onDelete} label={item.title}>
     <View style={[styles.done, corners(index + 1), tilt(index + 2)]}>
@@ -99,12 +100,13 @@ export function DoneRow({ item, index, onUndo, onDelete }: { item: Item; index: 
           <Circle filled />
         </Pressable>
       ) : null}
-      <Pressable onPress={() => router.push(`/item/${item.id}`)} style={{ flex: 1, flexDirection: 'row', paddingLeft: onUndo ? 0 : 8 }} accessibilityRole="button" accessibilityLabel={`${item.title}, done`}>
+      <Pressable onPress={() => router.push(`/item/${item.id}`)} style={{ flex: 1, flexDirection: 'row', paddingLeft: onUndo ? 0 : 8 }} accessibilityRole="button" accessibilityLabel={`${item.title}, done${withPeople.length ? ` with ${names(withPeople)}` : ''}`}>
         <View>
           <HandMedium size={15}>{item.title}</HandMedium>
           <Strike seed={hash(item.id) % 97} />
         </View>
       </Pressable>
+      {withPeople.length ? <AvatarStack people={withPeople} size={19} max={3} /> : null}
       <Mono size={11} color={colors.inkSoft}>{monthDay(item.done_at!)}</Mono>
     </View>
     </SwipeToDelete>

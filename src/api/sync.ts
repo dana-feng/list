@@ -53,7 +53,7 @@ export function refresh(): Promise<void> {
 async function load() {
   const seen = changes;
   const who = db.me;
-  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, haves, gifts, events, likes, comments, blocked, unseen] = await Promise.all([
+  const [profiles, follows, lists, members, viewers, items, photos, invitees, interests, haves, companions, gifts, events, likes, comments, blocked, unseen] = await Promise.all([
     supabase.from('profiles').select('*'),
     supabase.from('follows').select('*'),
     supabase.from('lists').select('*'),
@@ -64,6 +64,7 @@ async function load() {
     supabase.from('item_invitees').select('*'),
     supabase.from('interests').select('*'),
     supabase.from('borrow_haves').select('*'),
+    supabase.from('item_companions').select('*'),
     supabase.rpc('gift_status'),
     supabase.from('events').select('*').order('created_at', { ascending: false }).limit(FEED_LIMIT),
     // Only rows on posts you can see come back; trimmed to the loaded posts below.
@@ -74,7 +75,7 @@ async function load() {
     supabase.from('notifications').select('id', { count: 'exact', head: true }).is('seen_at', null),
   ]);
   // blocked accounts and the bell's dot are nice-to-haves here: if those lookups fail, load everything else anyway
-  const failed = [profiles, follows, lists, members, viewers, items, photos, invitees, interests, haves, gifts, events, likes, comments].find((r) => r.error);
+  const failed = [profiles, follows, lists, members, viewers, items, photos, invitees, interests, haves, companions, gifts, events, likes, comments].find((r) => r.error);
   if (failed?.error) {
     console.warn('refresh failed', failed.error.message);
     return;
@@ -98,6 +99,7 @@ async function load() {
   db.item_invitees = invitees.data ?? [];
   db.interests = interests.data ?? [];
   db.borrow_haves = haves.data ?? [];
+  db.item_companions = companions.data ?? [];
   db.gifts = Object.fromEntries(((gifts.data ?? []) as GiftStatus[]).map((g) => [g.item_id, g]));
   db.events = events.data ?? [];
   const loaded = new Set(db.events.map((e) => e.id));

@@ -3,16 +3,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { colors } from '@/theme';
 import { Button, LinkText } from './Button';
+import { DidItWith } from './DidItWith';
 import { Paper } from './Paper';
 import { Hand, Mono } from './Text';
 
-type Props = { title: string; count: string; onCard: () => void; onLater: () => void };
+type Props = { itemId: string; title: string; count: string; onCard: () => void; onLater: () => void };
 
 /**
- * "you did it!" after crossing something off. The post already went out;
- * "add photos" opens the done screen, "not now" just closes this.
+ * "you did it!" after crossing something off, on any kind of item. The post already went out;
+ * tag who you did it with right here, "add photos" opens the done screen, "not now" just closes this.
  */
-export function DoneSheet({ title, count, onCard, onLater }: Props) {
+export function DoneSheet({ itemId, title, count, onCard, onLater }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <View style={StyleSheet.absoluteFill} accessibilityViewIsModal>
@@ -26,6 +27,7 @@ export function DoneSheet({ title, count, onCard, onLater }: Props) {
           <Hand size={30} color={colors.paper} style={{ lineHeight: 32 }} accessibilityLiveRegion="polite">you did it!</Hand>
           <Hand size={18} color={colors.paper} style={{ opacity: 0.92 }}>{title}</Hand>
         </View>
+        <DidItWith itemId={itemId} onDark />
         <View style={{ gap: 4 }}>
           <Button label="add photos" tone="paper" onPress={onCard} style={{ height: 48 }} />
           <View style={{ alignItems: 'center' }}>

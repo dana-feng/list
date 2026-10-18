@@ -7,12 +7,14 @@ import {
   isInvitedTo, markDone, noTag, photosFor, removePhoto, setTag, TagChoice, tagChoiceOf, toggleHave, toggleInterest, undoDone, updateItem,
 } from '@/api/items';
 import { inviteHosts } from '@/api/feed';
-import { getList, isMember, listPeople, listProgress } from '@/api/lists';
+import { getList, isListDone, isMember, listPeople, listProgress } from '@/api/lists';
 import { tagsToIds, tagsToNames, Unfound } from '@/api/mentions';
 import { getProfile } from '@/api/profiles';
 import { AvatarStack } from '@/components/Avatar';
 import { Button, LinkText } from '@/components/Button';
 import { DateChip, DateField } from '@/components/DateField';
+import { DidItWith } from '@/components/DidItWith';
+import { DoneSheet } from '@/components/DoneSheet';
 import { canSayDown, interestLabel } from '@/components/Down';
 import { FolderTab } from '@/components/FolderTab';
 import { goBack, Header, TextAction } from '@/components/Header';
@@ -63,6 +65,8 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const [picking, setPicking] = useState(isNew && !listId);
   const [deleted, setDeleted] = useState(false);
   const [reporting, setReporting] = useState(false);
+  // just crossed off here: "you did it!" over the screen
+  const [cele, setCele] = useState(false);
   const [draft, setDraft] = useState<Draft>(() => ({
     listId: item?.list_id ?? listId ?? null, title: item?.title ?? '', date: item?.date ?? null, ...editableNotes(item?.notes ?? ''), photos: [],
     tag: noTag(),
@@ -125,8 +129,14 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   };
   const finish = () => {
     success();
-    const finishedList = markDone(item!.id);
-    if (finishedList) router.push(`/done/${list!.id}?kind=list`);
+    markDone(item!.id);
+    setCele(true);
+  };
+  // same as on the list: once that's out of the way, a finished list gets its own moment
+  const afterCele = (toCard: boolean) => {
+    setCele(false);
+    if (toCard) router.push(`/done/${item!.id}`);
+    else if (isListDone(list!.id)) router.push(`/done/${list!.id}?kind=list`);
   };
 
   // ---- header + folder tab ----
@@ -232,6 +242,9 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
         </View>
       ) : null}
 
+      {/* who it was done with, on any kind of item: yours, tap to change; someone else's, "untag me" if that's you */}
+      {item && done ? <DidItWith itemId={item.id} /> : null}
+
       <PhotoStrip
         photos={photos}
         onAdd={member ? addPhotos : undefined}
@@ -241,7 +254,13 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   );
 
   return (
-    <FolderScreen header={header} folderTabs={tab}>
+    <FolderScreen
+      header={header}
+      folderTabs={tab}
+      overlay={cele && item && list ? (
+        <DoneSheet itemId={item.id} title={item.title} count={`${progress!.done} of ${progress!.total} done`} onCard={() => afterCele(true)} onLater={() => afterCele(false)} />
+      ) : null}
+    >
       {card}
 
       {member && item && done ? (
