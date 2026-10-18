@@ -8,6 +8,8 @@
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
     "@expo/metro-runtime": "~57.0.16",
     "@supabase/supabase-js": "^2.117.3",
+    "@testing-library/react-native": "^14.1.0",
+    "@types/jest": "29.5.14",
     "expo": "~57.0.27",
     "expo-constants": "~57.0.21",
     "expo-contacts": "~57.0.6",
@@ -24,6 +26,8 @@
     "expo-splash-screen": "~57.0.9",
     "expo-sqlite": "~57.0.4",
     "expo-status-bar": "~57.0.1",
+    "jest": "~29.7.0",
+    "jest-expo": "~57.0.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -44,7 +48,22 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "supabase": "npx -y supabase@2.98.0"
+    "supabase": "npx -y supabase@2.98.0",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
-  "private": true
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.ts"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/supabase/"
+    ]
+  }
 }
