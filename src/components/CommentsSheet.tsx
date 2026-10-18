@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db, EventComment, FeedEvent } from '@/api/db';
 import { peopleToTag, tagBeingTyped, textParts } from '@/api/mentions';
 import { getProfile, me } from '@/api/profiles';
+import { useLive } from '@/api/watch';
 import { addComment, canDeleteComment, deleteComment, likers, threadsFor } from '@/api/reactions';
 import { hold, tap } from '@/haptics';
 import { timeAgo } from '@/lib';
@@ -32,6 +33,10 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
   const scroller = useRef<ScrollView>(null);
   const threads = threadsFor(event.id);
   const [replyTo, setReplyTo] = useState<EventComment | null>(null);
+  // new comments and replies (and deletes) from others show up while the sheet is open
+  useLive(`comments:${event.id}`, [
+    { table: 'event_comments', filter: `event_id=eq.${event.id}`, deleted: (old) => db.event_comments.some((c) => c.id === old.id && c.event_id === event.id) },
+  ]);
   // Following a link closes the sheet first, then goes, so the new screen isn't under the sheet.
   const go = (to: () => void) => {
     onClose();
