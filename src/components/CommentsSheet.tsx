@@ -74,6 +74,7 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
               <LikedBy eventId={event.id} go={go} />
             </View>
             <View style={styles.rule} />
+            {!threads.length ? <Mono size={12} center color={colors.inkSoft} style={{ marginTop: 18 }}>no comments yet. say something below.</Mono> : null}
             {threads.map(({ comment, replies }) => (
               <Fragment key={comment.id}>
                 <Comment comment={comment} go={go} onReply={setReplyTo} />

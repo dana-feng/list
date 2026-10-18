@@ -156,9 +156,11 @@ export default function ListScreen() {
         {/* first, so it's reachable without scrolling; new items land right under it */}
         {member ? (
           <Paper onPress={() => router.push(`/item/new?list=${id}`)} edge="dash" shape={3} style={{ height: 48, justifyContent: 'center', paddingLeft: 18 }} accessibilityLabel="Add an item to this list">
-            <Hand size={18} color={colors.inkSoft}>+ add</Hand>
+            <Hand size={18} color={colors.inkSoft}>{total ? '+ add' : '+ add the first thing'}</Hand>
           </Paper>
         ) : null}
+        {/* nothing on it at all: say so rather than leave the folder blank */}
+        {!total && !member ? <Mono size={12} color={colors.inkSoft} style={{ marginHorizontal: 4 }}>nothing on this list yet.</Mono> : null}
         {/* yours: hold a row and drag it to put the list in order */}
         {open.length ? (
           <Reorderable items={open} gap={member ? 6 : 8} onReorder={member ? (ids) => reorderItems(id, ids) : undefined} onDragging={setDragging}>

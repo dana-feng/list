@@ -5,6 +5,7 @@ import { useDb } from '@/api/db';
 import { asks, feedAll } from '@/api/feed';
 import { AskList } from '@/components/AskList';
 import { Bell } from '@/components/Bell';
+import { Pill } from '@/components/Button';
 import { FeedPost } from '@/components/FeedPost';
 import { FolderTab } from '@/components/FolderTab';
 import { Icon } from '@/components/Icon';
@@ -17,13 +18,14 @@ const TABS = ['all', 'asks'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function Home() {
-  useDb();
+  const db = useDb();
   const [tab, setTab] = useState<Tab>('all');
   const tracking = useTabPosition(0);
   const navigation = useNavigation();
   // tapping Home always lands back on activity
   useEffect(() => navigation.addListener('tabPress' as never, () => setTab('all')), [navigation]);
   const posts = feedAll();
+  const followsAnyone = db.follows.some((f) => f.follower_id === db.me);
   return (
     <FolderScreen
       insideTabs
@@ -34,7 +36,7 @@ export default function Home() {
           <Hand size={40} color={colors.paper} style={{ lineHeight: 44 }}>list</Hand>
           <View style={{ flexDirection: 'row' }}>
             <Bell />
-            <Pressable onPress={() => router.push('/search')} style={styles.icon} accessibilityRole="button" accessibilityLabel="Find people">
+            <Pressable onPress={() => router.push('/search')} style={styles.icon} accessibilityRole="button" accessibilityLabel="Search">
               <Icon name="search" size={21} color={colors.paper} strokeWidth={1.8} />
             </Pressable>
           </View>
@@ -55,7 +57,12 @@ export default function Home() {
         tracking={tracking}
         pages={{
           all: posts.length ? posts.map((e, i) => <FeedPost key={e.id} event={e} index={i} />) : (
-            <Empty title="quiet in here" body="follow a few people. what they add, cross off and ask about shows up here." />
+            // not following anyone is the usual reason it's empty, and the fix is one tap away
+            followsAnyone ? (
+              <Empty title="quiet in here" body="nothing new from the people you follow yet. what they add, cross off and ask about shows up here." />
+            ) : (
+              <Empty title="your feed is empty" body="follow a few people and what they add, cross off and ask about shows up here." action={{ label: 'find people', onPress: () => router.push('/search') }} />
+            )
           ),
           asks: (
             <AskList
@@ -69,11 +76,12 @@ export default function Home() {
   );
 }
 
-function Empty({ title, body }: { title: string; body: string }) {
+function Empty({ title, body, action }: { title: string; body: string; action?: { label: string; onPress: () => void } }) {
   return (
     <View style={{ paddingVertical: 56, alignItems: 'center', gap: 8 }}>
       <Hand size={24}>{title}</Hand>
       <Mono size={12} center color={colors.inkSoft} style={{ maxWidth: 260, lineHeight: 18 }}>{body}</Mono>
+      {action ? <Pill label={action.label} onPress={action.onPress} height={38} /> : null}
     </View>
   );
 }

@@ -100,7 +100,9 @@ export default function User() {
             <View style={{ paddingVertical: 48, alignItems: 'center', gap: 8 }}>
               <Hand size={22} color={colors.paper}>nothing to see yet</Hand>
               <Mono size={12} center color={colors.onDarkSoft} style={{ maxWidth: 280, lineHeight: 18 }}>
-                {person.name}’s lists are for followers or specific people. follow to see the ones open to followers.
+                {following
+                  ? `${person.name} hasn’t shared any lists with you yet.`
+                  : `${person.name}’s lists are for followers or specific people. follow to see the ones open to followers.`}
               </Mono>
             </View>
           ),
