@@ -12,7 +12,7 @@ import { getList, isListDone, isMember, listPeople, listProgress } from '@/api/l
 import { tagsToIds, tagsToNames, Unfound } from '@/api/mentions';
 import { getProfile } from '@/api/profiles';
 import { AvatarStack } from '@/components/Avatar';
-import { Button, LinkText } from '@/components/Button';
+import { Button } from '@/components/Button';
 import { DateChip, DateField } from '@/components/DateField';
 import { DidItWith } from '@/components/DidItWith';
 import { DoneSheet } from '@/components/DoneSheet';
@@ -195,10 +195,15 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
           <View style={{ flex: 1 }}>
             <EditableTitle value={item!.title} onSave={member ? (title) => updateItem(item!.id, { title }) : undefined} size={28} color={done ? colors.inkSoft : colors.ink} placeholder="untitled item" />
           </View>
-          {/* crossing it off (yours) */}
+          {/* crossing it off (yours), and filled in once it is: tap again to un-cross, like a row on the list */}
           {member && !done ? (
             <Pressable onPress={finish} hitSlop={8} style={styles.close} accessibilityRole="button" accessibilityLabel={`Mark ${item!.title} done`}>
               <Circle size={30} />
+              <Mono size={10.5}>done</Mono>
+            </Pressable>
+          ) : member && done ? (
+            <Pressable onPress={() => { tap(); undoDone(item!.id); }} hitSlop={8} style={styles.close} accessibilityRole="button" accessibilityLabel={`Done: ${item!.title}. Tap to un-cross`}>
+              <Circle size={30} filled />
               <Mono size={10.5}>done</Mono>
             </Pressable>
           ) : null}
@@ -273,9 +278,6 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       {member && item && done ? (
         <View style={styles.doneRow}>
           <View style={styles.doneChip}><MonoMedium size={11.5} color={colors.paper}>done · {dayOf(item.done_at!)}</MonoMedium></View>
-          <View style={{ marginLeft: 'auto' }}>
-            <LinkText label="undo" onPress={() => { tap(); undoDone(item.id); }} />
-          </View>
         </View>
       ) : null}
 
@@ -306,7 +308,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
       {/* your gift: how many are left shows on the card; who's getting them only when it isn't a surprise */}
       {member && item && isGift ? (
         <Mono size={11} color={colors.inkSoft} style={{ marginTop: 12, marginHorizontal: 4, lineHeight: 17 }}>
-          {item.auto_done && done ? `all ${gift.quantity} are covered, so it's marked done. tap undo to open it back up.` : surprise ? "it's a surprise: you'll see how many are left, never who's getting them." : "not a surprise: everyone sees who's getting it."}
+          {item.auto_done && done ? `all ${gift.quantity} are covered, so it's marked done. tap the circle to open it back up.` : surprise ? "it's a surprise: you'll see how many are left, never who's getting them." : "not a surprise: everyone sees who's getting it."}
         </Mono>
       ) : null}
 
