@@ -13,6 +13,8 @@ type Props = {
   onChange?: (v: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
+  /** A second after you stop typing (never partway through an @tag), and when it goes away with something unsaved. */
+  onPause?: () => void;
   editing?: boolean;
   placeholder?: string;
   /** People on this list come first when you type @. */
@@ -24,7 +26,7 @@ type Props = {
  * Reading, `value` is the saved text (tags as ids). Editing, it's the typed text (tags as @username).
  * While you type, the screen scrolls so the whole sheet stays above the keyboard as it grows.
  */
-export function NotesField({ value, onChange, onBlur, onFocus, editing, placeholder, listId }: Props) {
+export function NotesField({ value, onChange, onBlur, onFocus, onPause, editing, placeholder, listId }: Props) {
   const [cursor, setCursor] = useState(value.length);
   // where to put the cursor after a tag is dropped in; handed to the field once, then let go
   const [moveTo, setMoveTo] = useState<number | null>(null);
@@ -37,6 +39,28 @@ export function NotesField({ value, onChange, onBlur, onFocus, editing, placehol
     const sub = Keyboard.addListener('keyboardDidShow', () => reveal(box.current));
     return () => sub.remove();
   }, [focused, reveal]);
+
+  // saving as you go: a half-typed tag ("@jo" on the way to "@joanna") would tag the wrong person
+  const typing = editing ? tagBeingTyped(value, Math.min(cursor, value.length)) : null;
+  const latest = useRef(onPause);
+  useEffect(() => {
+    latest.current = onPause;
+  });
+  const unsaved = useRef(false);
+  useEffect(() => {
+    if (!focused) return;
+    unsaved.current = true;
+    if (typing) return;
+    const t = setTimeout(() => {
+      unsaved.current = false;
+      latest.current?.();
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [value, focused, typing]);
+  // leaving the screen mid-sentence
+  useEffect(() => () => {
+    if (unsaved.current) latest.current?.();
+  }, []);
 
   if (!editing) {
     return (
@@ -60,7 +84,6 @@ export function NotesField({ value, onChange, onBlur, onFocus, editing, placehol
     );
   }
 
-  const typing = tagBeingTyped(value, Math.min(cursor, value.length));
   const people = typing ? peopleToTag(typing.query, listId) : [];
   const tag = (username: string) => {
     if (!typing) return;
@@ -91,6 +114,7 @@ export function NotesField({ value, onChange, onBlur, onFocus, editing, placehol
           }}
           onBlur={() => {
             setFocused(false);
+            unsaved.current = false;
             onBlur?.();
           }}
           multiline

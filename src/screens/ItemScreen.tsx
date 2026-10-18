@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { db, useDb } from '@/api/db';
 import {
@@ -45,7 +45,7 @@ const editableNotes = (saved: string) => {
 
 /**
  * What's typed but not saved yet. For a new item that's everything, until "save".
- * For an existing one it's only the notes, which save when you tap away from them or tap "done" up top.
+ * For an existing one it's only the notes, which save as you type (and when you tap away).
  */
 type Draft = {
   /** notes are the typed text here: tags as @username, turned into ids on save. unfound: tagged people who can't be found, to keep their tags */
@@ -73,8 +73,6 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     tag: noTag(),
   }));
   const [howMany, setHowMany] = useState<number | null>(null);
-  // typing in an existing item's notes: "done" up top puts the keyboard away, which saves them
-  const [inNotes, setInNotes] = useState(false);
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const list = draft.listId ? getList(draft.listId) : undefined;
 
@@ -110,7 +108,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
     else set({ photos: [...draft.photos, ...uris] });
   };
   const removeNew = (photoId: string) => set({ photos: draft.photos.filter((_, i) => `new${i}` !== photoId) });
-  // notes save themselves when you tap away
+  // notes save themselves as you type, and when you tap away (only if they changed)
   const saveNotes = () => {
     if (!item) return;
     const notes = tagsToIds(draft.notes, draft.unfound);
@@ -152,9 +150,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   } else {
     header = (
       <Header
-        right={inNotes ? (
-          <SaveAction label="done" onPress={() => Keyboard.dismiss()} />
-        ) : member ? (
+        right={member ? (
           <MoreMenu label="More: delete" actions={[{ label: 'delete item', confirm: true, onPress: destroy }]} />
         ) : addedBy?.id !== db.me ? (
           <MoreMenu label="More: report item" actions={[{ label: 'report item', danger: true, onPress: () => setReporting(true) }]} />
@@ -323,8 +319,8 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
           <NotesField
             value={member ? draft.notes : item!.notes}
             onChange={(notes) => set({ notes })}
-            onFocus={isNew ? undefined : () => setInNotes(true)}
-            onBlur={isNew ? undefined : () => { setInNotes(false); saveNotes(); }}
+            onPause={isNew ? undefined : saveNotes}
+            onBlur={isNew ? undefined : saveNotes}
             editing={member}
             listId={draft.listId}
           />
