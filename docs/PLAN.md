@@ -8,7 +8,7 @@ v0 is an Expo (React Native) app on Supabase, iOS only, matching the design canv
 
 **Where things stand:** the screens are built, the database is live, and the app reads and writes Supabase (PRs #1–#4). What's left is testing on phones, fixing what that turns up, and the TestFlight items in phase 6.
 
-**Not in v0:** notifications, turning interest into a plan ("actually going"), people you may know, share links, Android, wishlists.
+**Not in v0:** push notifications (the in-app notifications screen is in), turning interest into a plan ("actually going"), people you may know, share links, Android, wishlists.
 
 ## Stack
 

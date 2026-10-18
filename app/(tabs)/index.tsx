@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useNavigation } from 'expo-router';
 import { useDb } from '@/api/db';
 import { feedAll, openInvites } from '@/api/feed';
+import { Bell } from '@/components/Bell';
 import { FeedPost } from '@/components/FeedPost';
 import { FolderTab } from '@/components/FolderTab';
 import { Icon } from '@/components/Icon';
@@ -32,9 +33,12 @@ export default function Home() {
       header={
         <View style={styles.top}>
           <Hand size={40} color={colors.paper} style={{ lineHeight: 44 }}>list</Hand>
-          <Pressable onPress={() => router.push('/search')} style={styles.icon} accessibilityRole="button" accessibilityLabel="Find people">
-            <Icon name="search" size={21} color={colors.paper} strokeWidth={1.8} />
-          </Pressable>
+          <View style={{ flexDirection: 'row' }}>
+            <Bell />
+            <Pressable onPress={() => router.push('/search')} style={styles.icon} accessibilityRole="button" accessibilityLabel="Find people">
+              <Icon name="search" size={21} color={colors.paper} strokeWidth={1.8} />
+            </Pressable>
+          </View>
         </View>
       }
       folderTabs={
