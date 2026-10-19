@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useDb } from '@/api/db';
-import { followCounts, followersOf, followingOf, getProfileByUsername } from '@/api/profiles';
+import { findByIds, followCounts, followersOf, followingOf, getProfileByUsername } from '@/api/profiles';
 import { Pill } from '@/components/Button';
 import { FolderTab } from '@/components/FolderTab';
 import { Header } from '@/components/Header';
@@ -25,6 +25,12 @@ export default function Follows() {
   const [q, setQ] = useState('');
   const person = getProfileByUsername(username);
   const own = person?.id === db.me;
+  // their followers and who they follow may include people you aren't connected to: look those up
+  const ids = person ? db.follows.filter((f) => f.followee_id === person.id || f.follower_id === person.id).map((f) => (f.followee_id === person.id ? f.follower_id : f.followee_id)) : [];
+  const key = ids.join(',');
+  useEffect(() => {
+    if (key) findByIds(key.split(','));
+  }, [key]);
   const counts = person ? followCounts(person.id) : { followers: 0, following: 0 };
   const s = q.trim().toLowerCase().replace(/^@/, '');
   // both tabs are drawn side by side, so you can drag from one to the other; the search filters both

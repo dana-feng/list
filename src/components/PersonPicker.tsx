@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { db, Profile } from '@/api/db';
-import { followingOf, getProfile, myFollowers, searchPeople } from '@/api/profiles';
+import { db, Profile, useDb } from '@/api/db';
+import { followingOf, getProfile, myFollowers, searchPeople, useFindPeople } from '@/api/profiles';
 import { colors } from '@/theme';
 import { Avatar } from './Avatar';
 import { Pill } from './Button';
@@ -43,6 +43,9 @@ export function PersonPicker({ title, initial, locked = [], pool = 'followers', 
   const insets = useSafeAreaInsets();
   const [q, setQ] = useState('');
   const [picked, setPicked] = useState<string[]>(initial);
+  // "anyone" also searches people you aren't connected to; they show up as they arrive
+  useDb();
+  useFindPeople(pool === 'anyone' ? q : '');
   const s = q.trim().toLowerCase().replace(/^@/, '');
   const choices = pool === 'anyone'
     ? (s ? searchPeople(s) : nearby(picked, suggested))

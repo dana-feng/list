@@ -31,7 +31,7 @@
       [
         "expo-contacts",
         {
-          "contactsPermission": "list uses your contacts to find friends who are already here."
+          "contactsPermission": "list checks the phone numbers in your contacts against list's members to find friends who are already here. your contacts aren't stored."
         }
       ],
       "expo-notifications"

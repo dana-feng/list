@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useDb } from '@/api/db';
 import { asksOf } from '@/api/feed';
 import { listsForProfile } from '@/api/lists';
-import { getProfileByUsername, isFollowing, toggleFollow } from '@/api/profiles';
+import { findByUsername, getProfileByUsername, isFollowing, toggleFollow } from '@/api/profiles';
 import { block, blockedByUsername, unblock } from '@/api/safety';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
@@ -28,6 +28,11 @@ export default function User() {
   const [tab, setTab] = useState<ProfileTab>('lists');
   const [reporting, setReporting] = useState(false);
   const tracking = useTabPosition(0);
+  // someone you aren't connected to isn't on the phone yet: look them up by username first
+  const [lookedUp, setLookedUp] = useState(false);
+  useEffect(() => {
+    findByUsername(username).finally(() => setLookedUp(true));
+  }, [username]);
   const blocked = blockedByUsername(username);
   if (blocked) {
     // what's left of someone you've blocked: who they are, and the way back
@@ -44,6 +49,7 @@ export default function User() {
       </Screen>
     );
   }
+  if (!person && !lookedUp) return <Screen header={<Header />}>{null}</Screen>;
   if (!person) {
     return (
       <Screen header={<Header />}>
