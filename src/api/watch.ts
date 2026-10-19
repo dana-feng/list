@@ -15,7 +15,7 @@ export type Watch =
    * filtered and arrive with only the row's key, so `deleted` says whether one is ours.
    */
   | { table: string; filter: string; deleted?: (old: Record<string, unknown>) => boolean }
-  /** An empty "changed" message on a public topic, like gift:<item id>. */
+  /** An empty "changed" message on a private topic, like gift:<item id>: only people who can see it can listen. */
   | { topic: string };
 
 /** How long to wait after a change for any others that come with it, so a burst reloads once. */
@@ -48,7 +48,7 @@ export function useLive(name: string, watches: Watch[], enabled = true) {
     let listening = false;
     for (const w of latest.current) {
       if ('topic' in w) {
-        channels.push(supabase.channel(w.topic).on('broadcast', { event: 'changed' }, nudge).subscribe());
+        channels.push(supabase.channel(w.topic, { config: { private: true } }).on('broadcast', { event: 'changed' }, nudge).subscribe());
         continue;
       }
       listening = true;

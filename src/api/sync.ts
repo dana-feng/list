@@ -17,7 +17,12 @@ import { supabase } from './supabase';
 export const newId = () => randomUUID();
 
 const FEED_LIMIT = 300;
-const PHOTO_URL_SECONDS = 60 * 60 * 24 * 7;
+// Signed photo links last a day, so someone taken off a list stops seeing its photos soon after;
+// they're renewed well before that while the app is open.
+const PHOTO_URL_SECONDS = 60 * 60 * 24;
+const PHOTO_URL_RENEW_MS = 1000 * 60 * 60 * 20;
+/** storage path -> when its link was signed */
+const signedAt: Record<string, number> = {};
 
 // ---------------------------------------------------------------------------
 // Reads
@@ -123,11 +128,17 @@ async function load() {
 
 /** Photos live in a private bucket, so each one needs a signed link to display. */
 async function signPhotoUrls() {
-  const missing = db.item_photos.map((p) => p.path).filter((path) => !isLocal(path) && !db.photoUrls[path]);
+  const stale = (path: string) => !db.photoUrls[path] || !signedAt[path] || Date.now() - signedAt[path] > PHOTO_URL_RENEW_MS;
+  const missing = db.item_photos.map((p) => p.path).filter((path) => !isLocal(path) && stale(path));
   if (!missing.length) return;
   const { data, error } = await supabase.storage.from('photos').createSignedUrls(missing, PHOTO_URL_SECONDS);
   if (error || !data) return;
-  for (const row of data) if (row.path && row.signedUrl) db.photoUrls[row.path] = row.signedUrl;
+  for (const row of data) {
+    if (row.path && row.signedUrl) {
+      db.photoUrls[row.path] = row.signedUrl;
+      signedAt[row.path] = Date.now();
+    }
+  }
 }
 
 export const isLocal = (path: string) => /^(file|ph|assets-library|content|blob|data):/.test(path);
