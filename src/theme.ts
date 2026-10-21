@@ -51,7 +51,7 @@ export const SCHEMES = {
   dark: {
     ground: colors.night, folder: colors.paper, logo: 'sage', swoosh: 'sun',
     // and the lighter ones on the dark background
-    folders: [colors.paper, colors.sage, colors.cream, colors.sun, colors.almostWhite],
+    folders: [colors.paper, colors.sage, colors.cream, colors.sun],
   },
 } as const;
 
