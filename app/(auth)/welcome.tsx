@@ -4,28 +4,30 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Logo, Swoosh } from '@/components/Logo';
-import { useScheme } from '@/components/Surface';
+import { Surface } from '@/components/Surface';
 import { Hand } from '@/components/Text';
-import { colors, fonts } from '@/theme';
+import { fonts, SCHEMES } from '@/theme';
 
-/** The landing page from the sheet: the logo over a paint stroke, "echi" tipped across the top. Olive on sage in light mode, sage on sun in dark. */
+/** The landing page from the sheet, always in the light look: the olive logo over the sun paint stroke on sage, "echi" tipped across the top. */
 export default function Welcome() {
   const insets = useSafeAreaInsets();
-  const scheme = useScheme();
+  const light = SCHEMES.light;
   return (
-    <View style={[styles.page, { backgroundColor: scheme.ground, paddingTop: insets.top, paddingBottom: insets.bottom + 16 }]}>
-      <StatusBar style={scheme.ground === colors.night ? 'light' : 'dark'} />
+    <Surface fill={light.ground}>
+    <View style={[styles.page, { backgroundColor: light.ground, paddingTop: insets.top, paddingBottom: insets.bottom + 16 }]}>
+      <StatusBar style="dark" />
       <View style={styles.middle}>
         <View style={styles.mark} accessibilityRole="header" accessibilityLabel="echi">
           <View style={StyleSheet.absoluteFill} pointerEvents="none">
-            <View style={styles.swoosh}><Swoosh width={150} /></View>
+            <View style={styles.swoosh}><Swoosh width={150} look={light.swoosh} /></View>
           </View>
           <Hand size={44} style={styles.word}>echi</Hand>
-          <Logo size={180} />
+          <Logo size={180} look={light.logo} />
         </View>
       </View>
       <Button label="get started" onPress={() => router.push('/phone')} />
     </View>
+    </Surface>
   );
 }
 

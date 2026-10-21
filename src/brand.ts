@@ -5,6 +5,8 @@ import { Image } from 'expo-image';
 export const BRAND = {
   logoOlive: require('../assets/brand/logo-olive.png'),
   logoSage: require('../assets/brand/logo-sage.png'),
+  // the sage logo with cream outlines, so it shows on the dark background
+  logoSageOnDark: require('../assets/brand/logo-sage-on-dark.png'),
   swooshSage: require('../assets/brand/swoosh-sage.png'),
   swooshSun: require('../assets/brand/swoosh-sun.png'),
   placeholderSun: require('../assets/brand/placeholder-sun.png'),

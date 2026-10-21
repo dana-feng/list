@@ -3,8 +3,8 @@ import { BRAND, BRAND_CACHE } from '@/brand';
 import { useScheme } from './Surface';
 
 // echi's logo, a little stack of three papers, and the paint stroke that goes behind it on the landing page.
-// Olive papers with a sage stroke in light mode, sage papers with a sun stroke in dark mode.
-const LOGOS = { olive: BRAND.logoOlive, sage: BRAND.logoSage };
+// Olive papers in light mode; sage papers with cream outlines in dark mode, where ink outlines would disappear.
+const LOGOS = { olive: BRAND.logoOlive, sage: BRAND.logoSage, sageOnDark: BRAND.logoSageOnDark };
 const SWOOSHES = {
   sage: { source: BRAND.swooshSage, ratio: 263 / 324 },
   sun: { source: BRAND.swooshSun, ratio: 410 / 433 },

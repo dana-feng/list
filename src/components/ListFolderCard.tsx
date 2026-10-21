@@ -5,7 +5,7 @@ import { db, List } from '@/api/db';
 import { isInvitedTo } from '@/api/items';
 import { invitedBy, listPeople, listProgress, progressLabel, respondInvite, visibilityLabel } from '@/api/lists';
 import { hold, toggle } from '@/haptics';
-import { colors, hash, tilt } from '@/theme';
+import { colors, folderColor, Swatch, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { Icon } from './Icon';
 import { ListPeek } from './ListPeek';
@@ -23,11 +23,10 @@ const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id ===
  * A list as a folder on a profile: a tab with how far along it is, a cover placeholder, the name and a progress bar.
  * `invited` is the olive "invited" folder with join / no. Who's on it always shows; `own` adds who can see it.
  */
-export function ListFolderCard({ list, invited, own, index }: { list: List; invited?: boolean; own?: boolean; index: number }) {
+export function ListFolderCard({ list, invited, own, index, cover }: { list: List; invited?: boolean; own?: boolean; index: number; cover?: Swatch }) {
   const { done, total } = listProgress(list.id);
-  const { folders, folder } = useScheme();
   // an invite is the same color as the big folder, with an olive tab; the rest take turns through the colors for this mode
-  const fill = invited ? folder : folders[hash(list.id) % folders.length];
+  const fill = folderColor(list.id, useScheme(), invited);
   const inviter = invitedBy(list.id);
   const invites = own ? 0 : openInviteCount(list.id);
   const pct = total ? Math.round((100 * done) / total) : 0;
@@ -65,7 +64,7 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
         >
           <Surface fill={fill}>
           {/* placeholder until lists get their own cover images */}
-          <Photo photo={{ id: list.id, path: null }} on={fill} style={styles.cover} />
+          <Photo photo={{ id: list.id, path: null }} on={fill} placeholder={cover} style={styles.cover} />
           <Hand size={17} style={{ lineHeight: 19 }}>{list.title}</Hand>
           {invited ? (
             <>

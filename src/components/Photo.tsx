@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import type { ItemPhoto } from '@/api/db';
 import { photoUri } from '@/api/items';
 import { BRAND, BRAND_CACHE } from '@/brand';
-import { colors, corners, swatchPair } from '@/theme';
+import { colors, corners, Swatch, swatchPair } from '@/theme';
 import { Icon } from './Icon';
 import { PhotoViewer } from './PhotoViewer';
 import { Mono } from './Text';
@@ -12,9 +12,17 @@ import { Mono } from './Text';
 type PhotoLike = Pick<ItemPhoto, 'id' | 'path'>;
 
 /** A photo, or a placeholder while there's no file yet: a colored ground with a paint scribble across it. */
-export function Photo({ photo, style, shape = 1, on }: { photo: PhotoLike | { id: string; path: null }; style?: StyleProp<ViewStyle>; shape?: number; /** The color it sits on, so the placeholder goes with it. */ on?: string }) {
+export function Photo({ photo, style, shape = 1, on, placeholder }: {
+  photo: PhotoLike | { id: string; path: null };
+  style?: StyleProp<ViewStyle>;
+  shape?: number;
+  /** The color it sits on, so the placeholder goes with it. */
+  on?: string;
+  /** Which placeholder to show, when it's been picked already (FolderGrid keeps neighbours different). */
+  placeholder?: Swatch;
+}) {
   const uri = photo.path ? photoUri(photo.path) : undefined;
-  const swatch = swatchPair(photo.id, on);
+  const swatch = placeholder ?? swatchPair(photo.id, on);
   const box = [corners(shape), { overflow: 'hidden' as const, backgroundColor: swatch.fill }, style];
   if (uri) {
     return (
