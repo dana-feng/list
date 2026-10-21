@@ -13,13 +13,15 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useDb } from '@/api/db';
 import { registerForPush, useOpenTappedPush } from '@/api/push';
 import { startSync } from '@/api/sync';
-import { GROUND, surfaceOf } from '@/theme';
+import { SCHEMES } from '@/theme';
+import { GroundSurface, useScheme } from '@/components/Surface';
 
 SplashScreen.preventAutoHideAsync();
 startSync();
 
 export default function RootLayout() {
   const db = useDb();
+  const scheme = useScheme();
   const [loaded, error] = useFonts({
     NotoSerifMalayalam_700Bold, NotoSerifMalayalam_800ExtraBold, NotoSerifMalayalam_900Black,
     Cousine_400Regular, Cousine_700Bold,
@@ -43,8 +45,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style={surfaceOf(GROUND) === 'light' ? 'dark' : 'light'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: GROUND } }}>
+      <GroundSurface>
+      <StatusBar style={scheme === SCHEMES.dark ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: scheme.ground } }}>
         <Stack.Screen name="done/[id]" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="list/new" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="item/new" options={{ animation: 'slide_from_bottom' }} />
@@ -55,6 +58,7 @@ export default function RootLayout() {
         <Stack.Screen name="user/[username]/index" options={{ fullScreenGestureEnabled: false }} />
         <Stack.Screen name="user/[username]/follows" options={{ fullScreenGestureEnabled: false }} />
       </Stack>
+      </GroundSurface>
     </SafeAreaProvider>
   );
 }

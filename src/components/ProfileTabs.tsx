@@ -5,6 +5,7 @@ import { colors } from '@/theme';
 import { FeedPost } from './FeedPost';
 import type { TabPosition } from './SwipeTabs';
 import { Hand, Mono, MonoMedium } from './Text';
+import { Surface, useScheme, useTint } from './Surface';
 
 export const PROFILE_TABS = ['lists', 'activity', 'asks'] as const;
 export type ProfileTab = (typeof PROFILE_TABS)[number];
@@ -19,6 +20,8 @@ const LINE = 100;
  * The underline slides along with `position` (SwipeTabs' drag), stretching from one word to the next.
  */
 export function ProfileTabs({ tab, onChange, lists, asks, position }: { tab: ProfileTab; onChange: (tab: ProfileTab) => void; lists: number; asks: number; position: TabPosition['position'] }) {
+  const ink = useTint(colors.ink);
+  const track = useTint(colors.inkTrack);
   const [spans, setSpans] = useState<Partial<Record<ProfileTab, Span>>>({});
   const measure = (t: ProfileTab) => ({ nativeEvent: { layout } }: { nativeEvent: { layout: Span } }) =>
     setSpans((was) => (was[t]?.x === layout.x && was[t]?.width === layout.width ? was : { ...was, [t]: { x: layout.x, width: layout.width } }));
@@ -26,7 +29,7 @@ export function ProfileTabs({ tab, onChange, lists, asks, position }: { tab: Pro
   const measured = all.every(Boolean) ? (all as Span[]) : null;
   const inputRange = PROFILE_TABS.map((_, i) => i);
   return (
-    <View style={styles.tabs} accessibilityRole="tablist">
+    <View style={[styles.tabs, { borderBottomColor: track }]} accessibilityRole="tablist">
       <Word label="lists" count={lists} on={tab === 'lists'} onPress={() => onChange('lists')} onLayout={measure('lists')} />
       <Word label="activity" on={tab === 'activity'} onPress={() => onChange('activity')} onLayout={measure('activity')} />
       <Word label="asks" count={asks} on={tab === 'asks'} onPress={() => onChange('asks')} onLayout={measure('asks')} />
@@ -35,6 +38,7 @@ export function ProfileTabs({ tab, onChange, lists, asks, position }: { tab: Pro
           pointerEvents="none"
           style={[
             styles.underline,
+            { backgroundColor: ink },
             {
               transform: [
                 // scaling stretches from the middle, so move the middle to the middle of the word
@@ -74,9 +78,11 @@ function Word({ label, count, on, onPress, onLayout }: {
 
 /** Someone's posts on a paper sheet, the same posts (likes and comments too) as on Home. */
 export function ActivityList({ userId, empty }: { userId: string; empty: string }) {
+  const { folder } = useScheme();
   const posts = activityFor(userId);
   return (
-    <View style={styles.paper}>
+    <View style={[styles.paper, { backgroundColor: folder }]}>
+      <Surface fill={folder}>
       {posts.length ? (
         posts.map((e, i) => <FeedPost key={e.id} event={e} index={i} />)
       ) : (
@@ -85,16 +91,17 @@ export function ActivityList({ userId, empty }: { userId: string; empty: string 
           <Mono size={12} center color={colors.inkSoft} style={{ maxWidth: 260, lineHeight: 18 }}>{empty}</Mono>
         </View>
       )}
+      </Surface>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', gap: 26, marginTop: 18, borderBottomWidth: 1, borderBottomColor: colors.inkTrack },
+  tabs: { flexDirection: 'row', gap: 26, marginTop: 18, borderBottomWidth: 1 },
   word: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 42 },
-  underline: { position: 'absolute', left: 0, bottom: -1, width: LINE, height: 2, backgroundColor: colors.ink },
+  underline: { position: 'absolute', left: 0, bottom: -1, width: LINE, height: 2 },
   paper: {
-    marginTop: 18, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: colors.paper,
+    marginTop: 18, paddingHorizontal: 12, paddingVertical: 4,
     borderTopLeftRadius: 18, borderTopRightRadius: 22, borderBottomRightRadius: 20, borderBottomLeftRadius: 16,
   },
 });

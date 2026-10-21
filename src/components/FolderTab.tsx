@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import { colors, FOLDER } from '@/theme';
-import { Surface } from './Surface';
+import { colors } from '@/theme';
+import { Surface, useScheme } from './Surface';
 import { MonoMedium } from './Text';
 
 type Props = {
@@ -17,21 +17,22 @@ type Props = {
 
 /** A tab sticking up from the top edge of the big folder. */
 export function FolderTab({ label, on = true, onPress, accessibilityLabel, tab, open }: Props) {
+  const { folder } = useScheme();
   const text = typeof label === 'string' ? <MonoMedium size={12.5} color={colors.ink} numberOfLines={1}>{label}</MonoMedium> : label;
   // the words on the open tab: ink, made to show up on the folder's color
-  const onFolder = <Surface fill={FOLDER}>{text}</Surface>;
+  const onFolder = <Surface fill={folder}>{text}</Surface>;
   const body = (
     <View
       style={{
         height: 44, paddingHorizontal: 16, justifyContent: 'center', flexDirection: 'row', alignItems: 'center', gap: 6,
-        borderTopLeftRadius: 12, borderTopRightRadius: 15, borderWidth: 1.5, borderBottomWidth: 0, borderColor: FOLDER,
-        backgroundColor: on && !open ? FOLDER : 'transparent', marginBottom: on ? -1 : 0, maxWidth: 330,
+        borderTopLeftRadius: 12, borderTopRightRadius: 15, borderWidth: 1.5, borderBottomWidth: 0, borderColor: folder,
+        backgroundColor: on && !open ? folder : 'transparent', marginBottom: on ? -1 : 0, maxWidth: 330,
       }}
     >
       {open ? (
         <>
           {/* the folder color and its words fade in over the closed look as the tab opens */}
-          <Animated.View style={[StyleSheet.absoluteFill, styles.folder, { opacity: open }]} />
+          <Animated.View style={[StyleSheet.absoluteFill, styles.folder, { backgroundColor: folder, opacity: open }]} />
           {text}
           <Animated.View style={[StyleSheet.absoluteFill, styles.center, { opacity: open }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
             {onFolder}
@@ -55,6 +56,6 @@ export function FolderTab({ label, on = true, onPress, accessibilityLabel, tab, 
 }
 
 const styles = StyleSheet.create({
-  folder: { backgroundColor: FOLDER, borderTopLeftRadius: 10, borderTopRightRadius: 13 },
+  folder: { borderTopLeftRadius: 10, borderTopRightRadius: 13 },
   center: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
 });

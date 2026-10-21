@@ -8,10 +8,12 @@ import { Button, LinkText } from '@/components/Button';
 import { Hand, Mono } from '@/components/Text';
 import { AuthStep } from '@/screens/AuthStep';
 import { colors, corners } from '@/theme';
+import { useTint } from '@/components/Surface';
 
 const RESEND_AFTER = 30;
 
 export default function Code() {
+  const ink = useTint(colors.ink);
   const { phone, change } = useLocalSearchParams<{ phone: string; change?: string }>();
   const [code, setCode] = useState('');
   const [wait, setWait] = useState(RESEND_AFTER);
@@ -89,7 +91,7 @@ export default function Code() {
         accessibilityLabel="6-digit code"
         style={styles.hidden}
       />
-      {busy ? <ActivityIndicator color={colors.ink} style={{ marginTop: 20, alignSelf: 'flex-start' }} /> : null}
+      {busy ? <ActivityIndicator color={ink} style={{ marginTop: 20, alignSelf: 'flex-start' }} /> : null}
       {problem ? (
         <Mono size={12} color={colors.paper} style={{ marginTop: 20, marginHorizontal: 4 }} accessibilityLiveRegion="polite">{problem}</Mono>
       ) : null}

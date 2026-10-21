@@ -2,8 +2,8 @@ import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, use
 import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { refresh } from '@/api/sync';
-import { colors, FOLDER, GROUND, space, surfaceOf, TAB_BAR_HEIGHT, tint } from '@/theme';
-import { Surface } from './Surface';
+import { colors, space, TAB_BAR_HEIGHT } from '@/theme';
+import { Surface, useScheme, useTint } from './Surface';
 
 type Common = {
   children: ReactNode;
@@ -27,12 +27,13 @@ function useBottomPad(insideTabs?: boolean, footer?: ReactNode) {
 
 function useRefresher(on?: boolean) {
   const [refreshing, setRefreshing] = useState(false);
+  const spinner = useTint(colors.ink);
   if (!on) return undefined;
   const onRefresh = () => {
     setRefreshing(true);
     refresh().finally(() => setRefreshing(false));
   };
-  return <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tint(colors.paper, surfaceOf(GROUND))} colors={[colors.ink]} />;
+  return <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={spinner} colors={[colors.ink]} />;
 }
 
 /** Scrolls the screen so all of `target` sits above the keyboard (when it doesn't already). */
@@ -68,7 +69,7 @@ function useRevealer() {
 function Shell({ header, footer, overlay, children }: Pick<Common, 'header' | 'footer' | 'overlay' | 'children'>) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={styles.night}>
+    <View style={[styles.fill, { backgroundColor: useScheme().ground }]}>
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={{ paddingTop: insets.top + 6 }}>{header}</View>
         {children}
@@ -120,11 +121,12 @@ export function FolderScreen({ children, header, footer, refreshable, scroll = t
   const bottom = useBottomPad(insideTabs, footer);
   const refresher = useRefresher(refreshable);
   const { reveal, props } = useRevealer();
+  const { folder } = useScheme();
   return (
     <Shell header={header} footer={footer} overlay={overlay}>
       <View style={styles.folderTabs}>{folderTabs}</View>
-      <View style={[styles.folder, roundCorner && { borderTopLeftRadius: 15 }]}>
-        <Surface fill={FOLDER}>
+      <View style={[styles.folder, { backgroundColor: folder }, roundCorner && { borderTopLeftRadius: 15 }]}>
+        <Surface fill={folder}>
         {scroll ? (
           <ScrollView
             {...props}
@@ -147,11 +149,10 @@ export function FolderScreen({ children, header, footer, refreshable, scroll = t
 }
 
 const styles = StyleSheet.create({
-  night: { flex: 1, backgroundColor: GROUND },
   fill: { flex: 1 },
   folderTabs: { flexDirection: 'row', gap: 6, paddingHorizontal: 12, marginTop: space.sm, zIndex: 2 },
   folder: {
-    flex: 1, marginLeft: 12, marginRight: 16, marginBottom: 12, backgroundColor: FOLDER, overflow: 'hidden',
+    flex: 1, marginLeft: 12, marginRight: 16, marginBottom: 12, overflow: 'hidden',
     borderTopLeftRadius: 0, borderTopRightRadius: 18, borderBottomRightRadius: 20, borderBottomLeftRadius: 15,
   },
 });

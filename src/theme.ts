@@ -43,9 +43,16 @@ export const fonts = {
   monoMedium: 'Cousine_700Bold',
 } as const;
 
-/** The screen's background, and the big folder most screens hold their content in. Swap these two to flip the app light-on-dark. */
-export const GROUND = colors.almostWhite;
-export const FOLDER = colors.bark;
+/**
+ * Light and dark mode, following the phone's setting: the screen's background, the big folder most screens hold their
+ * content in, and which logo and paint stroke go with them. Everything else picks ink or cream to match (see Surface).
+ */
+export const SCHEMES = {
+  light: { ground: colors.almostWhite, folder: colors.bark, logo: 'olive', swoosh: 'sage' },
+  dark: { ground: colors.night, folder: colors.paper, logo: 'sage', swoosh: 'sun' },
+} as const;
+
+export type Scheme = (typeof SCHEMES)[keyof typeof SCHEMES];
 
 /** Whether something sits on a light fill (dark ink on it) or a dark one (cream on it). */
 export type Surface = 'light' | 'dark';

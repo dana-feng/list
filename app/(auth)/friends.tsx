@@ -11,8 +11,10 @@ import { Avatar } from '@/components/Avatar';
 import { Hand, Label, Mono } from '@/components/Text';
 import { AuthStep } from '@/screens/AuthStep';
 import { colors } from '@/theme';
+import { useTint } from '@/components/Surface';
 
 export default function Friends() {
+  const ink = useTint(colors.ink);
   useDb();
   const [people, setPeople] = useState<Profile[] | null>(null);
   const [q, setQ] = useState('');
@@ -59,7 +61,7 @@ export default function Friends() {
           ) : null}
         </View>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 12 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          {people === null ? <ActivityIndicator color={colors.ink} style={{ marginTop: 16, alignSelf: 'flex-start' }} /> : null}
+          {people === null ? <ActivityIndicator color={ink} style={{ marginTop: 16, alignSelf: 'flex-start' }} /> : null}
           {people && !people.length ? (
             <Mono size={12} color={colors.inkSoft} style={{ marginTop: 10, lineHeight: 18 }}>nobody from your contacts is here yet. you can find people later with search.</Mono>
           ) : null}
