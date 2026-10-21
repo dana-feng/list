@@ -52,7 +52,7 @@ function Tab({ icon, label, color, ink = colors.paper, up, bottom, onPress }: { 
       accessibilityState={{ selected: up }}
       style={[styles.tab, { backgroundColor: color, height: (up ? TAB_UP : TAB) + bottom, paddingBottom: bottom }]}
     >
-      <Surface fill={color}><Icon name={icon} size={icon === 'plus' || icon === 'x' ? 22 : 20} color={ink} strokeWidth={2.1} /></Surface>
+      <Surface fill={color}><Icon name={icon} size={28} color={ink} /></Surface>
     </Pressable>
   );
 }
