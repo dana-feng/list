@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -14,12 +14,15 @@ import { useDb } from '@/api/db';
 import { registerForPush, useOpenTappedPush } from '@/api/push';
 import { startSync } from '@/api/sync';
 import { applyAppearance } from '@/appearance';
+import { preloadBrand } from '@/brand';
 import { SCHEMES } from '@/theme';
 import { GroundSurface, useScheme } from '@/components/Surface';
 
 SplashScreen.preventAutoHideAsync();
 applyAppearance();
 startSync();
+// the drawn art, loaded while the splash is up
+const brand = preloadBrand();
 
 export default function RootLayout() {
   const db = useDb();
@@ -29,8 +32,13 @@ export default function RootLayout() {
     Cousine_400Regular, Cousine_700Bold,
   });
 
-  // Keep the splash up until fonts are in and we know whether you're signed in.
-  const ready = (loaded || !!error) && db.status !== 'loading';
+  const [art, setArt] = useState(false);
+  useEffect(() => {
+    brand.finally(() => setArt(true));
+  }, []);
+
+  // Keep the splash up until fonts and the drawn art are in and we know whether you're signed in.
+  const ready = (loaded || !!error) && art && db.status !== 'loading';
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);

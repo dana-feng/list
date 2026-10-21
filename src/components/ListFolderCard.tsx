@@ -65,7 +65,7 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
         >
           <Surface fill={fill}>
           {/* placeholder until lists get their own cover images */}
-          <Photo photo={{ id: list.id, path: null }} style={styles.cover} />
+          <Photo photo={{ id: list.id, path: null }} on={fill} style={styles.cover} />
           <Hand size={17} style={{ lineHeight: 19 }}>{list.title}</Hand>
           {invited ? (
             <>

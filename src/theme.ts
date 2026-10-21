@@ -17,7 +17,7 @@ export const colors = {
   // ink
   ink: '#521709',
   inkSoft: 'rgba(82,23,9,0.75)',
-  inkSoftSolid: '#7A4E40', // inkSoft over almost white, for fills (see-through ones show seams where they overlap)
+  inkSoftSolid: '#73472E', // inkSoft over sage (the light-mode background), for fills (see-through ones show seams where they overlap)
   inkFaint: 'rgba(82,23,9,0.45)',
   inkTrack: 'rgba(82,23,9,0.18)',
   rule: 'rgba(82,23,9,0.3)',
@@ -45,7 +45,7 @@ export const fonts = {
  */
 export const SCHEMES = {
   light: {
-    ground: colors.almostWhite, folder: colors.bark, logo: 'olive', swoosh: 'sage',
+    ground: colors.sage, folder: colors.bark, logo: 'olive', swoosh: 'sun',
     // lists on a profile: the darker colors on the light background
     folders: [colors.bark, colors.olive, colors.burntOrange, colors.night, colors.inkSoftSolid],
   },
@@ -121,11 +121,26 @@ export const SWATCHES = [
   { fill: colors.burntOrange, stroke: colors.bark },
 ] as const;
 
-/** The placeholder for a photo or list cover until a real image exists, the same every time for the same id. */
-export const swatchPair = (id: string) => SWATCHES[hash(id) % SWATCHES.length];
+/** The placeholder for a photo or list cover until a real image exists, the same every time for the same id. `on` is the color it sits on, to pick one that goes with it. */
+export const swatchPair = (id: string, on?: string) => {
+  const fits = on ? SWATCHES.filter((w) => (GOES_WITH[on] ?? []).includes(w.fill)) : [];
+  const from = fits.length ? fits : SWATCHES;
+  // its own pick, apart from the one that chose the folder's color, so the pairings don't repeat in step
+  return from[hash(`${id}:cover`) % from.length];
+};
 
-/** Just the ground of `swatchPair`. */
-export const swatchFor = (id: string) => swatchPair(id).fill;
+/** The placeholder grounds that look right on each folder color: enough contrast, and never the folder's own color. */
+const GOES_WITH: Record<string, string[]> = {
+  [colors.paper]: [colors.bark, colors.burntOrange],
+  [colors.cream]: [colors.bark, colors.burntOrange, colors.sun],
+  [colors.sage]: [colors.bark, colors.burntOrange],
+  [colors.sun]: [colors.bark, colors.olive],
+  [colors.burntOrange]: [colors.sun, colors.bark],
+  [colors.bark]: [colors.sun, colors.burntOrange],
+  [colors.olive]: [colors.sun, colors.bark],
+  [colors.night]: [colors.sun, colors.burntOrange, colors.olive],
+  [colors.inkSoftSolid]: [colors.sun, colors.burntOrange],
+};
 
 /** Height of the tab row above the safe area; screens pad their scroll content by this. */
 export const TAB_BAR_HEIGHT = 52;

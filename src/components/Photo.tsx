@@ -3,6 +3,7 @@ import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StylePr
 import { Image } from 'expo-image';
 import type { ItemPhoto } from '@/api/db';
 import { photoUri } from '@/api/items';
+import { BRAND, BRAND_CACHE } from '@/brand';
 import { colors, corners, swatchPair } from '@/theme';
 import { Icon } from './Icon';
 import { PhotoViewer } from './PhotoViewer';
@@ -11,9 +12,9 @@ import { Mono } from './Text';
 type PhotoLike = Pick<ItemPhoto, 'id' | 'path'>;
 
 /** A photo, or a placeholder while there's no file yet: a colored ground with a paint scribble across it. */
-export function Photo({ photo, style, shape = 1 }: { photo: PhotoLike | { id: string; path: null }; style?: StyleProp<ViewStyle>; shape?: number }) {
+export function Photo({ photo, style, shape = 1, on }: { photo: PhotoLike | { id: string; path: null }; style?: StyleProp<ViewStyle>; shape?: number; /** The color it sits on, so the placeholder goes with it. */ on?: string }) {
   const uri = photo.path ? photoUri(photo.path) : undefined;
-  const swatch = swatchPair(photo.id);
+  const swatch = swatchPair(photo.id, on);
   const box = [corners(shape), { overflow: 'hidden' as const, backgroundColor: swatch.fill }, style];
   if (uri) {
     return (
@@ -24,17 +25,17 @@ export function Photo({ photo, style, shape = 1 }: { photo: PhotoLike | { id: st
   }
   return (
     <View style={box}>
-      <Image source={PLACEHOLDERS[swatch.fill]} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
+      <Image source={PLACEHOLDERS[swatch.fill]} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy={BRAND_CACHE} accessible={false} />
     </View>
   );
 }
 
 // the sheet's placeholder photos, one per ground color in SWATCHES (theme.ts)
 const PLACEHOLDERS: Record<string, number> = {
-  [colors.sun]: require('../../assets/brand/placeholder-sun.png'),
-  [colors.bark]: require('../../assets/brand/placeholder-bark.png'),
-  [colors.olive]: require('../../assets/brand/placeholder-olive.png'),
-  [colors.burntOrange]: require('../../assets/brand/placeholder-orange.png'),
+  [colors.sun]: BRAND.placeholderSun,
+  [colors.bark]: BRAND.placeholderBark,
+  [colors.olive]: BRAND.placeholderOlive,
+  [colors.burntOrange]: BRAND.placeholderOrange,
 };
 
 /** Space above the photos for the × that sits across their top corner. */
