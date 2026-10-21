@@ -7,7 +7,10 @@ import { Avatar } from './Avatar';
 import { Button } from './Button';
 import { DownButton } from './Down';
 import { SearchField } from './SearchField';
+import { Surface } from './Surface';
 import { Switch } from './Switch';
+import { Mono } from './Text';
+import { colors } from '@/theme';
 import { Stepper } from './TagField';
 
 beforeEach(() => signIn());
@@ -98,5 +101,18 @@ describe('DownButton', () => {
     const i = item(list(), { tag: 'invite', open_invite: true, invite_audience: 'anyone', title: 'picnic' });
     await render(<DownButton itemId={i.id} />);
     expect(screen.queryByLabelText("I'm interested in picnic")).toBeNull();
+  });
+});
+
+describe('Surface', () => {
+  it('turns ink cream on a dark fill and cream ink on a light one', async () => {
+    await render(<><Surface tone="dark"><Mono>on dark</Mono></Surface><Surface tone="light"><Mono color={colors.paper}>on light</Mono></Surface></>);
+    expect(screen.getByText('on dark')).toHaveStyle({ color: colors.paper });
+    expect(screen.getByText('on light')).toHaveStyle({ color: colors.ink });
+  });
+
+  it('leaves other colors alone', async () => {
+    await render(<Surface tone="dark"><Mono color={colors.sun}>sunny</Mono></Surface>);
+    expect(screen.getByText('sunny')).toHaveStyle({ color: colors.sun });
   });
 });

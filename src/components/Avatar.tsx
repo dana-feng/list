@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { Image } from 'expo-image';
 import type { Profile } from '@/api/db';
 import { colors, fonts, tintFor } from '@/theme';
+import { Surface } from './Surface';
 import { Hand } from './Text';
 
 type Props = { person: Profile; size?: number; edge?: string; fill?: string };
@@ -20,7 +21,7 @@ export function Avatar({ person, size = 24, edge = colors.ink, fill }: Props) {
       {person.profile_photo ? (
         <Image source={{ uri: person.profile_photo }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" />
       ) : (
-        <Hand size={size * 0.46} style={{ lineHeight: size * 0.6, fontFamily: fonts.hand }}>{initial}</Hand>
+        <Surface tone="light"><Hand size={size * 0.46} style={{ lineHeight: size * 0.6, fontFamily: fonts.hand }}>{initial}</Hand></Surface>
       )}
     </View>
   );
@@ -33,7 +34,7 @@ export function SomeoneAvatar({ seed = 'someone', size = 24 }: { seed?: string; 
       style={{ width: size, height: size, borderRadius: Math.round(size * 0.3), alignItems: 'center', justifyContent: 'center', backgroundColor: tintFor(seed) }}
       accessibilityLabel="Someone"
     >
-      <Hand size={size * 0.46} style={{ lineHeight: size * 0.6, fontFamily: fonts.hand }}>?</Hand>
+      <Surface tone="light"><Hand size={size * 0.46} style={{ lineHeight: size * 0.6, fontFamily: fonts.hand }}>?</Hand></Surface>
     </View>
   );
 }

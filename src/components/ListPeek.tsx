@@ -10,6 +10,7 @@ import { LinkText } from './Button';
 import { ConfirmCard } from './ConfirmDialog';
 import { Paper } from './Paper';
 import { Hand, Mono, MonoMedium } from './Text';
+import { Surface } from './Surface';
 
 const SHOW_ITEMS = 5;
 
@@ -32,6 +33,7 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
 
   return (
     <Modal transparent visible animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      <Surface tone="light">
       <View style={styles.fill} accessibilityViewIsModal>
         <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: colors.dim }]} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
         <Animated.View style={[styles.stack, { transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }] }]}>
@@ -77,6 +79,7 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
           />
         ) : null}
       </View>
+      </Surface>
     </Modal>
   );
 }

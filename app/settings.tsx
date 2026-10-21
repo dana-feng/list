@@ -20,6 +20,7 @@ import { usernameStatus } from '@/components/UsernameField';
 import { pickPhotos, takePhoto } from '@/pickPhotos';
 import { NAME_MAX } from '@/limits';
 import { colors, fonts, noOutline } from '@/theme';
+import { useTint } from '@/components/Surface';
 
 /** Settings, and the same screen as "edit profile". */
 export default function Settings() {
@@ -154,7 +155,7 @@ export default function Settings() {
       <Button label="log out" tone="outline" onPress={() => setLoggingOut(true)} style={{ marginTop: 24, height: 48 }} />
       <View style={{ alignItems: 'center', marginTop: 10 }}>
         <LinkText label="delete my account" color={colors.burntOrange} onPress={() => setConfirming(true)} />
-        <Mono size={10} color={colors.inkFaint} style={{ marginTop: 8 }}>list v{Constants.expoConfig?.version ?? ''}</Mono>
+        <Mono size={10} color={colors.inkFaint} style={{ marginTop: 8 }}>echi v{Constants.expoConfig?.version ?? ''}</Mono>
       </View>
       {feedback ? <FeedbackSheet onClose={() => setFeedback(false)} /> : null}
       {loggingOut ? (
@@ -196,8 +197,9 @@ function Field({ label, help, children, onPress, tall }: { label: string; help?:
 }
 
 function Row({ label, value, onPress }: { label: string; value?: string; onPress?: () => void }) {
+  const rule = useTint(colors.rule);
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={styles.row} accessibilityRole={onPress ? 'button' : undefined}>
+    <Pressable onPress={onPress} disabled={!onPress} style={[styles.row, { borderColor: rule }]} accessibilityRole={onPress ? 'button' : undefined}>
       <Mono size={12.5}>{label}</Mono>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         {value ? <Mono size={11.5} color={colors.inkSoft}>{value}</Mono> : null}

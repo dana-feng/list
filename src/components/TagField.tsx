@@ -13,6 +13,7 @@ import { Sheet } from './Sheet';
 import { Switch } from './Switch';
 import { Mono, MonoMedium } from './Text';
 import { choiceIcon } from './VisibilityPicker';
+import { Surface } from './Surface';
 
 export const TAG_ICON: Record<ItemTag, IconName> = { invite: 'invite', gift: 'gift', borrow: 'borrow' };
 
@@ -56,6 +57,7 @@ export function TagField({ value, onChange, claimed = 0, interested = 0 }: Props
 
       {menu ? (
         <Modal visible transparent animationType="fade" onRequestClose={() => setMenu(null)}>
+          <Surface tone="light">
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setMenu(null)} accessibilityRole="button" accessibilityLabel="Close" />
           <View style={[styles.menu, { left: Math.max(12, menu.x), top: menu.y }]} accessibilityRole="menu">
             {(['invite', 'gift', 'borrow'] as const).map((t) => {
@@ -83,6 +85,7 @@ export function TagField({ value, onChange, claimed = 0, interested = 0 }: Props
               )}
             </View>
           </View>
+          </Surface>
         </Modal>
       ) : null}
 

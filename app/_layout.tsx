@@ -13,7 +13,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useDb } from '@/api/db';
 import { registerForPush, useOpenTappedPush } from '@/api/push';
 import { startSync } from '@/api/sync';
-import { colors } from '@/theme';
+import { GROUND, surfaceOf } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
 startSync();
@@ -43,8 +43,8 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night } }}>
+      <StatusBar style={surfaceOf(GROUND) === 'light' ? 'dark' : 'light'} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: GROUND } }}>
         <Stack.Screen name="done/[id]" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="list/new" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="item/new" options={{ animation: 'slide_from_bottom' }} />

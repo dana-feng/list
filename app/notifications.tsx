@@ -10,7 +10,7 @@ import { Avatar, SomeoneAvatar } from '@/components/Avatar';
 import { Header } from '@/components/Header';
 import { Hand, Mono, MonoMedium } from '@/components/Text';
 import { timeAgo } from '@/lib';
-import { colors } from '@/theme';
+import { colors, GROUND } from '@/theme';
 
 /**
  * Plain rows on the dark background, newest first: "new" (not seen before you opened this) and
@@ -39,7 +39,7 @@ export default function Notifications() {
   const earlier = rows?.filter((n) => n.seen_at) ?? [];
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.night }}>
+    <View style={{ flex: 1, backgroundColor: GROUND }}>
       <View style={{ paddingTop: insets.top + 6 }}>
         <Header title="notifications" />
       </View>
@@ -48,7 +48,7 @@ export default function Notifications() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            tintColor={colors.paper}
+            tintColor={colors.ink}
             onRefresh={() => {
               setRefreshing(true);
               Promise.all([load(), refresh()]).finally(() => setRefreshing(false));
@@ -95,8 +95,8 @@ function Row({ n }: { n: Notification }) {
       <View style={styles.faces}>
         {a && b ? (
           <>
-            <View style={{ position: 'absolute', left: 0, top: 0 }}><Avatar person={a} size={26} edge={colors.night} /></View>
-            <View style={{ position: 'absolute', right: 0, bottom: 0 }}><Avatar person={b} size={22} edge={colors.night} /></View>
+            <View style={{ position: 'absolute', left: 0, top: 0 }}><Avatar person={a} size={26} edge={GROUND} /></View>
+            <View style={{ position: 'absolute', right: 0, bottom: 0 }}><Avatar person={b} size={22} edge={GROUND} /></View>
           </>
         ) : a ? (
           <Avatar person={a} size={32} edge={colors.paper} />

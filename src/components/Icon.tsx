@@ -1,5 +1,6 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { colors } from '@/theme';
+import { colors, tint } from '@/theme';
+import { useSurface } from './Surface';
 
 export type IconName =
   | 'home' | 'plus' | 'list' | 'back' | 'right' | 'down' | 'search' | 'sliders' | 'image'
@@ -19,7 +20,10 @@ type Props = {
 
 /** Icons from the echi sheet (24×24, round caps): ink outlines with colored fills, or plain lines in one color. */
 export function Icon({ name, size = 22, color = colors.ink, strokeWidth = 1.9, tone }: Props) {
-  if ((tone ?? (color === colors.ink ? 'color' : 'line')) === 'color') return <ColorIcon name={name} size={size} strokeWidth={strokeWidth} />;
+  // ink on light fills, cream on dark ones (see Surface); the colored look is for light fills only
+  const surface = useSurface();
+  color = tint(color, surface);
+  if ((tone ?? (color === colors.ink && surface === 'light' ? 'color' : 'line')) === 'color') return <ColorIcon name={name} size={size} strokeWidth={strokeWidth} />;
   const s = { stroke: color, strokeWidth, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

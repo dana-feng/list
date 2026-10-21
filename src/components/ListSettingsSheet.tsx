@@ -14,6 +14,7 @@ import { Paper } from './Paper';
 import { PersonPicker } from './PersonPicker';
 import { Sheet } from './Sheet';
 import { Label, Mono } from './Text';
+import { Surface } from './Surface';
 
 const OPTIONS: AudienceOption<Visibility>[] = [
   { value: 'just_me', title: 'owners', icon: 'lock' },
@@ -30,7 +31,7 @@ function PersonChip({ person, note, onRemove, removeLabel }: { person: Profile; 
       <Mono size={12.5}>{note ? `${person.name} · ${note}` : person.name}</Mono>
       {onRemove ? (
         <Pressable onPress={onRemove} hitSlop={12} style={styles.remove} accessibilityRole="button" accessibilityLabel={removeLabel}>
-          <Icon name="x" size={7} color={colors.paper} strokeWidth={3.2} />
+          <Surface tone="dark"><Icon name="x" size={7} color={colors.paper} strokeWidth={3.2} /></Surface>
         </Pressable>
       ) : null}
     </Paper>

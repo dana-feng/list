@@ -14,6 +14,7 @@ import { Pill } from './Button';
 import { ProgressBar } from './ProgressBar';
 import { choiceIcon } from './VisibilityPicker';
 import { Hand, Mono, MonoMedium } from './Text';
+import { Surface } from './Surface';
 
 /** Open invites on the list that include you. */
 const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id === listId && isInvitedTo(i.id)).length;
@@ -44,8 +45,8 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
   return (
     <View style={[{ flex: 1 }, invited ? null : tilt(index)]}>
       <Animated.View style={{ transform: [{ scale: press }] }}>
-        <View style={[styles.tab, { backgroundColor: invited ? colors.olive : fill, borderColor: invited ? colors.olive : colors.paper }]}>
-          <MonoMedium size={11} color={invited ? colors.paper : colors.ink}>{invited ? 'invited' : progressLabel(list.id)}</MonoMedium>
+        <View style={[styles.tab, { backgroundColor: invited ? colors.olive : fill, borderColor: invited ? colors.olive : colors.ink }]}>
+          <Surface fill={invited ? colors.olive : fill}><MonoMedium size={11} color={invited ? colors.paper : colors.ink}>{invited ? 'invited' : progressLabel(list.id)}</MonoMedium></Surface>
         </View>
         <Pressable
           onPress={open}
@@ -56,8 +57,9 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
           accessibilityRole="button"
           accessibilityLabel={`Open ${list.title}`}
           accessibilityHint={canPeek ? 'Press and hold for a closer look and to delete' : undefined}
-          style={[styles.body, { backgroundColor: fill, borderColor: invited ? colors.olive : colors.paper, borderWidth: invited ? 2 : 1.6 }]}
+          style={[styles.body, { backgroundColor: fill, borderColor: invited ? colors.olive : colors.ink, borderWidth: invited ? 2 : 1.6 }]}
         >
+          <Surface fill={fill}>
           {/* placeholder until lists get their own cover images */}
           <Photo photo={{ id: list.id, path: null }} style={styles.cover} />
           <Hand size={17} style={{ lineHeight: 19 }}>{list.title}</Hand>
@@ -84,12 +86,13 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
                   </View>
                 ) : invites ? (
                   <View style={styles.chip}>
-                    <Mono size={10} color={colors.paper}>{invites} open invite{invites > 1 ? 's' : ''}</Mono>
+                    <Surface tone="dark"><Mono size={10} color={colors.paper}>{invites} open invite{invites > 1 ? 's' : ''}</Mono></Surface>
                   </View>
                 ) : null}
               </View>
             </>
           )}
+          </Surface>
         </Pressable>
       </Animated.View>
       {peeking ? <ListPeek list={list} onOpen={() => { setPeeking(false); open(); }} onClose={() => setPeeking(false)} /> : null}

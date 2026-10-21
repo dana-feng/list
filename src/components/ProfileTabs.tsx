@@ -90,9 +90,9 @@ export function ActivityList({ userId, empty }: { userId: string; empty: string 
 }
 
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', gap: 26, marginTop: 18, borderBottomWidth: 1, borderBottomColor: 'rgba(251,239,167,0.18)' },
+  tabs: { flexDirection: 'row', gap: 26, marginTop: 18, borderBottomWidth: 1, borderBottomColor: colors.inkTrack },
   word: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 42 },
-  underline: { position: 'absolute', left: 0, bottom: -1, width: LINE, height: 2, backgroundColor: colors.paper },
+  underline: { position: 'absolute', left: 0, bottom: -1, width: LINE, height: 2, backgroundColor: colors.ink },
   paper: {
     marginTop: 18, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: colors.paper,
     borderTopLeftRadius: 18, borderTopRightRadius: 22, borderBottomRightRadius: 20, borderBottomLeftRadius: 16,

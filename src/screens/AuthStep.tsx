@@ -18,7 +18,7 @@ export function AuthStep({ step, title, body, children, footer, scroll = true, b
           center={
             <View style={{ flexDirection: 'row', gap: 6 }} accessibilityLabel={`Step ${step} of 4`}>
               {[1, 2, 3, 4].map((n) => (
-                <View key={n} style={{ width: 26, height: 4, borderRadius: 2, backgroundColor: colors.paper, opacity: n <= step ? 1 : 0.3 }} />
+                <View key={n} style={{ width: 26, height: 4, borderRadius: 2, backgroundColor: colors.ink, opacity: n <= step ? 1 : 0.3 }} />
               ))}
             </View>
           }

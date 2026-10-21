@@ -9,6 +9,7 @@ import { monthDay, names } from '@/lib';
 import { colors } from '@/theme';
 import { Icon } from './Icon';
 import { Mono } from './Text';
+import { Surface } from './Surface';
 
 /** `added_by`, when known, shows as "added by dana" under the photo. */
 type PhotoLike = Pick<ItemPhoto, 'id' | 'path'> & Partial<Pick<ItemPhoto, 'added_by' | 'created_at'>>;
@@ -25,6 +26,7 @@ export function PhotoViewer({ photos, start, onClose }: { photos: PhotoLike[]; s
   const addedBy = current?.added_by ? getProfile(current.added_by) : undefined;
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onShow={() => setIndex(first)} onRequestClose={onClose}>
+      <Surface tone="dark">
       <View style={styles.dim} accessibilityViewIsModal>
         {visible ? (
           <FlatList
@@ -71,6 +73,7 @@ export function PhotoViewer({ photos, start, onClose }: { photos: PhotoLike[]; s
           <View style={styles.closeDot}><Icon name="x" size={18} color={colors.paper} strokeWidth={2.6} /></View>
         </Pressable>
       </View>
+      </Surface>
     </Modal>
   );
 }

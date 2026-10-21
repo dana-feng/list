@@ -18,6 +18,7 @@ import { Photo } from './Photo';
 import { PhotoViewer } from './PhotoViewer';
 import { TAG_ICON } from './TagField';
 import { Hand, Mono, MonoMedium } from './Text';
+import { Surface, useTint } from './Surface';
 
 type Kind = Exclude<FeedEvent['kind'], 'open_invite'>;
 
@@ -96,11 +97,12 @@ type Post = NonNullable<ReturnType<typeof describePost>>;
  * Lines are separated by a rule rather than each sitting in its own box.
  */
 export function FeedPost({ event, index }: { event: FeedEvent; index: number }) {
+  const rule = useTint(colors.rule);
   const [talking, setTalking] = useState(false);
   const post = describePost(event);
   if (!post) return null;
   return (
-    <View style={[styles.post, index > 0 && styles.rule]}>
+    <View style={[styles.post, index > 0 && [styles.rule, { borderTopColor: rule }]]}>
       <PostBody event={event} post={post} index={index} />
       <Reactions event={event} onComments={() => setTalking(true)} />
       {talking ? <CommentsSheet event={event} post={post} index={index} onClose={() => setTalking(false)} /> : null}
@@ -151,7 +153,7 @@ export function PostBody({ event, post, index, go = (to) => to() }: { event: Fee
             <Pressable key={photo.id} onPress={() => setViewing(i)} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={`View photo ${i + 1} of ${photos.length}`}>
               <Photo photo={photo} shape={index + i} style={{ height: shown.length === 1 ? 170 : 104 }} />
               {extra > 0 && i === shown.length - 1 ? (
-                <View style={styles.more}><Mono size={10.5} color={colors.paper}>+{extra}</Mono></View>
+                <View style={styles.more}><Surface tone="dark"><Mono size={10.5} color={colors.paper}>+{extra}</Mono></Surface></View>
               ) : null}
             </Pressable>
           ))}

@@ -6,6 +6,7 @@ import { colors, space } from '@/theme';
 import { Icon, IconName } from './Icon';
 import { Paper } from './Paper';
 import { Hand, MonoMedium } from './Text';
+import { Surface } from './Surface';
 
 export type TabName = 'home' | 'lists';
 
@@ -21,9 +22,11 @@ export function TabBar({ active, onTab }: { active: TabName | null; onTab: (tab:
     <>
       <Tabs active={open ? null : active} plusOpen={open} onPlus={() => setOpen(!open)} onTab={onTab} />
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Surface tone="light">
         <Pressable style={styles.dim} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel="Close" />
         <PlusMenu close={() => setOpen(false)} />
         <Tabs active={null} plusOpen onPlus={() => setOpen(false)} onTab={(t) => { setOpen(false); onTab(t); }} />
+        </Surface>
       </Modal>
     </>
   );
@@ -35,7 +38,7 @@ function Tabs({ active, plusOpen, onPlus, onTab }: { active: TabName | null; plu
     <View style={[styles.bar, { height: TAB_UP + reach(insets.bottom) }]} pointerEvents="box-none">
       <Tab icon="home" label="Home" color={colors.olive} up={active === 'home'} bottom={reach(insets.bottom)} onPress={() => onTab('home')} />
       <Tab icon={plusOpen ? 'x' : 'plus'} label={plusOpen ? 'Close' : 'Add an item or start a list'} color={colors.paper} ink={colors.ink} up={plusOpen} bottom={reach(insets.bottom)} onPress={onPlus} />
-      <Tab icon="list" label="Your lists" color={colors.bark} up={active === 'lists'} bottom={reach(insets.bottom)} onPress={() => onTab('lists')} />
+      <Tab icon="list" label="Your lists" color={colors.burntOrange} up={active === 'lists'} bottom={reach(insets.bottom)} onPress={() => onTab('lists')} />
     </View>
   );
 }
@@ -49,7 +52,7 @@ function Tab({ icon, label, color, ink = colors.paper, up, bottom, onPress }: { 
       accessibilityState={{ selected: up }}
       style={[styles.tab, { backgroundColor: color, height: (up ? TAB_UP : TAB) + bottom, paddingBottom: bottom }]}
     >
-      <Icon name={icon} size={icon === 'plus' || icon === 'x' ? 22 : 20} color={ink} strokeWidth={2.1} />
+      <Surface fill={color}><Icon name={icon} size={icon === 'plus' || icon === 'x' ? 22 : 20} color={ink} strokeWidth={2.1} /></Surface>
     </Pressable>
   );
 }

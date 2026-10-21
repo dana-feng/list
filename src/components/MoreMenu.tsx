@@ -6,6 +6,7 @@ import { ConfirmCard } from './ConfirmDialog';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
 import { MonoMedium } from './Text';
+import { Surface } from './Surface';
 
 export type MoreAction = {
   label: string;
@@ -41,6 +42,7 @@ export function MoreMenu({ actions, label = 'More' }: { actions: MoreAction[]; l
       </Pressable>
       {open ? (
         <Modal visible transparent animationType="fade" onRequestClose={close}>
+          <Surface tone="light">
           {/* asking first: the menu gives way to the "are you sure?" card, in the same popup */}
           {confirming ? (
             <ConfirmCard
@@ -65,6 +67,7 @@ export function MoreMenu({ actions, label = 'More' }: { actions: MoreAction[]; l
               </Paper>
             </>
           )}
+          </Surface>
         </Modal>
       ) : null}
     </>

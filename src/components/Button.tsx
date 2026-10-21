@@ -3,6 +3,7 @@ import { StyleProp, View, ViewStyle } from 'react-native';
 import { colors } from '@/theme';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
+import { useSurface } from './Surface';
 import { MonoMedium } from './Text';
 
 type Tone = 'bark' | 'sun' | 'paper' | 'outline' | 'outlineLight' | 'dashLight';
@@ -30,7 +31,9 @@ type Props = {
 
 /** The full-width button: "save", "send code", "done". */
 export function Button({ label, onPress, tone = 'bark', disabled, icon, style, accessibilityLabel }: Props) {
-  const t = TONES[tone];
+  // bark on the bark folder wouldn't show: there it's paper instead
+  const surface = useSurface();
+  const t = TONES[tone === 'bark' && surface === 'dark' ? 'paper' : tone];
   return (
     <Paper
       onPress={onPress}
@@ -59,7 +62,8 @@ export function Pill({ label, on, filled, sun, onPress, accessibilityLabel, heig
   // "on" is normally the outline; `filled` says outright which look to draw
   const hollow = filled === undefined ? !!on : !filled;
   const checked = filled && on;
-  const look = light
+  const dark = useSurface() === 'dark';
+  const look = light || (dark && !checked && !sun)
     ? hollow ? { fill: undefined, edge: 'light' as const, text: colors.paper } : { fill: colors.paper, edge: 'none' as const, text: colors.ink }
     : checked ? { fill: colors.sage, edge: 'ink' as const, text: colors.ink }
     : sun ? { fill: colors.sun, edge: 'ink' as const, text: colors.ink }

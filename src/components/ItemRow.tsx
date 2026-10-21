@@ -11,6 +11,7 @@ import { useReorderHandle } from './Reorderable';
 import { Circle, Strike } from './Scribble';
 import { SwipeToDelete } from './SwipeToDelete';
 import { Hand, HandMedium, Mono } from './Text';
+import { Surface } from './Surface';
 
 type OpenProps = {
   item: Item;
@@ -46,6 +47,7 @@ export function OpenRow({ item, member, onDone, onDelete }: OpenProps) {
 
   return (
     <SwipeToDelete onDelete={member ? onDelete : undefined} label={item.title}>
+    <Surface tone="light">
     <View style={tilt(shape)}>
       <View style={[styles.row, corners(shape), { backgroundColor: colors.sage, borderColor: colors.ink, borderWidth: 1.5 }]}>
         {member ? (
@@ -85,6 +87,7 @@ export function OpenRow({ item, member, onDone, onDelete }: OpenProps) {
         )}
       </View>
     </View>
+    </Surface>
     </SwipeToDelete>
   );
 }
@@ -94,6 +97,7 @@ export function DoneRow({ item, index, onUndo, onDelete }: { item: Item; index: 
   const withPeople = companionsFor(item.id);
   return (
     <SwipeToDelete onDelete={onDelete} label={item.title}>
+    <Surface tone="light">
     <View style={[styles.done, corners(index + 1), tilt(index + 2)]}>
       {onUndo ? (
         <Pressable onPress={onUndo} style={styles.circle} accessibilityRole="button" accessibilityLabel={`Done: ${item.title}. Tap to un-cross`}>
@@ -109,6 +113,7 @@ export function DoneRow({ item, index, onUndo, onDelete }: { item: Item; index: 
       {withPeople.length ? <AvatarStack people={withPeople} size={19} max={3} /> : null}
       <Mono size={11} color={colors.inkSoft}>{monthDay(item.done_at!)}</Mono>
     </View>
+    </Surface>
     </SwipeToDelete>
   );
 }

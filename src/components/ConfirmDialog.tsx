@@ -3,6 +3,7 @@ import { colors } from '@/theme';
 import { Button } from './Button';
 import { Paper } from './Paper';
 import { Hand, Mono } from './Text';
+import { Surface } from './Surface';
 
 export type ConfirmProps = {
   /** The question, short: "delete this list?" */
@@ -45,7 +46,9 @@ export function ConfirmCard({ title, body, action, onConfirm, onCancel, cancel =
 export function ConfirmDialog(props: ConfirmProps) {
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={props.onCancel}>
+      <Surface tone="light">
       <ConfirmCard {...props} />
+      </Surface>
     </Modal>
   );
 }

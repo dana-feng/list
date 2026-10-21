@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { AccessibilityActionEvent, AccessibilityActionInfo, Pressable, StyleProp, View, ViewStyle } from 'react-native';
-import { colors, corners, tilt } from '@/theme';
+import { colors, corners, surfaceOf, tilt, tint } from '@/theme';
+import { Surface, useSurface } from './Surface';
 
 type Edge = 'ink' | 'light' | 'olive' | 'dash' | 'dashLight' | 'none';
 
@@ -36,22 +37,28 @@ const EDGE: Record<Edge, { color: string; style: 'solid' | 'dashed' } | null> = 
   none: null,
 };
 
-/** A hand-cut piece of paper: uneven corners, an optional pen line around it, a slight tilt. */
+/**
+ * A hand-cut piece of paper: uneven corners, an optional pen line around it, a slight tilt.
+ * Its line is drawn to show up on what it sits on (an ink line turns cream on the dark folder), and what's on it matches its fill.
+ */
 export function Paper({ children, fill, edge = 'none', edgeWidth = 1.5, shape = 0, round = 1, lean, style, onPress, disabled, ...a11y }: Props) {
+  const under = useSurface();
   const line = EDGE[edge];
+  // a light card keeps its ink line; a dark or see-through one takes its line from what's under it
+  const lineColor = line ? tint(line.color, fill && surfaceOf(fill) === 'light' ? 'light' : under) : undefined;
   const box: StyleProp<ViewStyle> = [
     corners(shape, round),
     fill ? { backgroundColor: fill } : null,
-    line ? { borderWidth: edgeWidth, borderColor: line.color, borderStyle: line.style } : null,
+    line ? { borderWidth: edgeWidth, borderColor: lineColor, borderStyle: line.style } : null,
     lean === undefined ? null : tilt(lean),
     style,
   ];
   if (onPress) {
     return (
       <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => [box, pressed && { opacity: 0.85 }]} accessibilityRole={a11y.accessibilityRole ?? 'button'} {...a11y}>
-        {children}
+        <Surface fill={fill}>{children}</Surface>
       </Pressable>
     );
   }
-  return <View style={box} {...a11y}>{children}</View>;
+  return <View style={box} {...a11y}><Surface fill={fill}>{children}</Surface></View>;
 }

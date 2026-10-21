@@ -27,6 +27,9 @@ export const colors = {
   rule: 'rgba(82,23,9,0.3)',
   onDark: '#FBEFA7',
   onDarkSoft: 'rgba(251,239,167,0.8)',
+  onDarkFaint: 'rgba(251,239,167,0.5)',
+  onDarkTrack: 'rgba(251,239,167,0.2)',
+  onDarkRule: 'rgba(251,239,167,0.35)',
   dim: 'rgba(40,10,0,0.62)',
 } as const;
 
@@ -39,6 +42,31 @@ export const fonts = {
   mono: 'Cousine_400Regular',
   monoMedium: 'Cousine_700Bold',
 } as const;
+
+/** The screen's background, and the big folder most screens hold their content in. Swap these two to flip the app light-on-dark. */
+export const GROUND = colors.almostWhite;
+export const FOLDER = colors.bark;
+
+/** Whether something sits on a light fill (dark ink on it) or a dark one (cream on it). */
+export type Surface = 'light' | 'dark';
+
+const DARK_FILLS: string[] = [colors.night, colors.bark, colors.olive, colors.burntOrange, colors.disabled, colors.ink, colors.dim];
+
+/** Which surface a fill makes for what's on it. */
+export const surfaceOf = (fill: string): Surface => (DARK_FILLS.includes(fill) || fill.startsWith('rgba(40') || fill.startsWith('rgba(58') ? 'dark' : 'light');
+
+// ink and its tints on dark fills, and the cream "on dark" colors on light ones
+const ON_DARK: Record<string, string> = {
+  [colors.ink]: colors.paper, [colors.inkSoft]: colors.onDarkSoft, [colors.inkFaint]: colors.onDarkFaint,
+  [colors.inkTrack]: colors.onDarkTrack, [colors.rule]: colors.onDarkRule,
+};
+const ON_LIGHT: Record<string, string> = {
+  [colors.paper]: colors.ink, [colors.onDarkSoft]: colors.inkSoft, [colors.onDarkFaint]: colors.inkFaint,
+  [colors.onDarkTrack]: colors.inkTrack, [colors.onDarkRule]: colors.rule,
+};
+
+/** A text, line or icon color made to show up on `surface`: ink turns cream on dark, cream turns ink on light. Anything else stays. */
+export const tint = (color: string, surface: Surface) => (surface === 'dark' ? ON_DARK : ON_LIGHT)[color] ?? color;
 
 // Web preview only: fields draw their own border, so drop the browser focus ring.
 export const noOutline = Platform.select({ web: { outlineStyle: 'none' } as object, default: {} });

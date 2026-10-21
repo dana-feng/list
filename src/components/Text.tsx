@@ -1,14 +1,17 @@
 import { StyleProp, Text, TextProps, TextStyle } from 'react-native';
 import { colors, fonts } from '@/theme';
+import { useTint } from './Surface';
 
 type Props = TextProps & { size?: number; color?: string; center?: boolean };
 
 function make(font: string, defaultSize: number, extra?: (size: number) => TextStyle, defaultColor: string = colors.ink) {
   return function Styled({ size = defaultSize, color = defaultColor, center, style, ...rest }: Props) {
+    // ink on light fills, cream on dark ones (see Surface)
+    const shown = useTint(color);
     return (
       <Text
         {...rest}
-        style={[{ fontFamily: font, fontSize: size, color, textAlign: center ? 'center' : undefined }, extra?.(size), style]}
+        style={[{ fontFamily: font, fontSize: size, color: shown, textAlign: center ? 'center' : undefined }, extra?.(size), style]}
       />
     );
   };

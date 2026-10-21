@@ -89,7 +89,7 @@ export default function Code() {
         accessibilityLabel="6-digit code"
         style={styles.hidden}
       />
-      {busy ? <ActivityIndicator color={colors.paper} style={{ marginTop: 20, alignSelf: 'flex-start' }} /> : null}
+      {busy ? <ActivityIndicator color={colors.ink} style={{ marginTop: 20, alignSelf: 'flex-start' }} /> : null}
       {problem ? (
         <Mono size={12} color={colors.paper} style={{ marginTop: 20, marginHorizontal: 4 }} accessibilityLiveRegion="polite">{problem}</Mono>
       ) : null}

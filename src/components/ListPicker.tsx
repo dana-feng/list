@@ -6,11 +6,13 @@ import { colors } from '@/theme';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
 import { Mono, MonoMedium } from './Text';
+import { useTint } from './Surface';
 
 /** Inside the folder tab on a new item: the chosen list (dashed underline) and a chevron. */
 export function ListPickerTab({ list, open, onPress }: { list?: List; open: boolean; onPress: () => void }) {
+  const ink = useTint(colors.ink);
   return (
-    <Pressable onPress={onPress} style={styles.tab} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`Which list: ${list?.title ?? 'none picked'}`}>
+    <Pressable onPress={onPress} style={[styles.tab, { borderColor: ink }]} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`Which list: ${list?.title ?? 'none picked'}`}>
       <MonoMedium size={12} numberOfLines={1} style={{ flexShrink: 1 }}>{list ? list.title : 'pick a list'}</MonoMedium>
       <Icon name="down" size={13} strokeWidth={2.2} />
     </Pressable>

@@ -11,6 +11,7 @@ import { Circle } from './Scribble';
 import { SearchField } from './SearchField';
 import { Hand, Mono } from './Text';
 import { useDragToClose } from './dragToClose';
+import { Surface } from './Surface';
 
 type Props = {
   title: string;
@@ -53,6 +54,7 @@ export function PersonPicker({ title, initial, locked = [], pool = 'followers', 
   const toggle = (id: string) => setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : full ? cur : [...cur, id]));
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <Surface tone="light">
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: drag.dim }]}>
         <Pressable style={styles.dim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
       </Animated.View>
@@ -90,6 +92,7 @@ export function PersonPicker({ title, initial, locked = [], pool = 'followers', 
           {full ? <Mono size={11} color={colors.inkSoft} style={{ marginTop: 6 }}>that’s as many as one thing can have.</Mono> : null}
         </Paper>
       </Animated.View>
+      </Surface>
     </Modal>
   );
 }
