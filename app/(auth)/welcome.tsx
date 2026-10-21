@@ -17,8 +17,8 @@ export default function Welcome() {
         <StatusBar style="dark" />
         <View style={styles.middle}>
           <View style={styles.mark} accessibilityRole="header" accessibilityLabel="echi">
-            <View style={styles.swoosh} pointerEvents="none"><Swoosh width={185} look="sage" /></View>
-            <Hand size={40} color={colors.night} style={styles.word}>echi</Hand>
+            <View style={styles.swoosh} pointerEvents="none"><Swoosh width={180} look="sage" /></View>
+            <Hand size={32} color={colors.night} style={styles.word}>echi</Hand>
             <Logo size={220} look="olive" />
           </View>
         </View>
@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, paddingHorizontal: 20, backgroundColor: colors.almostWhite },
   middle: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   mark: { width: 260, height: 300, alignItems: 'center', justifyContent: 'center' },
-  // the stroke runs from low on the left up behind the papers to the right, like the mockup
-  swoosh: { position: 'absolute', top: 44, left: 34, transform: [{ rotate: '34deg' }] },
-  word: { fontFamily: fonts.hand, lineHeight: 52, marginBottom: -4, zIndex: 1 },
+  // the stroke stands upright behind the papers, as drawn: its top by the word, its tail out below on the left
+  swoosh: { position: 'absolute', top: 70, left: 50 },
+  word: { fontFamily: fonts.hand, lineHeight: 42, marginBottom: -2, zIndex: 1 },
 });
