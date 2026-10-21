@@ -34,9 +34,8 @@ export default function Home() {
       roundCorner={tab === 'asks'}
       header={
         <View style={styles.top}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} accessibilityRole="header" accessibilityLabel="echi">
-            <Logo size={44} />
-            <Hand size={36} color={colors.paper} style={{ lineHeight: 50 }}>echi</Hand>
+          <View accessibilityRole="header" accessibilityLabel="echi">
+            <Logo size={56} />
           </View>
           <View style={{ flexDirection: 'row' }}>
             <Bell />

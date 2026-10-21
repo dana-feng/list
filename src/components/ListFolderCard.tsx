@@ -5,7 +5,7 @@ import { db, List } from '@/api/db';
 import { isInvitedTo } from '@/api/items';
 import { invitedBy, listPeople, listProgress, progressLabel, respondInvite, visibilityLabel } from '@/api/lists';
 import { hold, toggle } from '@/haptics';
-import { colors, folderFills, hash, tilt } from '@/theme';
+import { colors, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { Icon } from './Icon';
 import { ListPeek } from './ListPeek';
@@ -14,7 +14,7 @@ import { Pill } from './Button';
 import { ProgressBar } from './ProgressBar';
 import { choiceIcon } from './VisibilityPicker';
 import { Hand, Mono, MonoMedium } from './Text';
-import { Surface, useTint } from './Surface';
+import { Surface, useScheme, useTint } from './Surface';
 
 /** Open invites on the list that include you. */
 const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id === listId && isInvitedTo(i.id)).length;
@@ -25,7 +25,9 @@ const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id ===
  */
 export function ListFolderCard({ list, invited, own, index }: { list: List; invited?: boolean; own?: boolean; index: number }) {
   const { done, total } = listProgress(list.id);
-  const fill = invited ? colors.cream : folderFills[hash(list.id) % folderFills.length];
+  const { folders, folder } = useScheme();
+  // an invite is the same color as the big folder, with an olive tab; the rest take turns through the colors for this mode
+  const fill = invited ? folder : folders[hash(list.id) % folders.length];
   const inviter = invitedBy(list.id);
   const invites = own ? 0 : openInviteCount(list.id);
   const pct = total ? Math.round((100 * done) / total) : 0;

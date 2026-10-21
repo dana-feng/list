@@ -43,8 +43,16 @@ export const fonts = {
  * content in, and which logo and paint stroke go with them. Everything else picks ink or cream to match (see Surface).
  */
 export const SCHEMES = {
-  light: { ground: colors.almostWhite, folder: colors.bark, logo: 'olive', swoosh: 'sage' },
-  dark: { ground: colors.night, folder: colors.paper, logo: 'sage', swoosh: 'sun' },
+  light: {
+    ground: colors.almostWhite, folder: colors.bark, logo: 'olive', swoosh: 'sage',
+    // lists on a profile: the darker colors on the light background
+    folders: [colors.bark, colors.olive, colors.burntOrange, colors.night],
+  },
+  dark: {
+    ground: colors.night, folder: colors.paper, logo: 'sage', swoosh: 'sun',
+    // and the lighter ones on the dark background
+    folders: [colors.paper, colors.sage, colors.cream, colors.sun, colors.almostWhite],
+  },
 } as const;
 
 export type Scheme = (typeof SCHEMES)[keyof typeof SCHEMES];
@@ -77,9 +85,6 @@ export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28 } as const;
 
 /** Card fills that rotate through rows and slips. */
 export const cardFills = [colors.sage, colors.cream, colors.paper, colors.almostWhite] as const;
-
-/** Folder colors for lists on a profile: every color on the sheet. */
-export const folderFills = [colors.paper, colors.olive, colors.sage, colors.burntOrange, colors.cream, colors.bark, colors.sun, colors.night, colors.almostWhite] as const;
 
 // Hand-cut corners: every box gets slightly different radii so nothing looks machine-made.
 const CORNERS: [number, number, number, number][] = [
