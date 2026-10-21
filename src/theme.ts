@@ -17,7 +17,7 @@ export const colors = {
   // ink
   ink: '#521709',
   inkSoft: 'rgba(82,23,9,0.75)',
-  inkSoftSolid: '#73472E', // inkSoft over sage (the light-mode background), for fills (see-through ones show seams where they overlap)
+  inkSoftSolid: '#7D5147', // inkSoft over white, as in the design file, for fills (see-through ones show seams where they overlap)
   inkFaint: 'rgba(82,23,9,0.45)',
   inkTrack: 'rgba(82,23,9,0.18)',
   rule: 'rgba(82,23,9,0.3)',
@@ -47,12 +47,14 @@ export const SCHEMES = {
   light: {
     ground: colors.sage, folder: colors.bark, logo: 'olive', swoosh: 'sun',
     // lists on a profile: the darker colors on the light background
-    folders: [colors.bark, colors.olive, colors.burntOrange, colors.night, colors.inkSoftSolid],
+    folders: [colors.night, colors.bark, colors.olive],
+    covers: ['sage', 'olive'],
   },
   dark: {
-    ground: colors.night, folder: colors.paper, logo: 'sageOnDark', swoosh: 'sun',
-    // and the lighter ones on the dark background (burnt orange sits in the middle, so it's in both)
-    folders: [colors.paper, colors.sage, colors.burntOrange, colors.cream, colors.sun],
+    ground: colors.night, folder: colors.paper, logo: 'sage', swoosh: 'sun',
+    // and the lighter ones (plus inkSoft) on the dark background
+    folders: [colors.inkSoftSolid, colors.sage, colors.cream],
+    covers: ['bark', 'inkSoft'],
   },
 } as const;
 
@@ -113,56 +115,63 @@ export function hash(id: string) {
 /** Background for someone's initial until they add a photo. */
 export const tintFor = (id: string) => [colors.sage, colors.almostWhite, colors.cream, colors.sun, colors.paper][hash(id) % 5];
 
-/** Placeholder photos: a ground and the scribble across it. */
+/**
+ * Placeholder photos from the design: a scribble in a deeper or paler shade of its ground. `id` names the image
+ * (assets/brand/cover-<id>.png). Light mode uses the sage and olive ones, dark mode the bark and inkSoft ones.
+ */
 export const SWATCHES = [
-  { fill: colors.sun, stroke: colors.olive },
-  { fill: colors.bark, stroke: colors.sun },
-  { fill: colors.olive, stroke: colors.burntOrange },
-  { fill: colors.burntOrange, stroke: colors.bark },
+  { id: 'sage', fill: colors.sage },
+  { id: 'olive', fill: colors.olive },
+  { id: 'bark', fill: colors.bark },
+  { id: 'inkSoft', fill: colors.inkSoftSolid },
 ] as const;
 
-/** The placeholder for a photo or list cover until a real image exists, the same every time for the same id. `on` is the color it sits on, to pick one that goes with it. */
-export const swatchPair = (id: string, on?: string) => {
-  const from = goesWith(on);
+export type Swatch = (typeof SWATCHES)[number];
+
+/** This mode's placeholders, minus any whose ground is the color they'd sit on (olive on an olive folder). */
+const pool = (scheme: Scheme, on?: string): Swatch[] => {
+  const mine = SWATCHES.filter((w) => (scheme.covers as readonly string[]).includes(w.id));
+  const fits = mine.filter((w) => w.fill !== on);
+  return fits.length ? fits : mine;
+};
+
+/** The placeholder for a photo or list cover until a real image exists, the same every time for the same id. `on` is the color it sits on. */
+export const swatchPair = (id: string, scheme: Scheme, on?: string) => {
+  const from = pool(scheme, on);
   // its own pick, apart from the one that chose the folder's color, so the pairings don't repeat in step
   return from[hash(`${id}:cover`) % from.length];
 };
 
-export type Swatch = (typeof SWATCHES)[number];
-
-const goesWith = (on?: string): readonly Swatch[] => {
-  const fits = on ? SWATCHES.filter((w) => (GOES_WITH[on] ?? []).includes(w.fill)) : [];
-  return fits.length ? fits : SWATCHES;
-};
-
 /**
- * Covers for folders laid out in a grid, `cols` across: none is the same as the one beside it, above it or diagonally
- * above it, and each is one that goes with its folder's color (as in swatchPair) where that's possible. In a 2-wide
- * grid every 2x2 block needs all four covers, so it backtracks; failing that (four same-colored folders in a block) it
- * lets a cover match its folder's color rather than its neighbour.
+ * Covers for folders laid out in a grid, `cols` across, so the same image isn't next to itself: never side by side or
+ * above and below, and not diagonally either where that can be helped (with two images a 2-wide grid can only be a
+ * checkerboard, so diagonals repeat). A cover's ground is never its folder's color unless there's no other way.
  */
-export function gridCovers(folders: { id: string; on: string }[], cols = 2): Swatch[] {
-  const near = (i: number) => {
+export function gridCovers(folders: { id: string; on: string }[], scheme: Scheme, cols = 2): Swatch[] {
+  const mine = pool(scheme);
+  const near = (i: number, diagonal: boolean) => {
     const col = i % cols;
-    return [col > 0 ? i - 1 : -1, i - cols, col > 0 ? i - cols - 1 : -1, col < cols - 1 ? i - cols + 1 : -1].filter((j) => j >= 0);
+    const beside = [col > 0 ? i - 1 : -1, i - cols];
+    const across = diagonal ? [col > 0 ? i - cols - 1 : -1, col < cols - 1 ? i - cols + 1 : -1] : [];
+    return [...beside, ...across].filter((j) => j >= 0);
   };
   // each folder's covers in the order to try: the ones that suit it (from its own starting point), then the rest
-  const order = folders.map(({ id, on }, i) => {
-    const fits = goesWith(on);
+  const order = folders.map(({ id, on }) => {
+    const fits = pool(scheme, on);
     const start = hash(`${id}:cover`) % fits.length;
     const turn = [...fits.slice(start), ...fits.slice(0, start)];
-    return { turn: [...turn, ...SWATCHES.filter((w) => !turn.includes(w))], on, i };
+    return { turn: [...turn, ...mine.filter((w) => !turn.includes(w))], on };
   });
-  const solve = (ownColorOk: boolean) => {
+  const solve = (diagonal: boolean, ownColorOk: boolean) => {
     const out: Swatch[] = [];
     // a cap on tries, so a layout that can't work gives up quickly instead of trying every combination
     let tries = 0;
     const place = (i: number): boolean => {
       if (i === folders.length) return true;
       if (++tries > 4000) return false;
-      const taken = near(i).map((j) => out[j].fill);
+      const taken = near(i, diagonal).map((j) => out[j].id);
       for (const w of order[i].turn) {
-        if (taken.includes(w.fill) || (!ownColorOk && w.fill === order[i].on)) continue;
+        if (taken.includes(w.id) || (!ownColorOk && w.fill === order[i].on)) continue;
         out[i] = w;
         if (place(i + 1)) return true;
       }
@@ -170,24 +179,12 @@ export function gridCovers(folders: { id: string; on: string }[], cols = 2): Swa
     };
     return place(0) ? out : null;
   };
-  return solve(false) ?? solve(true) ?? order.map((o) => o.turn[0]);
+  return solve(true, false) ?? solve(false, false) ?? solve(false, true) ?? order.map((o) => o.turn[0]);
 }
 
 /** A list's folder color on a profile, from the colors for light or dark mode. An invite is the big folder's color. */
 export const folderColor = (id: string, scheme: Scheme, invited?: boolean) => (invited ? scheme.folder : scheme.folders[hash(id) % scheme.folders.length]);
 
-/** The placeholder grounds that look right on each folder color: enough contrast, and never the folder's own color. */
-const GOES_WITH: Record<string, string[]> = {
-  [colors.paper]: [colors.bark, colors.burntOrange],
-  [colors.cream]: [colors.bark, colors.burntOrange, colors.sun],
-  [colors.sage]: [colors.bark, colors.burntOrange],
-  [colors.sun]: [colors.bark, colors.olive],
-  [colors.burntOrange]: [colors.sun, colors.bark],
-  [colors.bark]: [colors.sun, colors.burntOrange],
-  [colors.olive]: [colors.sun, colors.bark],
-  [colors.night]: [colors.sun, colors.burntOrange, colors.olive],
-  [colors.inkSoftSolid]: [colors.sun, colors.burntOrange],
-};
 
 /** Height of the tab row above the safe area; screens pad their scroll content by this. */
 export const TAB_BAR_HEIGHT = 52;

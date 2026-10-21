@@ -8,7 +8,7 @@ import { useScheme } from './Surface';
 export function FolderGrid({ rows, own }: { rows: { list: List; invited: boolean }[]; own?: boolean }) {
   const scheme = useScheme();
   // no two folders side by side, above and below, or diagonal get the same cover
-  const covers = gridCovers(rows.map((r) => ({ id: r.list.id, on: folderColor(r.list.id, scheme, r.invited) })));
+  const covers = gridCovers(rows.map((r) => ({ id: r.list.id, on: folderColor(r.list.id, scheme, r.invited) })), scheme);
   const pairs: (typeof rows)[] = [];
   for (let i = 0; i < rows.length; i += 2) pairs.push(rows.slice(i, i + 2));
   return (

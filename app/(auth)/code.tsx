@@ -8,7 +8,7 @@ import { Button, LinkText } from '@/components/Button';
 import { Hand, Mono } from '@/components/Text';
 import { AuthStep } from '@/screens/AuthStep';
 import { colors, corners } from '@/theme';
-import { useTint } from '@/components/Surface';
+import { Surface, useTint } from '@/components/Surface';
 
 const RESEND_AFTER = 30;
 
@@ -74,7 +74,7 @@ export default function Code() {
       <Pressable onPress={() => input.current?.focus()} style={styles.boxes} accessibilityLabel="6-digit code">
         {Array.from({ length: 6 }, (_, i) => (
           <View key={i} style={[styles.box, corners(i), { backgroundColor: code[i] ? colors.paper : colors.almostWhite }, i === code.length && styles.active]}>
-            <Hand size={28}>{code[i] ?? ''}</Hand>
+            <Surface tone="light"><Hand size={28}>{code[i] ?? ''}</Hand></Surface>
           </View>
         ))}
       </Pressable>

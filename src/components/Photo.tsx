@@ -7,11 +7,12 @@ import { BRAND, BRAND_CACHE } from '@/brand';
 import { colors, corners, Swatch, swatchPair } from '@/theme';
 import { Icon } from './Icon';
 import { PhotoViewer } from './PhotoViewer';
+import { useScheme } from './Surface';
 import { Mono } from './Text';
 
 type PhotoLike = Pick<ItemPhoto, 'id' | 'path'>;
 
-/** A photo, or a placeholder while there's no file yet: a colored ground with a paint scribble across it. */
+/** A photo, or a placeholder while there's no file yet: one of the design's scribble images for light or dark mode. */
 export function Photo({ photo, style, shape = 1, on, placeholder }: {
   photo: PhotoLike | { id: string; path: null };
   style?: StyleProp<ViewStyle>;
@@ -22,7 +23,8 @@ export function Photo({ photo, style, shape = 1, on, placeholder }: {
   placeholder?: Swatch;
 }) {
   const uri = photo.path ? photoUri(photo.path) : undefined;
-  const swatch = placeholder ?? swatchPair(photo.id, on);
+  const scheme = useScheme();
+  const swatch = placeholder ?? swatchPair(photo.id, scheme, on);
   const box = [corners(shape), { overflow: 'hidden' as const, backgroundColor: swatch.fill }, style];
   if (uri) {
     return (
@@ -33,17 +35,14 @@ export function Photo({ photo, style, shape = 1, on, placeholder }: {
   }
   return (
     <View style={box}>
-      <Image source={PLACEHOLDERS[swatch.fill]} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy={BRAND_CACHE} accessible={false} />
+      <Image source={PLACEHOLDERS[swatch.id]} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy={BRAND_CACHE} accessible={false} />
     </View>
   );
 }
 
-// the sheet's placeholder photos, one per ground color in SWATCHES (theme.ts)
-const PLACEHOLDERS: Record<string, number> = {
-  [colors.sun]: BRAND.placeholderSun,
-  [colors.bark]: BRAND.placeholderBark,
-  [colors.olive]: BRAND.placeholderOlive,
-  [colors.burntOrange]: BRAND.placeholderOrange,
+// the placeholder images, by SWATCHES id (theme.ts)
+const PLACEHOLDERS: Record<Swatch['id'], number> = {
+  sage: BRAND.coverSage, olive: BRAND.coverOlive, bark: BRAND.coverBark, inkSoft: BRAND.coverInkSoft,
 };
 
 /** Space above the photos for the × that sits across their top corner. */

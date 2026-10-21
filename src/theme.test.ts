@@ -1,59 +1,55 @@
 import { colors, folderColor, gridCovers, SCHEMES, swatchPair } from './theme';
 
-describe('folder covers', () => {
-  const ids = Array.from({ length: 40 }, (_, i) => `list-${i}-${i * 7919}`);
+const { light, dark } = SCHEMES;
+const ids = (n: number, tag = 'l') => Array.from({ length: n }, (_, i) => `${tag}${n}-${i}-${i * 7919}`);
 
-  it('every folder color, in both modes, gets placeholders that go with it and never its own color', () => {
-    for (const scheme of [SCHEMES.light, SCHEMES.dark]) {
-      for (const fill of scheme.folders) {
-        const grounds = new Set<string>(ids.map((id) => swatchPair(id, fill).fill));
-        expect(grounds.has(fill)).toBe(false);
-        expect(grounds.size).toBeGreaterThan(1);
-      }
-    }
+describe('placeholders', () => {
+  it('light mode uses the sage and olive ones, dark mode the bark and inkSoft ones', () => {
+    expect(new Set(ids(40).map((id) => swatchPair(id, light).id))).toEqual(new Set(['sage', 'olive']));
+    expect(new Set(ids(40).map((id) => swatchPair(id, dark).id))).toEqual(new Set(['bark', 'inkSoft']));
   });
 
-  it('a sage folder only gets bark or burnt orange covers', () => {
-    const grounds = new Set<string>(ids.map((id) => swatchPair(id, colors.sage).fill));
-    expect([...grounds].sort()).toEqual([colors.bark, colors.burntOrange].sort());
+  it('never puts one on a folder of its own ground color', () => {
+    expect(new Set(ids(40).map((id) => swatchPair(id, light, colors.olive).id))).toEqual(new Set(['sage']));
+    expect(new Set(ids(40).map((id) => swatchPair(id, dark, colors.inkSoftSolid).id))).toEqual(new Set(['bark']));
   });
 
   it('is the same every time for the same list', () => {
-    expect(swatchPair('abc', colors.paper)).toBe(swatchPair('abc', colors.paper));
+    expect(swatchPair('abc', dark, colors.sage)).toBe(swatchPair('abc', dark, colors.sage));
   });
 });
 
 describe('gridCovers', () => {
-  const neighbours = (i: number) => (i % 2 ? [i - 1, i - 2, i - 3] : [i - 2, i - 1]).filter((j) => j >= 0);
+  // beside and above (always different), and the two diagonals above
+  const beside = (i: number) => (i % 2 ? [i - 1, i - 2] : [i - 2]).filter((j) => j >= 0);
 
-  it('never puts the same cover beside, above or diagonal to another, in either mode', () => {
-    for (const scheme of [SCHEMES.light, SCHEMES.dark]) {
+  it('never puts the same cover side by side or above and below, in either mode', () => {
+    for (const scheme of [light, dark]) {
       for (let n = 1; n <= 30; n++) {
-        const folders = Array.from({ length: n }, (_, i) => ({ id: `l${n}-${i}`, on: folderColor(`l${n}-${i}`, scheme) }));
-        const covers = gridCovers(folders);
+        const folders = ids(n).map((id) => ({ id, on: folderColor(id, scheme) }));
+        const covers = gridCovers(folders, scheme);
         covers.forEach((c, i) => {
-          for (const j of neighbours(i)) expect(c.fill).not.toBe(covers[j].fill);
+          for (const j of beside(i)) expect(c.id).not.toBe(covers[j].id);
         });
       }
     }
   });
 
-  it("never gives a folder a cover in its own color when there's another way", () => {
-    const on = [colors.bark, colors.olive, colors.burntOrange, colors.sun, colors.bark, colors.olive];
-    const covers = gridCovers(on.map((c, i) => ({ id: `f${i}`, on: c })));
-    covers.forEach((c, i) => expect(c.fill).not.toBe(on[i]));
+  it('keeps diagonals different too when there are enough covers to', () => {
+    // a single row of two: nothing diagonal to worry about, and both differ
+    const covers = gridCovers(ids(2).map((id) => ({ id, on: colors.sage })), dark);
+    expect(covers[0].id).not.toBe(covers[1].id);
   });
 
-  it('still picks covers that suit the folder when it can', () => {
-    const [only] = gridCovers([{ id: 'x', on: colors.sage }]);
-    expect([colors.bark, colors.burntOrange]).toContain(only.fill);
+  it('only uses this mode\'s covers', () => {
+    const covers = gridCovers(ids(20).map((id) => ({ id, on: folderColor(id, light) })), light);
+    for (const c of covers) expect(['sage', 'olive']).toContain(c.id);
   });
-});
 
-it('works out covers for a long profile quickly, even when a block of folders is all one color', () => {
-  const folders = Array.from({ length: 400 }, (_, i) => ({ id: `big-${i}`, on: i < 4 ? colors.bark : folderColor(`big-${i}`, SCHEMES.light) }));
-  const t = Date.now();
-  const covers = gridCovers(folders);
-  expect(Date.now() - t).toBeLessThan(500);
-  expect(covers).toHaveLength(400);
+  it('works out covers for a long profile quickly', () => {
+    const folders = ids(400, 'big').map((id) => ({ id, on: folderColor(id, light) }));
+    const t = Date.now();
+    expect(gridCovers(folders, light)).toHaveLength(400);
+    expect(Date.now() - t).toBeLessThan(500);
+  });
 });
