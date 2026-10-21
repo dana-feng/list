@@ -17,6 +17,7 @@ export const colors = {
   // ink
   ink: '#521709',
   inkSoft: 'rgba(82,23,9,0.75)',
+  inkSoftSolid: '#7A4E40', // inkSoft over almost white, for fills (see-through ones show seams where they overlap)
   inkFaint: 'rgba(82,23,9,0.45)',
   inkTrack: 'rgba(82,23,9,0.18)',
   rule: 'rgba(82,23,9,0.3)',
@@ -46,12 +47,12 @@ export const SCHEMES = {
   light: {
     ground: colors.almostWhite, folder: colors.bark, logo: 'olive', swoosh: 'sage',
     // lists on a profile: the darker colors on the light background
-    folders: [colors.bark, colors.olive, colors.burntOrange, colors.night],
+    folders: [colors.bark, colors.olive, colors.burntOrange, colors.night, colors.inkSoftSolid],
   },
   dark: {
     ground: colors.night, folder: colors.paper, logo: 'sage', swoosh: 'sun',
-    // and the lighter ones on the dark background
-    folders: [colors.paper, colors.sage, colors.cream, colors.sun],
+    // and the lighter ones on the dark background (burnt orange sits in the middle, so it's in both)
+    folders: [colors.paper, colors.sage, colors.burntOrange, colors.cream, colors.sun],
   },
 } as const;
 
@@ -60,7 +61,7 @@ export type Scheme = (typeof SCHEMES)[keyof typeof SCHEMES];
 /** Whether something sits on a light fill (dark ink on it) or a dark one (cream on it). */
 export type Surface = 'light' | 'dark';
 
-const DARK_FILLS: string[] = [colors.night, colors.bark, colors.olive, colors.burntOrange, colors.inkSoft, colors.ink, colors.dim];
+const DARK_FILLS: string[] = [colors.night, colors.bark, colors.olive, colors.burntOrange, colors.inkSoft, colors.inkSoftSolid, colors.ink, colors.dim];
 
 /** Which surface a fill makes for what's on it. */
 export const surfaceOf = (fill: string): Surface => (DARK_FILLS.includes(fill) || fill.startsWith('rgba(40') || fill.startsWith('rgba(58') ? 'dark' : 'light');
