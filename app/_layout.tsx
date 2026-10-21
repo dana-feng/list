@@ -13,10 +13,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useDb } from '@/api/db';
 import { registerForPush, useOpenTappedPush } from '@/api/push';
 import { startSync } from '@/api/sync';
+import { applyAppearance } from '@/appearance';
 import { SCHEMES } from '@/theme';
 import { GroundSurface, useScheme } from '@/components/Surface';
 
 SplashScreen.preventAutoHideAsync();
+applyAppearance();
 startSync();
 
 export default function RootLayout() {
