@@ -9,6 +9,7 @@ import { colors, folderFills, hash, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { Icon } from './Icon';
 import { ListPeek } from './ListPeek';
+import { Photo } from './Photo';
 import { Pill } from './Button';
 import { ProgressBar } from './ProgressBar';
 import { choiceIcon } from './VisibilityPicker';
@@ -58,15 +59,13 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
           style={[styles.body, { backgroundColor: fill, borderColor: invited ? colors.olive : colors.paper, borderWidth: invited ? 2 : 1.6 }]}
         >
           {/* placeholder until lists get their own cover images */}
-          <View style={[styles.cover, { backgroundColor: invited ? colors.sage : fill === colors.paper ? colors.sage : colors.paper }]}>
-            <Icon name="image" size={22} />
-          </View>
+          <Photo photo={{ id: list.id, path: null }} style={styles.cover} />
           <Hand size={17} style={{ lineHeight: 19 }}>{list.title}</Hand>
           {invited ? (
             <>
               <Mono size={10.5}>{inviter ? `${inviter.name} invited you` : 'you were invited'}</Mono>
               <View style={{ flexDirection: 'row', gap: 6, marginTop: 2 }}>
-                <Pill label="join" height={34} onPress={() => { toggle(true); respondInvite(list.id, true); }} accessibilityLabel={`Join ${list.title}`} />
+                <Pill label="join" sun height={34} onPress={() => { toggle(true); respondInvite(list.id, true); }} accessibilityLabel={`Join ${list.title}`} />
                 <Pill label="no" on height={34} onPress={() => { toggle(false); respondInvite(list.id, false); }} accessibilityLabel={`Say no to ${list.title}`} />
               </View>
             </>

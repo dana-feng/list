@@ -1,6 +1,6 @@
 import { Platform, ViewStyle } from 'react-native';
 
-// Colors, fonts and shapes taken from the "List Feed Explorations" design canvas (Final boards).
+// Colors, fonts and shapes from the echi design sheet.
 export const colors = {
   // grounds
   night: '#3A1000', // screen background
@@ -10,9 +10,15 @@ export const colors = {
   paper: '#FBEFA7', // folders, light buttons, text on dark
   cream: '#FFF8D6',
   sage: '#D6D79F',
-  straw: '#E6E2AE',
-  moss: '#C9CC8A',
-  gold: '#EAD79B', // done rows and cards
+  almostWhite: '#F2F3E5', // the landing page
+  // accents
+  sun: '#DAB900', // "add" buttons, "join", switch knobs, the bell and send icons
+  burntOrange: '#B66700', // filled hearts, "undo", the x icon
+  // the sheet has no more papers than these; the old in-betweens now point at them
+  straw: '#F2F3E5',
+  moss: '#D6D79F',
+  gold: '#D6D79F', // done rows and cards
+  disabled: '#B09A7E', // a button you can't press yet
   // ink
   ink: '#521709',
   inkSoft: 'rgba(82,23,9,0.75)',
@@ -25,12 +31,13 @@ export const colors = {
 } as const;
 
 export const fonts = {
-  // the display face (a chunky sans with some character). The keys are still called "hand" from when this was a handwriting font.
-  hand: 'BricolageGrotesque_700Bold',
-  handMedium: 'BricolageGrotesque_600SemiBold',
-  handBold: 'BricolageGrotesque_800ExtraBold',
-  mono: 'IBMPlexMono_400Regular',
-  monoMedium: 'IBMPlexMono_500Medium',
+  // the display face: Noto Serif Malayalam extra bold. The keys are still called "hand" from when this was a handwriting font.
+  hand: 'NotoSerifMalayalam_800ExtraBold',
+  handMedium: 'NotoSerifMalayalam_700Bold',
+  handBold: 'NotoSerifMalayalam_900Black',
+  // the typewriter: Cousine
+  mono: 'Cousine_400Regular',
+  monoMedium: 'Cousine_700Bold',
 } as const;
 
 // Web preview only: fields draw their own border, so drop the browser focus ring.
@@ -39,10 +46,10 @@ export const noOutline = Platform.select({ web: { outlineStyle: 'none' } as obje
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28 } as const;
 
 /** Card fills that rotate through rows and slips. */
-export const cardFills = [colors.sage, colors.cream, colors.moss, colors.straw] as const;
+export const cardFills = [colors.sage, colors.cream, colors.paper, colors.almostWhite] as const;
 
 /** Folder colors for lists on a profile. */
-export const folderFills = [colors.paper, colors.sage, colors.straw, colors.gold, colors.moss] as const;
+export const folderFills = [colors.paper, colors.sage, colors.cream, colors.sun, colors.almostWhite] as const;
 
 // Hand-cut corners: every box gets slightly different radii so nothing looks machine-made.
 const CORNERS: [number, number, number, number][] = [
@@ -70,8 +77,19 @@ export function hash(id: string) {
 /** Background for someone's initial until they add a photo. */
 export const tintFor = (id: string) => [colors.sage, colors.straw, colors.cream, colors.moss, colors.paper][hash(id) % 5];
 
-/** Placeholder fill for photos and list covers until real images exist. */
-export const swatchFor = (id: string) => [colors.moss, colors.straw, colors.sage, colors.cream][hash(id) % 4];
+/** Placeholder photos: a ground and the scribble across it. */
+export const SWATCHES = [
+  { fill: colors.sun, stroke: colors.olive },
+  { fill: colors.bark, stroke: colors.sun },
+  { fill: colors.olive, stroke: colors.burntOrange },
+  { fill: colors.burntOrange, stroke: colors.bark },
+] as const;
+
+/** The placeholder for a photo or list cover until a real image exists, the same every time for the same id. */
+export const swatchPair = (id: string) => SWATCHES[hash(id) % SWATCHES.length];
+
+/** Just the ground of `swatchPair`. */
+export const swatchFor = (id: string) => swatchPair(id).fill;
 
 /** Height of the tab row above the safe area; screens pad their scroll content by this. */
 export const TAB_BAR_HEIGHT = 52;

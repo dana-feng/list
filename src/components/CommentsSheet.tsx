@@ -104,7 +104,7 @@ function LikedBy({ eventId, go }: { eventId: string; go: (to: () => void) => voi
   const rest = people.length - named.length;
   return (
     <View style={styles.likedBy}>
-      <Icon name="heartFilled" size={14} color={colors.olive} strokeWidth={1.8} />
+      <Icon name="heartFilled" size={15} strokeWidth={1.6} />
       <Mono size={11} style={{ flex: 1 }}>
         liked by{' '}
         {named.map((p, i) => (
@@ -254,9 +254,9 @@ function CommentPeek({ comment, onClose, onReport }: { comment: EventComment; on
           </View>
           <Paper fill={colors.cream} shape={4} round={1.2} style={styles.peekMenu}>
             {canDeleteComment(comment) ? (
-              <LinkText label="delete comment" color={colors.bark} onPress={remove} />
+              <LinkText label="delete comment" color={colors.burntOrange} onPress={remove} />
             ) : (
-              <LinkText label="report comment" color={colors.bark} onPress={flag} />
+              <LinkText label="report comment" color={colors.burntOrange} onPress={flag} />
             )}
           </Paper>
         </Animated.View>

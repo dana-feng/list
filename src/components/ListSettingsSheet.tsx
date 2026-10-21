@@ -75,7 +75,7 @@ export function ListSettingsSheet({ listId, onClose, onDelete, onLeave }: { list
       onClose={close}
       footer={
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <LinkText label="delete list" color={colors.bark} onPress={() => setConfirmingDelete(true)} />
+          <LinkText label="delete list" color={colors.burntOrange} onPress={() => setConfirmingDelete(true)} />
           <Button label="done" onPress={close} style={{ minWidth: 130 }} />
         </View>
       }

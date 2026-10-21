@@ -4,11 +4,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 // One import per weight, so only these files ship with the app.
-import { BricolageGrotesque_600SemiBold } from '@expo-google-fonts/bricolage-grotesque/600SemiBold';
-import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque/700Bold';
-import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque/800ExtraBold';
-import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono/400Regular';
-import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono/500Medium';
+import { Cousine_400Regular } from '@expo-google-fonts/cousine/400Regular';
+import { Cousine_700Bold } from '@expo-google-fonts/cousine/700Bold';
+import { NotoSerifMalayalam_700Bold } from '@expo-google-fonts/noto-serif-malayalam/700Bold';
+import { NotoSerifMalayalam_800ExtraBold } from '@expo-google-fonts/noto-serif-malayalam/800ExtraBold';
+import { NotoSerifMalayalam_900Black } from '@expo-google-fonts/noto-serif-malayalam/900Black';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useDb } from '@/api/db';
 import { registerForPush, useOpenTappedPush } from '@/api/push';
@@ -21,8 +21,8 @@ startSync();
 export default function RootLayout() {
   const db = useDb();
   const [loaded, error] = useFonts({
-    BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold,
-    IBMPlexMono_400Regular, IBMPlexMono_500Medium,
+    NotoSerifMalayalam_700Bold, NotoSerifMalayalam_800ExtraBold, NotoSerifMalayalam_900Black,
+    Cousine_400Regular, Cousine_700Bold,
   });
 
   // Keep the splash up until fonts are in and we know whether you're signed in.

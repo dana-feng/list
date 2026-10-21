@@ -14,7 +14,7 @@ export function AuthStep({ step, title, body, children, footer, scroll = true, b
       contentStyle={{ paddingHorizontal: 20 }}
       header={
         <Header
-          left={!back ? <Hand size={24} color={colors.paper} style={{ paddingLeft: 6, fontFamily: fonts.handBold }}>list</Hand> : <BackButton />}
+          left={!back ? <Hand size={24} color={colors.paper} style={{ paddingLeft: 6, fontFamily: fonts.handBold }}>echi</Hand> : <BackButton />}
           center={
             <View style={{ flexDirection: 'row', gap: 6 }} accessibilityLabel={`Step ${step} of 4`}>
               {[1, 2, 3, 4].map((n) => (

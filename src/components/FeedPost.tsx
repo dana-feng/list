@@ -24,9 +24,9 @@ type Kind = Exclude<FeedEvent['kind'], 'open_invite'>;
 /** The icon at the start of each post: what kind of thing happened. */
 const MARK: Record<Kind, { icon: IconName; color: string }> = {
   list_created: { icon: 'folder', color: colors.ink },
-  list_done: { icon: 'folder', color: colors.olive },
+  list_done: { icon: 'folder', color: colors.ink },
   item_added: { icon: 'plus', color: colors.ink },
-  item_done: { icon: 'check', color: colors.olive },
+  item_done: { icon: 'check', color: colors.ink },
   photos_added: { icon: 'image', color: colors.ink },
   list_joined: { icon: 'people', color: colors.ink },
   item_tagged: { icon: 'plus', color: colors.ink },
@@ -126,7 +126,7 @@ export function PostBody({ event, post, index, go = (to) => to() }: { event: Fee
     <>
       <View style={styles.row}>
         <View style={styles.mark} accessibilityElementsHidden importantForAccessibility="no">
-          <Icon name={mark.icon} size={22} color={mark.color} strokeWidth={kind === 'item_done' ? 2.4 : 1.9} />
+          <Icon name={mark.icon} size={22} color={mark.color} strokeWidth={1.7} />
         </View>
         <View style={styles.text}>
           {/* faces of everyone who did it (up to three), small, with when on the right */}
@@ -196,11 +196,11 @@ function Reactions({ event, onComments }: { event: FeedEvent; onComments: () => 
         accessibilityState={{ selected: liked }}
         accessibilityLabel={`${liked ? 'Unlike' : 'Like'}${likes ? `, ${likes} ${likes === 1 ? 'like' : 'likes'}` : ''}`}
       >
-        <Icon name={liked ? 'heartFilled' : 'heart'} size={17} color={liked ? colors.olive : colors.inkSoft} strokeWidth={1.8} />
+        <Icon name={liked ? 'heartFilled' : 'heart'} size={19} strokeWidth={1.6} />
         {likes ? <Mono size={11} color={liked ? colors.ink : colors.inkSoft}>{likes}</Mono> : null}
       </Pressable>
       <Pressable onPress={onComments} hitSlop={8} style={styles.reaction} accessibilityRole="button" accessibilityLabel={comments ? `${comments} comments` : 'Comment'}>
-        <Icon name="comment" size={17} color={comments ? colors.ink : colors.inkSoft} strokeWidth={1.8} />
+        <Icon name="comment" size={19} strokeWidth={1.6} />
         <Mono size={11} color={comments ? colors.ink : colors.inkSoft}>{comments ? `${comments} ${comments === 1 ? 'comment' : 'comments'}` : 'reply'}</Mono>
       </Pressable>
     </View>

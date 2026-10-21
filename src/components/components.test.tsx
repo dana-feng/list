@@ -1,9 +1,11 @@
 // A few components that hold behaviour of their own, rendered the way the app uses them.
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { db } from '@/api/db';
-import { person, signIn } from '@/test/fixtures';
+import { isInterested } from '@/api/items';
+import { item, list, person, signIn } from '@/test/fixtures';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
+import { DownButton } from './Down';
 import { SearchField } from './SearchField';
 import { Switch } from './Switch';
 import { Stepper } from './TagField';
@@ -80,4 +82,21 @@ describe('Switch and Button', () => {
 
 it('fixtures sign in a fresh person each test', () => {
   expect(db.profiles).toHaveLength(1);
+});
+
+describe('DownButton', () => {
+  it('is the logo: tap it to say you\'re interested, again to take it back', async () => {
+    const i = item(list({ visibility: 'anyone' }, [person()]), { tag: 'invite', open_invite: true, invite_audience: 'anyone', title: 'picnic' });
+    await render(<DownButton itemId={i.id} />);
+    await fireEvent.press(screen.getByLabelText("I'm interested in picnic"));
+    expect(isInterested(i.id)).toBe(true);
+    await fireEvent.press(screen.getByLabelText("You're interested in picnic. Tap to take it back"));
+    expect(isInterested(i.id)).toBe(false);
+  });
+
+  it('isn\'t there on your own list', async () => {
+    const i = item(list(), { tag: 'invite', open_invite: true, invite_audience: 'anyone', title: 'picnic' });
+    await render(<DownButton itemId={i.id} />);
+    expect(screen.queryByLabelText("I'm interested in picnic")).toBeNull();
+  });
 });

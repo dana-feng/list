@@ -3,17 +3,19 @@ import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StylePr
 import { Image } from 'expo-image';
 import type { ItemPhoto } from '@/api/db';
 import { photoUri } from '@/api/items';
-import { colors, corners, swatchFor } from '@/theme';
+import Svg, { Path } from 'react-native-svg';
+import { colors, corners, hash, swatchPair } from '@/theme';
 import { Icon } from './Icon';
 import { PhotoViewer } from './PhotoViewer';
 import { Mono } from './Text';
 
 type PhotoLike = Pick<ItemPhoto, 'id' | 'path'>;
 
-/** A photo, or a flat paper block with a picture icon while there's no file yet. */
+/** A photo, or a placeholder while there's no file yet: a colored ground with a paint scribble across it. */
 export function Photo({ photo, style, shape = 1 }: { photo: PhotoLike | { id: string; path: null }; style?: StyleProp<ViewStyle>; shape?: number }) {
   const uri = photo.path ? photoUri(photo.path) : undefined;
-  const box = [corners(shape), { overflow: 'hidden' as const, backgroundColor: swatchFor(photo.id) }, style];
+  const swatch = swatchPair(photo.id);
+  const box = [corners(shape), { overflow: 'hidden' as const, backgroundColor: swatch.fill }, style];
   if (uri) {
     return (
       <View style={box}>
@@ -22,9 +24,25 @@ export function Photo({ photo, style, shape = 1 }: { photo: PhotoLike | { id: st
     );
   }
   return (
-    <View style={[...box, { alignItems: 'center', justifyContent: 'center' }]}>
-      <Icon name="image" size={22} />
+    <View style={box}>
+      <Placeholder color={swatch.stroke} flip={hash(photo.id) % 2 === 1} />
     </View>
+  );
+}
+
+/** The scribble on a placeholder photo, stretched to fill it. */
+function Placeholder({ color, flip }: { color: string; flip: boolean }) {
+  return (
+    <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style={flip ? { transform: [{ scaleX: -1 }] } : undefined}>
+      <Path
+        d="M14 62 C 24 44, 40 26, 48 24 C 54 23, 26 60, 24 72 C 23 80, 50 46, 62 34 C 70 27, 64 44, 52 62 C 46 72, 58 70, 68 56 C 76 46, 86 34, 88 30"
+        fill="none"
+        stroke={color}
+        strokeWidth={11}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 
@@ -75,7 +93,7 @@ export function PhotoCarousel({ photos, height, peek = 44, gap = 6, dots = true,
             </Pressable>
             {onRemove ? (
               <Pressable onPress={() => onRemove(p.id)} style={{ position: 'absolute', top: -22, right: -22, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={`Remove photo ${i + 1}`}>
-                <Icon name="x" size={24} color={colors.olive} strokeWidth={3.2} />
+                <Icon name="x" size={24} strokeWidth={2.2} />
               </Pressable>
             ) : null}
           </View>

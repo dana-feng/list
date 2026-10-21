@@ -39,28 +39,51 @@ export function scratch(w: number, h: number, seed: number) {
   return smooth(pts);
 }
 
-/** The scribble drawn over a crossed-off title. Sits on top of the text, stretched to its size. */
-export function Strike({ seed, color = colors.ink, style }: { seed: number; color?: string; style?: StyleProp<ViewStyle> }) {
+/** A few flecks of paint flicked off the end of a brush stroke, as dots in a 300×30 box. */
+function flecks(seed: number) {
+  let s = Math.round(seed * 104729) % 233280 || 7;
+  const r = () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+  return Array.from({ length: 6 }, () => `M ${(268 + r() * 30).toFixed(1)} ${(6 + r() * 18).toFixed(1)} h 0.1`).join(' ');
+}
+
+/** The olive brush stroke drawn over a crossed-off title: a thick back-and-forth scribble, a thinner one through it, and some flecks at the end. Sits on top of the text, stretched to its size. */
+export function Strike({ seed, color = colors.olive, style }: { seed: number; color?: string; style?: StyleProp<ViewStyle> }) {
+  const line = { fill: 'none', stroke: color, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, vectorEffect: 'non-scaling-stroke' as const };
   return (
     <View pointerEvents="none" style={[{ position: 'absolute', left: -4, right: -4, top: 0, bottom: 0 }, style]}>
       <Svg width="100%" height="100%" viewBox="0 0 300 30" preserveAspectRatio="none">
-        <Path d={scratch(300, 30, seed)} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" opacity={0.85} />
+        <Path d={scratch(300, 30, seed)} {...line} strokeWidth={5.5} opacity={0.92} />
+        <Path d={scratch(270, 30, seed + 13)} {...line} strokeWidth={1.6} opacity={0.75} />
+        <Path d={flecks(seed)} {...line} strokeWidth={2.4} opacity={0.8} />
       </Svg>
     </View>
   );
 }
 
-/** The hand-drawn circle you tap to start crossing something off. Filled olive once it's done (or armed). */
+/** The box you tap to start crossing something off: an ink square drawn by hand, scribbled over in olive once it's done (or armed). Still called Circle from when it was round. */
 export function Circle({ filled, size = 28 }: { filled?: boolean; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path
-        d="M12 2.5 C 18 2, 21.5 6, 21 12 C 20.5 18.5, 16 21.5, 11 21 C 5.5 20.5, 2.5 16.5, 3 11 C 3.5 6, 7 3, 13.5 3.4"
-        fill={filled ? colors.olive : colors.cream}
+        d="M4 3.6 C 9 3, 15 3.3, 20.4 3.7 C 20.9 9, 20.8 15, 20.3 20.4 C 14.5 20.9, 9 20.6, 3.6 20.3 C 3.1 14.5, 3.3 9, 4 3.6 Z"
+        fill={colors.cream}
         stroke={colors.ink}
-        strokeWidth={1.8}
-        strokeLinecap="round"
+        strokeWidth={2}
+        strokeLinejoin="round"
       />
+      {filled ? (
+        <Path
+          d="M6.2 9.5 L10 6.4 L6.8 12.6 L14.5 6.3 L7.4 16.6 L17.6 7.6 L10.6 18.2 L18.2 11.6 L14.6 18"
+          fill="none"
+          stroke={colors.olive}
+          strokeWidth={2.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : null}
     </Svg>
   );
 }

@@ -19,6 +19,7 @@ import { DateChip, DateField } from '@/components/DateField';
 import { DidItWith } from '@/components/DidItWith';
 import { DoneSheet } from '@/components/DoneSheet';
 import { canSayDown, interestLabel } from '@/components/Down';
+import { Logo } from '@/components/Logo';
 import { FolderTab } from '@/components/FolderTab';
 import { goBack, Header, SaveAction, TextAction } from '@/components/Header';
 import { EditableTitle, FieldRow, TitleInput } from '@/components/ListFields';
@@ -311,6 +312,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
           <Button
             label={interestLabel(iAmDown)}
             tone={iAmDown ? 'bark' : 'outline'}
+            icon={<Logo size={30} look={iAmDown ? 'olive' : 'sage'} />}
             onPress={() => {
               toggle(!iAmDown);
               toggleInterest(item.id);

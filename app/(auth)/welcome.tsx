@@ -1,19 +1,40 @@
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
-import { Screen } from '@/components/Screen';
+import { Logo, Swoosh } from '@/components/Logo';
 import { Hand, Mono } from '@/components/Text';
 import { colors, fonts } from '@/theme';
 
+/** The landing page from the sheet: almost white, the logo over a sun-yellow paint stroke, "echi" tipped across the top. */
 export default function Welcome() {
+  const insets = useSafeAreaInsets();
   return (
-    <Screen scroll={false} footer={<Button label="get started" tone="paper" onPress={() => router.push('/phone')} />}>
-      <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 6 }}>
-        <Hand size={76} color={colors.paper} style={{ lineHeight: 84, fontFamily: fonts.handBold }}>list</Hand>
-        <Mono size={14} color={colors.onDarkSoft} style={{ maxWidth: 280, lineHeight: 22 }}>
+    <View style={[styles.page, { paddingTop: insets.top, paddingBottom: insets.bottom + 16 }]}>
+      <StatusBar style="dark" />
+      <View style={styles.middle}>
+        <View style={styles.mark} accessibilityRole="header" accessibilityLabel="echi">
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <View style={styles.swoosh}><Swoosh width={230} /></View>
+          </View>
+          <Hand size={44} style={styles.word}>echi</Hand>
+          <Logo size={170} />
+        </View>
+        <Mono size={13} center color={colors.inkSoft} style={styles.tagline}>
           lists of things to do, shared with the people you’d do them with.
         </Mono>
       </View>
-    </Screen>
+      <Button label="get started" onPress={() => router.push('/phone')} />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  page: { flex: 1, backgroundColor: colors.almostWhite, paddingHorizontal: 20 },
+  middle: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 28 },
+  mark: { width: 230, height: 230, alignItems: 'center', justifyContent: 'center' },
+  swoosh: { position: 'absolute', left: -20, top: -6 },
+  word: { fontFamily: fonts.hand, lineHeight: 60, marginBottom: -26, marginLeft: -30, zIndex: 1, transform: [{ rotate: '-14deg' }] },
+  tagline: { maxWidth: 280, lineHeight: 20 },
+});

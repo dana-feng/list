@@ -121,7 +121,7 @@ export default function Settings() {
               <Button label="take photo" tone="outline" onPress={() => changePhoto('camera')} />
               {person.profile_photo ? (
                 <View style={{ alignSelf: 'center' }}>
-                  <LinkText label="remove photo" color={colors.bark} size={13} onPress={deletePhoto} />
+                  <LinkText label="remove photo" color={colors.burntOrange} size={13} onPress={deletePhoto} />
                 </View>
               ) : null}
             </View>
@@ -153,7 +153,7 @@ export default function Settings() {
 
       <Button label="log out" tone="outline" onPress={() => setLoggingOut(true)} style={{ marginTop: 24, height: 48 }} />
       <View style={{ alignItems: 'center', marginTop: 10 }}>
-        <LinkText label="delete my account" color={colors.bark} onPress={() => setConfirming(true)} />
+        <LinkText label="delete my account" color={colors.burntOrange} onPress={() => setConfirming(true)} />
         <Mono size={10} color={colors.inkFaint} style={{ marginTop: 8 }}>list v{Constants.expoConfig?.version ?? ''}</Mono>
       </View>
       {feedback ? <FeedbackSheet onClose={() => setFeedback(false)} /> : null}

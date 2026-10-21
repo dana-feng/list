@@ -64,7 +64,7 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
           </Pressable>
 
           <Paper fill={fill} shape={4} round={1.2} style={styles.menu}>
-            <LinkText label="delete list" color={colors.bark} onPress={() => setConfirming(true)} />
+            <LinkText label="delete list" color={colors.burntOrange} onPress={() => setConfirming(true)} />
           </Paper>
         </Animated.View>
         {confirming ? (

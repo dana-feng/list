@@ -161,7 +161,7 @@ export default function ListScreen() {
         <Paper fill={colors.cream} edge="ink" shape={2} style={{ padding: 14, marginTop: 16, gap: 10 }}>
           <Mono size={12}>{invitedBy(id)?.name ?? 'someone'} invited you to this list.</Mono>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Pill label="join" height={36} onPress={() => { toggle(true); respondInvite(id, true); }} />
+            <Pill label="join" sun height={36} onPress={() => { toggle(true); respondInvite(id, true); }} />
             <Pill label="no thanks" on height={36} onPress={() => { toggle(false); respondInvite(id, false); router.back(); }} />
           </View>
         </Paper>
