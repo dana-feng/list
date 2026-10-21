@@ -14,7 +14,7 @@ import { Pill } from './Button';
 import { ProgressBar } from './ProgressBar';
 import { choiceIcon } from './VisibilityPicker';
 import { Hand, Mono, MonoMedium } from './Text';
-import { Surface } from './Surface';
+import { Surface, useTint } from './Surface';
 
 /** Open invites on the list that include you. */
 const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id === listId && isInvitedTo(i.id)).length;
@@ -29,6 +29,8 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
   const inviter = invitedBy(list.id);
   const invites = own ? 0 : openInviteCount(list.id);
   const pct = total ? Math.round((100 * done) / total) : 0;
+  // the pen line around the folder, ink or cream to show up on the background
+  const edge = useTint(colors.ink);
   const open = () => router.push(`/list/${list.id}`);
   // press and hold one of your own lists to bring it up close, with delete underneath
   const [peeking, setPeeking] = useState(false);
@@ -45,7 +47,7 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
   return (
     <View style={[{ flex: 1 }, invited ? null : tilt(index)]}>
       <Animated.View style={{ transform: [{ scale: press }] }}>
-        <View style={[styles.tab, { backgroundColor: invited ? colors.olive : fill, borderColor: invited ? colors.olive : colors.ink }]}>
+        <View style={[styles.tab, { backgroundColor: invited ? colors.olive : fill, borderColor: invited ? colors.olive : edge }]}>
           <Surface fill={invited ? colors.olive : fill}><MonoMedium size={11} color={invited ? colors.paper : colors.ink}>{invited ? 'invited' : progressLabel(list.id)}</MonoMedium></Surface>
         </View>
         <Pressable
@@ -57,7 +59,7 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
           accessibilityRole="button"
           accessibilityLabel={`Open ${list.title}`}
           accessibilityHint={canPeek ? 'Press and hold for a closer look and to delete' : undefined}
-          style={[styles.body, { backgroundColor: fill, borderColor: invited ? colors.olive : colors.ink, borderWidth: invited ? 2 : 1.6 }]}
+          style={[styles.body, { backgroundColor: fill, borderColor: invited ? colors.olive : edge, borderWidth: invited ? 2 : 1.6 }]}
         >
           <Surface fill={fill}>
           {/* placeholder until lists get their own cover images */}

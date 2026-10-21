@@ -69,7 +69,7 @@ function PlusMenu({ close }: { close: () => void }) {
         <MonoMedium size={11.5}>new</MonoMedium>
       </Paper>
       <Paper fill={colors.paper} edge="olive" edgeWidth={2} style={styles.menuBody}>
-        <MenuRow icon="list" tint={colors.straw} title="start a list" onPress={() => open('/list/new')} />
+        <MenuRow icon="list" tint={colors.almostWhite} title="start a list" onPress={() => open('/list/new')} />
         <View style={styles.dash} />
         <MenuRow icon="pencil" tint={colors.sage} title="add an item" onPress={() => open('/item/new')} />
       </Paper>

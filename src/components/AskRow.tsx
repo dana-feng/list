@@ -18,7 +18,7 @@ import { TAG_ICON } from './TagField';
 import { Hand, Mono, MonoMedium } from './Text';
 import { Surface } from './Surface';
 
-const STUBS = [colors.sage, colors.moss, colors.sage, colors.straw];
+const STUBS = [colors.sage, colors.sun, colors.paper, colors.almostWhite];
 
 /** "jo", "jo + sam", "jo + 4": names stop at two so the list's name still fits. */
 function ownersText(people: Profile[]) {

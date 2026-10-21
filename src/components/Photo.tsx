@@ -1,10 +1,9 @@
 import { ReactNode, useState } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleProp, View, ViewStyle } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import type { ItemPhoto } from '@/api/db';
 import { photoUri } from '@/api/items';
-import Svg, { Path } from 'react-native-svg';
-import { colors, corners, hash, swatchPair } from '@/theme';
+import { colors, corners, swatchPair } from '@/theme';
 import { Icon } from './Icon';
 import { PhotoViewer } from './PhotoViewer';
 import { Mono } from './Text';
@@ -25,26 +24,18 @@ export function Photo({ photo, style, shape = 1 }: { photo: PhotoLike | { id: st
   }
   return (
     <View style={box}>
-      <Placeholder color={swatch.stroke} flip={hash(photo.id) % 2 === 1} />
+      <Image source={PLACEHOLDERS[swatch.fill]} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
     </View>
   );
 }
 
-/** The scribble on a placeholder photo, stretched to fill it. */
-function Placeholder({ color, flip }: { color: string; flip: boolean }) {
-  return (
-    <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style={flip ? { transform: [{ scaleX: -1 }] } : undefined}>
-      <Path
-        d="M14 62 C 24 44, 40 26, 48 24 C 54 23, 26 60, 24 72 C 23 80, 50 46, 62 34 C 70 27, 64 44, 52 62 C 46 72, 58 70, 68 56 C 76 46, 86 34, 88 30"
-        fill="none"
-        stroke={color}
-        strokeWidth={11}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
+// the sheet's placeholder photos, one per ground color in SWATCHES (theme.ts)
+const PLACEHOLDERS: Record<string, number> = {
+  [colors.sun]: require('../../assets/brand/placeholder-sun.png'),
+  [colors.bark]: require('../../assets/brand/placeholder-bark.png'),
+  [colors.olive]: require('../../assets/brand/placeholder-olive.png'),
+  [colors.burntOrange]: require('../../assets/brand/placeholder-orange.png'),
+};
 
 /** Space above the photos for the × that sits across their top corner. */
 const REMOVE_ROOM = 14;

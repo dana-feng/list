@@ -107,7 +107,7 @@ export function DoneRow({ item, index, onUndo, onDelete }: { item: Item; index: 
       <Pressable onPress={() => router.push(`/item/${item.id}`)} style={{ flex: 1, flexDirection: 'row', paddingLeft: onUndo ? 0 : 8 }} accessibilityRole="button" accessibilityLabel={`${item.title}, done${withPeople.length ? ` with ${names(withPeople)}` : ''}`}>
         <View>
           <HandMedium size={15}>{item.title}</HandMedium>
-          <Strike seed={hash(item.id) % 97} />
+          <Strike />
         </View>
       </Pressable>
       {withPeople.length ? <AvatarStack people={withPeople} size={19} max={3} /> : null}
@@ -123,5 +123,5 @@ const styles = StyleSheet.create({
   circle: { width: 44, height: 46, alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, gap: 4, paddingVertical: 2 },
   chevron: { width: 32, height: 44, alignItems: 'center', justifyContent: 'center' },
-  done: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.gold, paddingVertical: 8, paddingLeft: 6, paddingRight: 14, minHeight: 48 },
+  done: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.cream, paddingVertical: 8, paddingLeft: 6, paddingRight: 14, minHeight: 48 },
 });

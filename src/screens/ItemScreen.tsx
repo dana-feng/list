@@ -207,7 +207,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const hosts = invitedHere ? inviteHosts(item!) : [];
 
   const card = (
-    <Paper fill={done ? colors.gold : colors.sage} edge="ink" edgeWidth={1.5} shape={4} lean={0} style={styles.card}>
+    <Paper fill={done ? colors.cream : colors.sage} edge="ink" edgeWidth={1.5} shape={4} lean={0} style={styles.card}>
       {isNew ? (
         <TitleInput value={draft.title} onChange={(title) => set({ title })} placeholder="untitled item" max={ITEM_TITLE_MAX} size={28} autoFocus={!picking} />
       ) : (
@@ -313,7 +313,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
           <Button
             label={interestLabel(iAmDown)}
             tone={iAmDown ? 'bark' : 'outline'}
-            icon={<Logo size={30} look={iAmDown ? 'olive' : 'sage'} />}
+            icon={<View style={{ opacity: iAmDown ? 1 : 0.4 }}><Logo size={30} /></View>}
             onPress={() => {
               toggle(!iAmDown);
               toggleInterest(item.id);

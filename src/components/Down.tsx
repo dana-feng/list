@@ -16,8 +16,8 @@ export function canSayDown(itemId: string) {
 }
 
 /**
- * On an open invite: the echi logo is the "i'm interested" button. Pale sage papers until you tap it, then olive
- * (with a little pop). Hidden on your own lists and on anything not asked about.
+ * On an open invite: the echi logo (the one for light or dark mode) is the "i'm interested" button. Faded until you
+ * tap it, then full strength (with a little pop). Hidden on your own lists and on anything not asked about.
  */
 export function DownButton({ itemId, size = 40 }: { itemId: string; size?: number }) {
   useDb();
@@ -39,8 +39,8 @@ export function DownButton({ itemId, size = 40 }: { itemId: string; size?: numbe
       accessibilityState={{ selected: on }}
       accessibilityLabel={on ? `You're interested in ${title}. Tap to take it back` : `I'm interested in ${title}`}
     >
-      <Animated.View style={{ transform: [{ scale: pop }], opacity: on ? 1 : 0.85 }}>
-        <Logo size={size} look={on ? 'olive' : 'sage'} />
+      <Animated.View style={{ transform: [{ scale: pop }], opacity: on ? 1 : 0.4 }}>
+        <Logo size={size} />
       </Animated.View>
     </Pressable>
   );

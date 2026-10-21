@@ -2,37 +2,28 @@ import 'expo-sqlite/localStorage/install';
 import { useSyncExternalStore } from 'react';
 import { Appearance } from 'react-native';
 
-/** Light or dark mode: follow the phone, or pick one for the app. Kept on this phone. */
-export type AppearanceChoice = 'system' | 'light' | 'dark';
-
-export const APPEARANCE_CHOICES: { value: AppearanceChoice; label: string }[] = [
-  { value: 'system', label: 'match phone' },
-  { value: 'light', label: 'light' },
-  { value: 'dark', label: 'dark' },
-];
-
+/** echi is dark unless you turn dark mode off in settings. Kept on this phone. */
 const KEY = 'echi.appearance';
 const listeners = new Set<() => void>();
 
-function read(): AppearanceChoice {
+function read() {
   try {
-    const v = localStorage.getItem(KEY);
-    return v === 'light' || v === 'dark' ? v : 'system';
+    return localStorage.getItem(KEY) !== 'light';
   } catch {
-    return 'system';
+    return true;
   }
 }
 
-let choice = read();
+let dark = read();
 
 // useColorScheme everywhere follows this, so the whole app flips at once
-const apply = () => Appearance.setColorScheme(choice === 'system' ? 'unspecified' : choice);
+const apply = () => Appearance.setColorScheme(dark ? 'dark' : 'light');
 
-/** Pick light, dark or "match phone", remember it, and switch the app over. */
-export function setAppearance(next: AppearanceChoice) {
-  choice = next;
+/** Turn dark mode on or off, remember it, and switch the app over. */
+export function setDarkMode(on: boolean) {
+  dark = on;
   try {
-    localStorage.setItem(KEY, next);
+    localStorage.setItem(KEY, on ? 'dark' : 'light');
   } catch {
     // still switches for now, just won't be remembered
   }
@@ -40,18 +31,18 @@ export function setAppearance(next: AppearanceChoice) {
   listeners.forEach((l) => l());
 }
 
-/** The current choice, re-rendering when it changes. */
-export function useAppearance() {
+/** Whether dark mode is on, re-rendering when it changes. */
+export function useDarkMode() {
   return useSyncExternalStore(
     (l) => {
       listeners.add(l);
       return () => listeners.delete(l);
     },
-    () => choice,
+    () => dark,
   );
 }
 
-/** Put the remembered choice in place. Once, at startup. */
+/** Put the remembered setting (dark, unless you've turned it off) in place. Once, at startup. */
 export function applyAppearance() {
-  if (choice !== 'system') apply();
+  apply();
 }

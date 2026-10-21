@@ -3,36 +3,35 @@ import { Appearance } from 'react-native';
 // kept across jest.resetModules, like the real one is across launches
 const mockStore = new Map<string, string>();
 jest.mock('expo-sqlite/localStorage/install', () => {
-  const store = mockStore;
   (globalThis as { localStorage?: unknown }).localStorage = {
-    getItem: (k: string) => store.get(k) ?? null,
-    setItem: (k: string, v: string) => void store.set(k, v),
+    getItem: (k: string) => mockStore.get(k) ?? null,
+    setItem: (k: string, v: string) => void mockStore.set(k, v),
   };
   return {};
 });
 
-describe('appearance', () => {
-  beforeEach(() => jest.resetModules());
+// a fresh copy of the module, as on a new launch
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const load = (): typeof import('./appearance') => require('./appearance');
 
-  it('switches the app and remembers the choice for next time', () => {
-    const set = jest.spyOn(Appearance, 'setColorScheme').mockImplementation(() => {});
-    const { setAppearance } = require('./appearance');
-    setAppearance('dark');
-    expect(set).toHaveBeenLastCalledWith('dark');
-    expect(localStorage.getItem('echi.appearance')).toBe('dark');
-    setAppearance('system');
-    expect(set).toHaveBeenLastCalledWith('unspecified');
+describe('dark mode', () => {
+  beforeEach(() => {
+    jest.resetModules();
+    mockStore.clear();
   });
 
-  it('puts a remembered choice back at startup, and leaves the phone in charge otherwise', () => {
+  it('is on until you turn it off', () => {
     const set = jest.spyOn(Appearance, 'setColorScheme').mockImplementation(() => {});
-    localStorage.setItem('echi.appearance', 'light');
-    require('./appearance').applyAppearance();
+    load().applyAppearance();
+    expect(set).toHaveBeenLastCalledWith('dark');
+  });
+
+  it('turning it off switches the app and is remembered next time', () => {
+    const set = jest.spyOn(Appearance, 'setColorScheme').mockImplementation(() => {});
+    load().setDarkMode(false);
     expect(set).toHaveBeenLastCalledWith('light');
-    set.mockClear();
     jest.resetModules();
-    localStorage.setItem('echi.appearance', 'system');
-    require('./appearance').applyAppearance();
-    expect(set).not.toHaveBeenCalled();
+    load().applyAppearance();
+    expect(set).toHaveBeenLastCalledWith('light');
   });
 });

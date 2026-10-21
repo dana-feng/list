@@ -14,11 +14,6 @@ export const colors = {
   // accents
   sun: '#DAB900', // "add" buttons, "join", switch knobs, the bell and send icons
   burntOrange: '#B66700', // filled hearts, "undo", the x icon
-  // the sheet has no more papers than these; the old in-betweens now point at them
-  straw: '#F2F3E5',
-  moss: '#D6D79F',
-  gold: '#D6D79F', // done rows and cards
-  disabled: '#B09A7E', // a button you can't press yet
   // ink
   ink: '#521709',
   inkSoft: 'rgba(82,23,9,0.75)',
@@ -57,7 +52,7 @@ export type Scheme = (typeof SCHEMES)[keyof typeof SCHEMES];
 /** Whether something sits on a light fill (dark ink on it) or a dark one (cream on it). */
 export type Surface = 'light' | 'dark';
 
-const DARK_FILLS: string[] = [colors.night, colors.bark, colors.olive, colors.burntOrange, colors.disabled, colors.ink, colors.dim];
+const DARK_FILLS: string[] = [colors.night, colors.bark, colors.olive, colors.burntOrange, colors.inkSoft, colors.ink, colors.dim];
 
 /** Which surface a fill makes for what's on it. */
 export const surfaceOf = (fill: string): Surface => (DARK_FILLS.includes(fill) || fill.startsWith('rgba(40') || fill.startsWith('rgba(58') ? 'dark' : 'light');
@@ -83,8 +78,8 @@ export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28 } as const;
 /** Card fills that rotate through rows and slips. */
 export const cardFills = [colors.sage, colors.cream, colors.paper, colors.almostWhite] as const;
 
-/** Folder colors for lists on a profile. */
-export const folderFills = [colors.paper, colors.sage, colors.cream, colors.sun, colors.almostWhite] as const;
+/** Folder colors for lists on a profile: every color on the sheet. */
+export const folderFills = [colors.paper, colors.olive, colors.sage, colors.burntOrange, colors.cream, colors.bark, colors.sun, colors.night, colors.almostWhite] as const;
 
 // Hand-cut corners: every box gets slightly different radii so nothing looks machine-made.
 const CORNERS: [number, number, number, number][] = [
@@ -110,7 +105,7 @@ export function hash(id: string) {
 }
 
 /** Background for someone's initial until they add a photo. */
-export const tintFor = (id: string) => [colors.sage, colors.straw, colors.cream, colors.moss, colors.paper][hash(id) % 5];
+export const tintFor = (id: string) => [colors.sage, colors.almostWhite, colors.cream, colors.sun, colors.paper][hash(id) % 5];
 
 /** Placeholder photos: a ground and the scribble across it. */
 export const SWATCHES = [

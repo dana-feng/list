@@ -40,7 +40,7 @@ export default function Phone() {
       }
     >
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Paper fill={colors.straw} shape={4} style={{ height: 58, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 6 }} accessibilityLabel="Country code: US +1">
+        <Paper fill={colors.almostWhite} shape={4} style={{ height: 58, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 6 }} accessibilityLabel="Country code: US +1">
           <Mono size={15}>+1</Mono>
           <Icon name="down" size={13} strokeWidth={2.2} />
         </Paper>

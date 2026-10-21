@@ -6,7 +6,7 @@ import { useDb } from '@/api/db';
 import { BIO_MAX, me, removeProfilePhoto, saveProfile, setProfilePhoto } from '@/api/profiles';
 import { deleteAccount, signOut } from '@/api/sync';
 import { Avatar } from '@/components/Avatar';
-import { Button, LinkText, Pill } from '@/components/Button';
+import { Button, LinkText } from '@/components/Button';
 import { FolderTab } from '@/components/FolderTab';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { FeedbackSheet } from '@/components/FeedbackSheet';
@@ -21,7 +21,8 @@ import { pickPhotos, takePhoto } from '@/pickPhotos';
 import { NAME_MAX } from '@/limits';
 import { colors, fonts, noOutline } from '@/theme';
 import { useTint } from '@/components/Surface';
-import { APPEARANCE_CHOICES, setAppearance, useAppearance } from '@/appearance';
+import { setDarkMode, useDarkMode } from '@/appearance';
+import { Switch } from '@/components/Switch';
 
 /** Settings, and the same screen as "edit profile". */
 export default function Settings() {
@@ -150,7 +151,7 @@ export default function Settings() {
       <Row label="blocked profiles" value={db.blocked.length ? String(db.blocked.length) : undefined} onPress={() => router.push('/blocked')} />
 
       <Label style={styles.label}>appearance</Label>
-      <AppearancePicker />
+      <DarkModeSwitch />
 
       <Label style={styles.label}>help</Label>
       <Row label="help + feedback" onPress={() => setFeedback(true)} />
@@ -200,22 +201,12 @@ function Field({ label, help, children, onPress, tall }: { label: string; help?:
   );
 }
 
-/** Light mode, dark mode, or whatever the phone is set to. */
-function AppearancePicker() {
-  const choice = useAppearance();
+/** The dark mode switch: on unless you've turned it off. */
+function DarkModeSwitch() {
+  const dark = useDarkMode();
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 4, paddingVertical: 6 }} accessibilityRole="radiogroup">
-      {APPEARANCE_CHOICES.map((c) => (
-        <Pill
-          key={c.value}
-          label={c.label}
-          on={choice === c.value}
-          filled={choice === c.value}
-          height={36}
-          onPress={() => setAppearance(c.value)}
-          accessibilityLabel={`Appearance: ${c.label}`}
-        />
-      ))}
+    <View style={{ paddingHorizontal: 4, paddingVertical: 8 }}>
+      <Switch on={dark} onPress={() => setDarkMode(!dark)} label="Dark mode" text="dark mode" />
     </View>
   );
 }

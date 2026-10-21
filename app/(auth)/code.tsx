@@ -73,7 +73,7 @@ export default function Code() {
     >
       <Pressable onPress={() => input.current?.focus()} style={styles.boxes} accessibilityLabel="6-digit code">
         {Array.from({ length: 6 }, (_, i) => (
-          <View key={i} style={[styles.box, corners(i), { backgroundColor: code[i] ? colors.paper : colors.straw }, i === code.length && styles.active]}>
+          <View key={i} style={[styles.box, corners(i), { backgroundColor: code[i] ? colors.paper : colors.almostWhite }, i === code.length && styles.active]}>
             <Hand size={28}>{code[i] ?? ''}</Hand>
           </View>
         ))}

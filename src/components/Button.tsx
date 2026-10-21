@@ -38,14 +38,14 @@ export function Button({ label, onPress, tone = 'bark', disabled, icon, style, a
     <Paper
       onPress={onPress}
       disabled={disabled}
-      fill={disabled ? colors.disabled : t.fill}
+      fill={disabled ? colors.inkSoft : t.fill}
       edge={disabled ? 'none' : t.edge}
       edgeWidth={1.8}
       shape={4}
       round={1.1}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
-      style={[{ height: 52, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 }, style]}
+      style={[{ height: 52, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, opacity: disabled ? 0.5 : 1 }, style]}
     >
       {icon}
       <MonoMedium size={13} color={disabled ? colors.cream : t.text}>{label}</MonoMedium>
