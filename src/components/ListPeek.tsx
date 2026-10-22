@@ -4,12 +4,13 @@ import type { List } from '@/api/db';
 import { itemsForList } from '@/api/items';
 import { deleteList, listPeople, progressLabel } from '@/api/lists';
 import { names } from '@/lib';
-import { colors, folderFills, hash } from '@/theme';
+import { colors, hash, surfaceOf, tint } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { LinkText } from './Button';
 import { ConfirmCard } from './ConfirmDialog';
 import { Paper } from './Paper';
 import { Hand, Mono, MonoMedium } from './Text';
+import { Surface, useScheme } from './Surface';
 
 const SHOW_ITEMS = 5;
 
@@ -24,7 +25,10 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
     Animated.spring(pop, { toValue: 1, useNativeDriver: true, friction: 6, tension: 110 }).start();
   }, [pop]);
 
-  const fill = folderFills[hash(list.id) % folderFills.length];
+  // the same color as its folder on the profile
+  const { folders } = useScheme();
+  const fill = folders[hash(list.id) % folders.length];
+  const ink = tint(colors.ink, surfaceOf(fill));
   const people = listPeople(list.id);
   const { open, done: finished } = itemsForList(list.id);
   const items = [...open, ...finished];
@@ -32,13 +36,15 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
 
   return (
     <Modal transparent visible animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      <Surface tone="light">
       <View style={styles.fill} accessibilityViewIsModal>
         <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: colors.dim }]} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
         <Animated.View style={[styles.stack, { transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }] }]}>
           <View style={[styles.tab, { backgroundColor: fill }]}>
-            <MonoMedium size={12}>{progressLabel(list.id)}</MonoMedium>
+            <Surface fill={fill}><MonoMedium size={12}>{progressLabel(list.id)}</MonoMedium></Surface>
           </View>
           <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={`Open ${list.title}`} style={[styles.body, { backgroundColor: fill }]}>
+            <Surface fill={fill}>
             <Hand size={26} style={{ lineHeight: 28 }}>{list.title}</Hand>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <AvatarStack people={people} size={22} />
@@ -47,7 +53,7 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
             <View style={styles.items}>
               {items.slice(0, SHOW_ITEMS).map((item) => (
                 <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View style={[styles.circle, item.done_at ? { backgroundColor: colors.olive, borderColor: colors.olive } : null]} />
+                  <View style={[styles.circle, { borderColor: ink }, item.done_at ? { backgroundColor: colors.olive, borderColor: colors.olive } : null]} />
                   <Hand
                     size={16}
                     numberOfLines={1}
@@ -61,10 +67,11 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
               {more > 0 ? <Mono size={11} color={colors.inkSoft}>+ {more} more</Mono> : null}
               {!items.length ? <Mono size={11} color={colors.inkSoft}>nothing on it yet.</Mono> : null}
             </View>
+            </Surface>
           </Pressable>
 
           <Paper fill={fill} shape={4} round={1.2} style={styles.menu}>
-            <LinkText label="delete list" color={colors.bark} onPress={() => setConfirming(true)} />
+            <LinkText label="delete list" color={colors.burntOrange} onPress={() => setConfirming(true)} />
           </Paper>
         </Animated.View>
         {confirming ? (
@@ -77,6 +84,7 @@ export function ListPeek({ list, onOpen, onClose }: { list: List; onOpen: () => 
           />
         ) : null}
       </View>
+      </Surface>
     </Modal>
   );
 }

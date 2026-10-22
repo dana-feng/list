@@ -18,6 +18,7 @@ import { openProfile } from './PersonRow';
 import { ReportSheet } from './ReportSheet';
 import { Hand, Mono, MonoMedium } from './Text';
 import { useDragToClose } from './dragToClose';
+import { Surface } from './Surface';
 
 type Post = NonNullable<ReturnType<typeof describePost>>;
 
@@ -52,6 +53,7 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <Surface tone="light">
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: drag.dim }]}>
         <Pressable style={styles.dim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close comments" />
       </Animated.View>
@@ -92,6 +94,7 @@ export function CommentsSheet({ event, post, index, onClose }: { event: FeedEven
           <Composer eventId={event.id} listId={event.list_id} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPosted={posted} />
         </Animated.View>
       </KeyboardAvoidingView>
+      </Surface>
     </Modal>
   );
 }
@@ -104,7 +107,7 @@ function LikedBy({ eventId, go }: { eventId: string; go: (to: () => void) => voi
   const rest = people.length - named.length;
   return (
     <View style={styles.likedBy}>
-      <Icon name="heartFilled" size={14} color={colors.olive} strokeWidth={1.8} />
+      <Icon name="heartFilled" size={15} strokeWidth={1.6} />
       <Mono size={11} style={{ flex: 1 }}>
         liked by{' '}
         {named.map((p, i) => (
@@ -241,6 +244,7 @@ function CommentPeek({ comment, onClose, onReport }: { comment: EventComment; on
 
   return (
     <Modal transparent visible animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+      <Surface tone="light">
       <View style={styles.peekFill} accessibilityViewIsModal>
         <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: colors.dim }]} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
         <Animated.View style={[styles.peekStack, { transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }] }]}>
@@ -254,13 +258,14 @@ function CommentPeek({ comment, onClose, onReport }: { comment: EventComment; on
           </View>
           <Paper fill={colors.cream} shape={4} round={1.2} style={styles.peekMenu}>
             {canDeleteComment(comment) ? (
-              <LinkText label="delete comment" color={colors.bark} onPress={remove} />
+              <LinkText label="delete comment" color={colors.burntOrange} onPress={remove} />
             ) : (
-              <LinkText label="report comment" color={colors.bark} onPress={flag} />
+              <LinkText label="report comment" color={colors.burntOrange} onPress={flag} />
             )}
           </Paper>
         </Animated.View>
       </View>
+      </Surface>
     </Modal>
   );
 }
@@ -377,7 +382,7 @@ function Composer({ eventId, listId, replyTo, onCancelReply, onPosted }: {
           accessibilityLabel={replyTo ? 'Post reply' : 'Post comment'}
           accessibilityState={{ disabled: !ready }}
         >
-          <Icon name="send" size={18} color={colors.paper} strokeWidth={2.2} />
+          <Surface tone="dark"><Icon name="send" size={18} color={colors.paper} strokeWidth={2.2} /></Surface>
         </Pressable>
       </View>
     </View>

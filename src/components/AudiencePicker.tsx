@@ -7,6 +7,7 @@ import { Avatar } from './Avatar';
 import { Icon, IconName } from './Icon';
 import { SearchField } from './SearchField';
 import { Hand, Mono, MonoMedium } from './Text';
+import { Surface } from './Surface';
 
 /** `icon`: the small picture beside the choice (people for followers, a globe for anyone…). */
 export type AudienceOption<T> = { value: T; title: string; icon?: IconName };
@@ -30,7 +31,7 @@ function Radio({ on }: { on: boolean }) {
 /** A ticked box, or an empty one. */
 function Tick({ on }: { on: boolean }) {
   return on ? (
-    <View style={[styles.box, { backgroundColor: colors.bark, borderColor: colors.bark }]}><Icon name="check" size={14} color={colors.paper} strokeWidth={3} /></View>
+    <View style={[styles.box, { backgroundColor: colors.bark, borderColor: colors.bark }]}><Surface tone="dark"><Icon name="check" size={14} color={colors.paper} strokeWidth={3} /></Surface></View>
   ) : (
     <View style={styles.box} />
   );

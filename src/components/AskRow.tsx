@@ -16,8 +16,9 @@ import { PeoplePress } from './PeopleSheet';
 import { Photo } from './Photo';
 import { TAG_ICON } from './TagField';
 import { Hand, Mono, MonoMedium } from './Text';
+import { Surface } from './Surface';
 
-const STUBS = [colors.sage, colors.moss, colors.sage, colors.straw];
+const STUBS = [colors.sage, colors.sun, colors.paper, colors.almostWhite];
 
 /** "jo", "jo + sam", "jo + 4": names stop at two so the list's name still fits. */
 function ownersText(people: Profile[]) {
@@ -36,6 +37,7 @@ export function AskRow({ item, list, index }: { item: Item; list: List; index: n
   const photo = photosFor(item.id)[0];
   const tag = item.tag!;
   return (
+    <Surface tone="light">
     <View style={[styles.ticket, tilt(index, 0.8)]}>
       <View style={[styles.stub, { backgroundColor: STUBS[index % STUBS.length] }]} accessibilityLabel={date ? `Due ${date.weekday.toLowerCase()} ${date.day}` : 'No due date'}>
         <Mono size={9.5} color={colors.inkSoft} style={{ letterSpacing: 1 }}>due</Mono>
@@ -48,7 +50,7 @@ export function AskRow({ item, list, index }: { item: Item; list: List; index: n
           <PeoplePress people={owners} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center' }}>
             <AvatarStack people={owners} size={22} max={3} />
             {owners.length > 3 ? (
-              <View style={styles.more}><MonoMedium size={9.5} color={colors.paper}>+{owners.length - 3}</MonoMedium></View>
+              <View style={styles.more}><Surface tone="dark"><MonoMedium size={9.5} color={colors.paper}>+{owners.length - 3}</MonoMedium></Surface></View>
             ) : null}
           </PeoplePress>
           <Mono size={10.5} color={colors.inkSoft} numberOfLines={1} style={{ flexShrink: 1 }}>{ownersText(listPeople(list.id))} · {list.title}</Mono>
@@ -65,6 +67,7 @@ export function AskRow({ item, list, index }: { item: Item; list: List; index: n
         </View>
       </View>
     </View>
+    </Surface>
   );
 }
 

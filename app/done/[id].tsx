@@ -16,7 +16,7 @@ import { Screen } from '@/components/Screen';
 import { Hand, HandMedium, Mono } from '@/components/Text';
 import { monthDay, names } from '@/lib';
 import { pickPhotos } from '@/pickPhotos';
-import { colors, hash } from '@/theme';
+import { colors } from '@/theme';
 
 /** Photos and who you did it with for an item you just crossed off, or every item crossed off for a whole list (?kind=list, id = the list). */
 export default function Done() {
@@ -118,7 +118,7 @@ function ListDone({ listId }: { listId: string }) {
             <Circle filled size={20} />
             <View style={{ flexShrink: 1, marginRight: 'auto' }}>
               <HandMedium size={16} numberOfLines={1}>{item.title}</HandMedium>
-              <Strike seed={hash(item.id) % 97} />
+              <Strike />
             </View>
             <Mono size={10.5} color={colors.inkSoft}>{monthDay(item.done_at!)}</Mono>
           </View>

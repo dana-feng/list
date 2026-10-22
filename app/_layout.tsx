@@ -1,32 +1,44 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 // One import per weight, so only these files ship with the app.
-import { BricolageGrotesque_600SemiBold } from '@expo-google-fonts/bricolage-grotesque/600SemiBold';
-import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque/700Bold';
-import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque/800ExtraBold';
-import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono/400Regular';
-import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono/500Medium';
+import { Cousine_400Regular } from '@expo-google-fonts/cousine/400Regular';
+import { Cousine_700Bold } from '@expo-google-fonts/cousine/700Bold';
+import { NotoSerifMalayalam_700Bold } from '@expo-google-fonts/noto-serif-malayalam/700Bold';
+import { NotoSerifMalayalam_800ExtraBold } from '@expo-google-fonts/noto-serif-malayalam/800ExtraBold';
+import { NotoSerifMalayalam_900Black } from '@expo-google-fonts/noto-serif-malayalam/900Black';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useDb } from '@/api/db';
 import { registerForPush, useOpenTappedPush } from '@/api/push';
 import { startSync } from '@/api/sync';
-import { colors } from '@/theme';
+import { applyAppearance } from '@/appearance';
+import { preloadBrand } from '@/brand';
+import { SCHEMES } from '@/theme';
+import { GroundSurface, useScheme } from '@/components/Surface';
 
 SplashScreen.preventAutoHideAsync();
+applyAppearance();
 startSync();
+// the drawn art, loaded while the splash is up
+const brand = preloadBrand();
 
 export default function RootLayout() {
   const db = useDb();
+  const scheme = useScheme();
   const [loaded, error] = useFonts({
-    BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold,
-    IBMPlexMono_400Regular, IBMPlexMono_500Medium,
+    NotoSerifMalayalam_700Bold, NotoSerifMalayalam_800ExtraBold, NotoSerifMalayalam_900Black,
+    Cousine_400Regular, Cousine_700Bold,
   });
 
-  // Keep the splash up until fonts are in and we know whether you're signed in.
-  const ready = (loaded || !!error) && db.status !== 'loading';
+  const [art, setArt] = useState(false);
+  useEffect(() => {
+    brand.finally(() => setArt(true));
+  }, []);
+
+  // Keep the splash up until fonts and the drawn art are in and we know whether you're signed in.
+  const ready = (loaded || !!error) && art && db.status !== 'loading';
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);
@@ -43,8 +55,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night } }}>
+      <GroundSurface>
+      <StatusBar style={scheme === SCHEMES.dark ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: scheme.ground } }}>
         <Stack.Screen name="done/[id]" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="list/new" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="item/new" options={{ animation: 'slide_from_bottom' }} />
@@ -55,6 +68,7 @@ export default function RootLayout() {
         <Stack.Screen name="user/[username]/index" options={{ fullScreenGestureEnabled: false }} />
         <Stack.Screen name="user/[username]/follows" options={{ fullScreenGestureEnabled: false }} />
       </Stack>
+      </GroundSurface>
     </SafeAreaProvider>
   );
 }

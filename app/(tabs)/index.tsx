@@ -9,6 +9,7 @@ import { Pill } from '@/components/Button';
 import { FeedPost } from '@/components/FeedPost';
 import { FolderTab } from '@/components/FolderTab';
 import { Icon } from '@/components/Icon';
+import { Logo } from '@/components/Logo';
 import { FolderScreen } from '@/components/Screen';
 import { SwipeTabs, useTabPosition } from '@/components/SwipeTabs';
 import { Hand, Mono } from '@/components/Text';
@@ -33,7 +34,9 @@ export default function Home() {
       roundCorner={tab === 'asks'}
       header={
         <View style={styles.top}>
-          <Hand size={40} color={colors.paper} style={{ lineHeight: 44 }}>list</Hand>
+          <View accessibilityRole="header" accessibilityLabel="echi">
+            <Logo size={56} />
+          </View>
           <View style={{ flexDirection: 'row' }}>
             <Bell />
             <Pressable onPress={() => router.push('/search')} style={styles.icon} accessibilityRole="button" accessibilityLabel="Search">

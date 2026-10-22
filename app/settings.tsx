@@ -20,6 +20,9 @@ import { usernameStatus } from '@/components/UsernameField';
 import { pickPhotos, takePhoto } from '@/pickPhotos';
 import { NAME_MAX } from '@/limits';
 import { colors, fonts, noOutline } from '@/theme';
+import { useTint } from '@/components/Surface';
+import { setDarkMode, useDarkMode } from '@/appearance';
+import { Switch } from '@/components/Switch';
 
 /** Settings, and the same screen as "edit profile". */
 export default function Settings() {
@@ -121,7 +124,7 @@ export default function Settings() {
               <Button label="take photo" tone="outline" onPress={() => changePhoto('camera')} />
               {person.profile_photo ? (
                 <View style={{ alignSelf: 'center' }}>
-                  <LinkText label="remove photo" color={colors.bark} size={13} onPress={deletePhoto} />
+                  <LinkText label="remove photo" color={colors.burntOrange} size={13} onPress={deletePhoto} />
                 </View>
               ) : null}
             </View>
@@ -147,14 +150,17 @@ export default function Settings() {
       <Row label="phone number" value={masked} onPress={startEdit} />
       <Row label="blocked profiles" value={db.blocked.length ? String(db.blocked.length) : undefined} onPress={() => router.push('/blocked')} />
 
+      <Label style={styles.label}>appearance</Label>
+      <DarkModeSwitch />
+
       <Label style={styles.label}>help</Label>
       <Row label="help + feedback" onPress={() => setFeedback(true)} />
       <Row label="terms + privacy" />
 
       <Button label="log out" tone="outline" onPress={() => setLoggingOut(true)} style={{ marginTop: 24, height: 48 }} />
       <View style={{ alignItems: 'center', marginTop: 10 }}>
-        <LinkText label="delete my account" color={colors.bark} onPress={() => setConfirming(true)} />
-        <Mono size={10} color={colors.inkFaint} style={{ marginTop: 8 }}>list v{Constants.expoConfig?.version ?? ''}</Mono>
+        <LinkText label="delete my account" color={colors.burntOrange} onPress={() => setConfirming(true)} />
+        <Mono size={10} color={colors.inkFaint} style={{ marginTop: 8 }}>echi v{Constants.expoConfig?.version ?? ''}</Mono>
       </View>
       {feedback ? <FeedbackSheet onClose={() => setFeedback(false)} /> : null}
       {loggingOut ? (
@@ -195,9 +201,20 @@ function Field({ label, help, children, onPress, tall }: { label: string; help?:
   );
 }
 
-function Row({ label, value, onPress }: { label: string; value?: string; onPress?: () => void }) {
+/** The dark mode switch: on unless you've turned it off. */
+function DarkModeSwitch() {
+  const dark = useDarkMode();
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={styles.row} accessibilityRole={onPress ? 'button' : undefined}>
+    <View style={{ paddingHorizontal: 4, paddingVertical: 8 }}>
+      <Switch on={dark} onPress={() => setDarkMode(!dark)} label="Dark mode" text="dark mode" />
+    </View>
+  );
+}
+
+function Row({ label, value, onPress }: { label: string; value?: string; onPress?: () => void }) {
+  const rule = useTint(colors.rule);
+  return (
+    <Pressable onPress={onPress} disabled={!onPress} style={[styles.row, { borderColor: rule }]} accessibilityRole={onPress ? 'button' : undefined}>
       <Mono size={12.5}>{label}</Mono>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         {value ? <Mono size={11.5} color={colors.inkSoft}>{value}</Mono> : null}

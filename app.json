@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "list",
+    "name": "echi",
     "slug": "list",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.danafeng.list"
@@ -19,19 +19,31 @@
       "expo-router",
       "expo-image",
       "expo-font",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#D6D79F",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#3A1000"
+          }
+        }
+      ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "list uses your photos to add pictures to your lists and profile.",
-          "cameraPermission": "list uses your camera to take a profile photo.",
+          "photosPermission": "echi uses your photos to add pictures to your lists and profile.",
+          "cameraPermission": "echi uses your camera to take a profile photo.",
           "microphonePermission": false
         }
       ],
       [
         "expo-contacts",
         {
-          "contactsPermission": "list uses your contacts to find friends who are already here."
+          "contactsPermission": "echi uses your contacts to find friends who are already here."
         }
       ],
       "expo-notifications"

@@ -8,9 +8,11 @@ import { followCounts } from '@/api/profiles';
 import { colors } from '@/theme';
 import { Avatar } from './Avatar';
 import { Hand, Mono } from './Text';
+import { Surface, useTint } from './Surface';
 
 /** Big face, lists / followers / following, name, bio, lists done, then an optional action (follow). */
 export function ProfileHeader({ person, action }: { person: Profile; action?: ReactNode }) {
+  const ink = useTint(colors.ink);
   const lists = listsForProfile(person.id).filter((r) => !r.invited).length;
   const { followers, following } = followCounts(person.id);
   const done = listsDoneCount(person.id);
@@ -22,7 +24,7 @@ export function ProfileHeader({ person, action }: { person: Profile; action?: Re
     <View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 10 }}>
         <Pressable onPress={() => setViewing(true)} disabled={!person.profile_photo} accessibilityRole={person.profile_photo ? 'button' : undefined} accessibilityLabel={`${person.name}'s photo`}>
-          <Avatar person={person} size={92} edge={colors.paper} />
+          <Avatar person={person} size={92} edge={ink} />
         </Pressable>
         <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
           <Count n={lists} label={lists === 1 ? 'list' : 'lists'} />
@@ -39,9 +41,11 @@ export function ProfileHeader({ person, action }: { person: Profile; action?: Re
       </View>
       {action ? <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>{action}</View> : null}
       <Modal visible={viewing} transparent animationType="fade" onRequestClose={() => setViewing(false)}>
+        <Surface tone="dark">
         <Pressable style={styles.dim} onPress={() => setViewing(false)} accessibilityRole="button" accessibilityLabel="Close photo">
           <Image source={{ uri: person.profile_photo ?? undefined }} style={{ width: big, height: big, borderRadius: Math.round(big * 0.3) }} contentFit="cover" transition={150} />
         </Pressable>
+        </Surface>
       </Modal>
     </View>
   );

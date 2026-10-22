@@ -5,14 +5,16 @@ import { db, List } from '@/api/db';
 import { isInvitedTo } from '@/api/items';
 import { invitedBy, listPeople, listProgress, progressLabel, respondInvite, visibilityLabel } from '@/api/lists';
 import { hold, toggle } from '@/haptics';
-import { colors, folderFills, hash, tilt } from '@/theme';
+import { colors, folderColor, Swatch, tilt } from '@/theme';
 import { AvatarStack } from './Avatar';
 import { Icon } from './Icon';
 import { ListPeek } from './ListPeek';
+import { Photo } from './Photo';
 import { Pill } from './Button';
 import { ProgressBar } from './ProgressBar';
 import { choiceIcon } from './VisibilityPicker';
 import { Hand, Mono, MonoMedium } from './Text';
+import { Surface, useScheme, useTint } from './Surface';
 
 /** Open invites on the list that include you. */
 const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id === listId && isInvitedTo(i.id)).length;
@@ -21,12 +23,15 @@ const openInviteCount = (listId: string) => db.items.filter((i) => i.list_id ===
  * A list as a folder on a profile: a tab with how far along it is, a cover placeholder, the name and a progress bar.
  * `invited` is the olive "invited" folder with join / no. Who's on it always shows; `own` adds who can see it.
  */
-export function ListFolderCard({ list, invited, own, index }: { list: List; invited?: boolean; own?: boolean; index: number }) {
+export function ListFolderCard({ list, invited, own, index, cover }: { list: List; invited?: boolean; own?: boolean; index: number; cover?: Swatch }) {
   const { done, total } = listProgress(list.id);
-  const fill = invited ? colors.cream : folderFills[hash(list.id) % folderFills.length];
+  // an invite is the same color as the big folder, with an olive tab; the rest take turns through the colors for this mode
+  const fill = folderColor(list.id, useScheme(), invited);
   const inviter = invitedBy(list.id);
   const invites = own ? 0 : openInviteCount(list.id);
   const pct = total ? Math.round((100 * done) / total) : 0;
+  // the pen line around the folder, ink or cream to show up on the background
+  const edge = useTint(colors.ink);
   const open = () => router.push(`/list/${list.id}`);
   // press and hold one of your own lists to bring it up close, with delete underneath
   const [peeking, setPeeking] = useState(false);
@@ -43,8 +48,8 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
   return (
     <View style={[{ flex: 1 }, invited ? null : tilt(index)]}>
       <Animated.View style={{ transform: [{ scale: press }] }}>
-        <View style={[styles.tab, { backgroundColor: invited ? colors.olive : fill, borderColor: invited ? colors.olive : colors.paper }]}>
-          <MonoMedium size={11} color={invited ? colors.paper : colors.ink}>{invited ? 'invited' : progressLabel(list.id)}</MonoMedium>
+        <View style={[styles.tab, { backgroundColor: invited ? colors.olive : fill, borderColor: invited ? colors.olive : edge }]}>
+          <Surface fill={invited ? colors.olive : fill}><MonoMedium size={11} color={invited ? colors.paper : colors.ink}>{invited ? 'invited' : progressLabel(list.id)}</MonoMedium></Surface>
         </View>
         <Pressable
           onPress={open}
@@ -55,18 +60,17 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
           accessibilityRole="button"
           accessibilityLabel={`Open ${list.title}`}
           accessibilityHint={canPeek ? 'Press and hold for a closer look and to delete' : undefined}
-          style={[styles.body, { backgroundColor: fill, borderColor: invited ? colors.olive : colors.paper, borderWidth: invited ? 2 : 1.6 }]}
+          style={[styles.body, { backgroundColor: fill, borderColor: invited ? colors.olive : edge, borderWidth: invited ? 2 : 1.6 }]}
         >
+          <Surface fill={fill}>
           {/* placeholder until lists get their own cover images */}
-          <View style={[styles.cover, { backgroundColor: invited ? colors.sage : fill === colors.paper ? colors.sage : colors.paper }]}>
-            <Icon name="image" size={22} />
-          </View>
+          <Photo photo={{ id: list.id, path: null }} on={fill} placeholder={cover} style={styles.cover} />
           <Hand size={17} style={{ lineHeight: 19 }}>{list.title}</Hand>
           {invited ? (
             <>
               <Mono size={10.5}>{inviter ? `${inviter.name} invited you` : 'you were invited'}</Mono>
               <View style={{ flexDirection: 'row', gap: 6, marginTop: 2 }}>
-                <Pill label="join" height={34} onPress={() => { toggle(true); respondInvite(list.id, true); }} accessibilityLabel={`Join ${list.title}`} />
+                <Pill label="join" sun height={34} onPress={() => { toggle(true); respondInvite(list.id, true); }} accessibilityLabel={`Join ${list.title}`} />
                 <Pill label="no" on height={34} onPress={() => { toggle(false); respondInvite(list.id, false); }} accessibilityLabel={`Say no to ${list.title}`} />
               </View>
             </>
@@ -85,12 +89,13 @@ export function ListFolderCard({ list, invited, own, index }: { list: List; invi
                   </View>
                 ) : invites ? (
                   <View style={styles.chip}>
-                    <Mono size={10} color={colors.paper}>{invites} open invite{invites > 1 ? 's' : ''}</Mono>
+                    <Surface tone="dark"><Mono size={10} color={colors.paper}>{invites} open invite{invites > 1 ? 's' : ''}</Mono></Surface>
                   </View>
                 ) : null}
               </View>
             </>
           )}
+          </Surface>
         </Pressable>
       </Animated.View>
       {peeking ? <ListPeek list={list} onOpen={() => { setPeeking(false); open(); }} onClose={() => setPeeking(false)} /> : null}

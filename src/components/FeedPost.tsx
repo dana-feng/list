@@ -18,15 +18,16 @@ import { Photo } from './Photo';
 import { PhotoViewer } from './PhotoViewer';
 import { TAG_ICON } from './TagField';
 import { Hand, Mono, MonoMedium } from './Text';
+import { Surface, useTint } from './Surface';
 
 type Kind = Exclude<FeedEvent['kind'], 'open_invite'>;
 
 /** The icon at the start of each post: what kind of thing happened. */
 const MARK: Record<Kind, { icon: IconName; color: string }> = {
   list_created: { icon: 'folder', color: colors.ink },
-  list_done: { icon: 'folder', color: colors.olive },
+  list_done: { icon: 'folder', color: colors.ink },
   item_added: { icon: 'plus', color: colors.ink },
-  item_done: { icon: 'check', color: colors.olive },
+  item_done: { icon: 'check', color: colors.ink },
   photos_added: { icon: 'image', color: colors.ink },
   list_joined: { icon: 'people', color: colors.ink },
   item_tagged: { icon: 'plus', color: colors.ink },
@@ -96,11 +97,12 @@ type Post = NonNullable<ReturnType<typeof describePost>>;
  * Lines are separated by a rule rather than each sitting in its own box.
  */
 export function FeedPost({ event, index }: { event: FeedEvent; index: number }) {
+  const rule = useTint(colors.rule);
   const [talking, setTalking] = useState(false);
   const post = describePost(event);
   if (!post) return null;
   return (
-    <View style={[styles.post, index > 0 && styles.rule]}>
+    <View style={[styles.post, index > 0 && [styles.rule, { borderTopColor: rule }]]}>
       <PostBody event={event} post={post} index={index} />
       <Reactions event={event} onComments={() => setTalking(true)} />
       {talking ? <CommentsSheet event={event} post={post} index={index} onClose={() => setTalking(false)} /> : null}
@@ -126,7 +128,7 @@ export function PostBody({ event, post, index, go = (to) => to() }: { event: Fee
     <>
       <View style={styles.row}>
         <View style={styles.mark} accessibilityElementsHidden importantForAccessibility="no">
-          <Icon name={mark.icon} size={22} color={mark.color} strokeWidth={kind === 'item_done' ? 2.4 : 1.9} />
+          <Icon name={mark.icon} size={22} color={mark.color} strokeWidth={1.7} />
         </View>
         <View style={styles.text}>
           {/* faces of everyone who did it (up to three), small, with when on the right */}
@@ -151,7 +153,7 @@ export function PostBody({ event, post, index, go = (to) => to() }: { event: Fee
             <Pressable key={photo.id} onPress={() => setViewing(i)} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={`View photo ${i + 1} of ${photos.length}`}>
               <Photo photo={photo} shape={index + i} style={{ height: shown.length === 1 ? 170 : 104 }} />
               {extra > 0 && i === shown.length - 1 ? (
-                <View style={styles.more}><Mono size={10.5} color={colors.paper}>+{extra}</Mono></View>
+                <View style={styles.more}><Surface tone="dark"><Mono size={10.5} color={colors.paper}>+{extra}</Mono></Surface></View>
               ) : null}
             </Pressable>
           ))}
@@ -196,11 +198,11 @@ function Reactions({ event, onComments }: { event: FeedEvent; onComments: () => 
         accessibilityState={{ selected: liked }}
         accessibilityLabel={`${liked ? 'Unlike' : 'Like'}${likes ? `, ${likes} ${likes === 1 ? 'like' : 'likes'}` : ''}`}
       >
-        <Icon name={liked ? 'heartFilled' : 'heart'} size={17} color={liked ? colors.olive : colors.inkSoft} strokeWidth={1.8} />
+        <Icon name={liked ? 'heartFilled' : 'heart'} size={19} strokeWidth={1.6} />
         {likes ? <Mono size={11} color={liked ? colors.ink : colors.inkSoft}>{likes}</Mono> : null}
       </Pressable>
       <Pressable onPress={onComments} hitSlop={8} style={styles.reaction} accessibilityRole="button" accessibilityLabel={comments ? `${comments} comments` : 'Comment'}>
-        <Icon name="comment" size={17} color={comments ? colors.ink : colors.inkSoft} strokeWidth={1.8} />
+        <Icon name="comment" size={19} strokeWidth={1.6} />
         <Mono size={11} color={comments ? colors.ink : colors.inkSoft}>{comments ? `${comments} ${comments === 1 ? 'comment' : 'comments'}` : 'reply'}</Mono>
       </Pressable>
     </View>

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme';
 import { useDragToClose } from './dragToClose';
 import { Hand } from './Text';
+import { Surface } from './Surface';
 
 type Props = {
   /** The heading. Leave it out when what's in the sheet speaks for itself. */
@@ -28,6 +29,7 @@ export function Sheet({ title, onClose, children, footer, overlay }: Props) {
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <Surface tone="light">
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: drag.dim }]}>
         <Pressable style={styles.dim} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
       </Animated.View>
@@ -57,6 +59,7 @@ export function Sheet({ title, onClose, children, footer, overlay }: Props) {
         </Animated.View>
       </KeyboardAvoidingView>
       {overlay}
+      </Surface>
     </Modal>
   );
 }

@@ -19,6 +19,7 @@ import { DateChip, DateField } from '@/components/DateField';
 import { DidItWith } from '@/components/DidItWith';
 import { DoneSheet } from '@/components/DoneSheet';
 import { canSayDown, interestLabel } from '@/components/Down';
+import { Logo } from '@/components/Logo';
 import { FolderTab } from '@/components/FolderTab';
 import { goBack, Header, SaveAction, TextAction } from '@/components/Header';
 import { EditableTitle, FieldRow, TitleInput } from '@/components/ListFields';
@@ -39,6 +40,7 @@ import { monthDay, names, toDay } from '@/lib';
 import { ITEM_TITLE_MAX, ITEMS_PER_LIST, PHOTOS_PER_ITEM } from '@/limits';
 import { pickPhotos } from '@/pickPhotos';
 import { colors } from '@/theme';
+import { Surface, useTint } from '@/components/Surface';
 
 /** Saved notes as the editor holds them. */
 const editableNotes = (saved: string) => {
@@ -205,7 +207,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
   const hosts = invitedHere ? inviteHosts(item!) : [];
 
   const card = (
-    <Paper fill={done ? colors.gold : colors.sage} edge="ink" edgeWidth={1.5} shape={4} lean={0} style={styles.card}>
+    <Paper fill={done ? colors.cream : colors.sage} edge="ink" edgeWidth={1.5} shape={4} lean={0} style={styles.card}>
       {isNew ? (
         <TitleInput value={draft.title} onChange={(title) => set({ title })} placeholder="untitled item" max={ITEM_TITLE_MAX} size={28} autoFocus={!picking} />
       ) : (
@@ -301,7 +303,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
 
       {member && item && done ? (
         <View style={styles.doneRow}>
-          <View style={styles.doneChip}><MonoMedium size={11.5} color={colors.paper}>done · {dayOf(item.done_at!)}</MonoMedium></View>
+          <View style={styles.doneChip}><Surface tone="dark"><MonoMedium size={11.5} color={colors.paper}>done · {dayOf(item.done_at!)}</MonoMedium></Surface></View>
         </View>
       ) : null}
 
@@ -311,6 +313,7 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
           <Button
             label={interestLabel(iAmDown)}
             tone={iAmDown ? 'bark' : 'outline'}
+            icon={<View style={{ opacity: iAmDown ? 1 : 0.4 }}><Logo size={30} /></View>}
             onPress={() => {
               toggle(!iAmDown);
               toggleInterest(item.id);
@@ -418,11 +421,12 @@ export function ItemScreen({ id, listId }: { id?: string; listId?: string }) {
  * who's getting what ("someone"); otherwise everyone who can see the list does.
  */
 function GiftClaim({ itemId, owner, surprise, howMany, setHowMany }: { itemId: string; owner: string; surprise: boolean; howMany: number | null; setHowMany: (n: number) => void }) {
+  const ink = useTint(colors.ink);
   const { quantity, mine, left } = giftOf(itemId);
   if (!canClaimGift(itemId)) {
     return (
       <>
-        <View style={styles.taken}><Mono size={13} color={colors.inkSoft}>someone’s getting this</Mono></View>
+        <View style={[styles.taken, { borderColor: ink }]}><Mono size={13} color={colors.inkSoft}>someone’s getting this</Mono></View>
         <Mono size={11} color={colors.inkSoft} style={{ marginTop: 8, marginHorizontal: 4, lineHeight: 17 }}>it’s off the asks tab now so no one doubles up.</Mono>
       </>
     );

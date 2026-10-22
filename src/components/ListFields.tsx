@@ -9,6 +9,7 @@ import { Paper } from './Paper';
 import { PersonPicker } from './PersonPicker';
 import { CharsLeft, Hand, Label, Mono } from './Text';
 import { Choice, choiceIcon, choiceLabel, VisibilityButton, VisibilityMenu, visibilityOptions } from './VisibilityPicker';
+import { useTint } from './Surface';
 
 /** "label ...stuff" on one line, the label in a fixed column. */
 export function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -31,6 +32,9 @@ function PersonChip({ person, you }: { person: Profile; you?: boolean }) {
 
 /** The big title field with a dashed underline. Typing stops at `max` characters. */
 export function TitleInput({ value, onChange, placeholder, max, size = 30, autoFocus, onBlur }: { value: string; onChange: (v: string) => void; placeholder: string; max: number; size?: number; autoFocus?: boolean; onBlur?: () => void }) {
+  // it sits straight on the folder, so ink or cream to match
+  const ink = useTint(colors.ink);
+  const faint = useTint(colors.inkFaint);
   return (
     <View>
     <TextInput
@@ -39,15 +43,15 @@ export function TitleInput({ value, onChange, placeholder, max, size = 30, autoF
       maxLength={max}
       onBlur={onBlur}
       placeholder={placeholder}
-      placeholderTextColor={colors.inkFaint}
+      placeholderTextColor={faint}
       autoFocus={autoFocus}
       multiline
       blurOnSubmit
       returnKeyType="done"
       accessibilityLabel={placeholder}
       style={[{
-        fontFamily: fonts.hand, fontSize: size, lineHeight: size * 1.1, color: colors.ink, paddingHorizontal: 0, paddingTop: 0, paddingBottom: 4,
-        borderBottomWidth: 1.6, borderStyle: 'dashed', borderColor: colors.ink,
+        fontFamily: fonts.hand, fontSize: size, lineHeight: size * 1.1, color: ink, paddingHorizontal: 0, paddingTop: 0, paddingBottom: 4,
+        borderBottomWidth: 1.6, borderStyle: 'dashed', borderColor: ink,
       }, noOutline]}
     />
     <CharsLeft value={value} max={max} />

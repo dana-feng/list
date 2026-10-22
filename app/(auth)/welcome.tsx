@@ -1,19 +1,38 @@
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
-import { Screen } from '@/components/Screen';
-import { Hand, Mono } from '@/components/Text';
+import { Logo, Swoosh } from '@/components/Logo';
+import { Surface } from '@/components/Surface';
+import { Hand } from '@/components/Text';
 import { colors, fonts } from '@/theme';
 
+/** The landing page, always in the light look: "echi" over the olive logo, with the sage paint stroke behind it, on almost white. */
 export default function Welcome() {
+  const insets = useSafeAreaInsets();
   return (
-    <Screen scroll={false} footer={<Button label="get started" tone="paper" onPress={() => router.push('/phone')} />}>
-      <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 6 }}>
-        <Hand size={76} color={colors.paper} style={{ lineHeight: 84, fontFamily: fonts.handBold }}>list</Hand>
-        <Mono size={14} color={colors.onDarkSoft} style={{ maxWidth: 280, lineHeight: 22 }}>
-          lists of things to do, shared with the people you’d do them with.
-        </Mono>
+    <Surface fill={colors.almostWhite}>
+      <View style={[styles.page, { paddingTop: insets.top, paddingBottom: insets.bottom + 16 }]}>
+        <StatusBar style="dark" />
+        <View style={styles.middle}>
+          <View style={styles.mark} accessibilityRole="header" accessibilityLabel="echi">
+            <View style={styles.swoosh} pointerEvents="none"><Swoosh width={180} look="sage" /></View>
+            <Hand size={32} color={colors.night} style={styles.word}>echi</Hand>
+            <Logo size={220} look="olive" />
+          </View>
+        </View>
+        <Button label="get started" onPress={() => router.push('/phone')} />
       </View>
-    </Screen>
+    </Surface>
   );
 }
+
+const styles = StyleSheet.create({
+  page: { flex: 1, paddingHorizontal: 20, backgroundColor: colors.almostWhite },
+  middle: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  mark: { width: 260, height: 300, alignItems: 'center', justifyContent: 'center' },
+  // the stroke stands upright behind the papers, as drawn: its top by the word, its tail out below on the left
+  swoosh: { position: 'absolute', top: 70, left: 50 },
+  word: { fontFamily: fonts.hand, lineHeight: 42, marginBottom: -2, zIndex: 1 },
+});

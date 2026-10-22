@@ -11,6 +11,7 @@ import { useReorderHandle } from './Reorderable';
 import { Circle, Strike } from './Scribble';
 import { SwipeToDelete } from './SwipeToDelete';
 import { Hand, HandMedium, Mono } from './Text';
+import { Surface } from './Surface';
 
 type OpenProps = {
   item: Item;
@@ -46,6 +47,7 @@ export function OpenRow({ item, member, onDone, onDelete }: OpenProps) {
 
   return (
     <SwipeToDelete onDelete={member ? onDelete : undefined} label={item.title}>
+    <Surface tone="light">
     <View style={tilt(shape)}>
       <View style={[styles.row, corners(shape), { backgroundColor: colors.sage, borderColor: colors.ink, borderWidth: 1.5 }]}>
         {member ? (
@@ -85,6 +87,7 @@ export function OpenRow({ item, member, onDone, onDelete }: OpenProps) {
         )}
       </View>
     </View>
+    </Surface>
     </SwipeToDelete>
   );
 }
@@ -94,6 +97,7 @@ export function DoneRow({ item, index, onUndo, onDelete }: { item: Item; index: 
   const withPeople = companionsFor(item.id);
   return (
     <SwipeToDelete onDelete={onDelete} label={item.title}>
+    <Surface tone="light">
     <View style={[styles.done, corners(index + 1), tilt(index + 2)]}>
       {onUndo ? (
         <Pressable onPress={onUndo} style={styles.circle} accessibilityRole="button" accessibilityLabel={`Done: ${item.title}. Tap to un-cross`}>
@@ -103,12 +107,13 @@ export function DoneRow({ item, index, onUndo, onDelete }: { item: Item; index: 
       <Pressable onPress={() => router.push(`/item/${item.id}`)} style={{ flex: 1, flexDirection: 'row', paddingLeft: onUndo ? 0 : 8 }} accessibilityRole="button" accessibilityLabel={`${item.title}, done${withPeople.length ? ` with ${names(withPeople)}` : ''}`}>
         <View>
           <HandMedium size={15}>{item.title}</HandMedium>
-          <Strike seed={hash(item.id) % 97} />
+          <Strike />
         </View>
       </Pressable>
       {withPeople.length ? <AvatarStack people={withPeople} size={19} max={3} /> : null}
       <Mono size={11} color={colors.inkSoft}>{monthDay(item.done_at!)}</Mono>
     </View>
+    </Surface>
     </SwipeToDelete>
   );
 }
@@ -118,5 +123,5 @@ const styles = StyleSheet.create({
   circle: { width: 44, height: 46, alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, gap: 4, paddingVertical: 2 },
   chevron: { width: 32, height: 44, alignItems: 'center', justifyContent: 'center' },
-  done: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.gold, paddingVertical: 8, paddingLeft: 6, paddingRight: 14, minHeight: 48 },
+  done: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.cream, paddingVertical: 8, paddingLeft: 6, paddingRight: 14, minHeight: 48 },
 });

@@ -13,8 +13,10 @@ import { AuthStep } from '@/screens/AuthStep';
 import { pickPhotos } from '@/pickPhotos';
 import { NAME_MAX } from '@/limits';
 import { colors, fonts, noOutline } from '@/theme';
+import { useTint } from '@/components/Surface';
 
 export default function ProfileStep() {
+  const ink = useTint(colors.ink);
   useDb();
   const person = me();
   const [name, setName] = useState(person.name);
@@ -47,7 +49,7 @@ export default function ProfileStep() {
           {photo ? (
             <Avatar person={{ ...person, name: name || person.name, profile_photo: photo }} size={136} edge={colors.paper} />
           ) : (
-            <View style={{ width: 136, height: 136, borderRadius: 41, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.paper, alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+            <View style={{ width: 136, height: 136, borderRadius: 41, borderWidth: 1.5, borderStyle: 'dashed', borderColor: ink, alignItems: 'center', justifyContent: 'center', gap: 2 }}>
               <Icon name="image" size={24} color={colors.paper} />
               <Mono size={11} color={colors.paper}>add photo</Mono>
             </View>

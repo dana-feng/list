@@ -7,6 +7,7 @@ import { Paper } from './Paper';
 import { Photo } from './Photo';
 import { PhotoViewer } from './PhotoViewer';
 import { Mono, MonoMedium } from './Text';
+import { Surface } from './Surface';
 
 type Props = { photos: Pick<ItemPhoto, 'id' | 'path'>[]; onAdd?: () => void; onRemove?: (id: string) => void; height?: number };
 
@@ -26,7 +27,7 @@ export function PhotoStrip({ photos, onAdd, onRemove, height = 132 }: Props) {
           </Pressable>
           {onRemove ? (
             <Pressable onPress={() => onRemove(p.id)} style={styles.remove} accessibilityRole="button" accessibilityLabel={`Remove photo ${i + 1}`}>
-              <View style={styles.removeDot}><Icon name="x" size={13} color={colors.paper} strokeWidth={2.6} /></View>
+              <View style={styles.removeDot}><Surface tone="dark"><Icon name="x" size={13} color={colors.paper} strokeWidth={2.6} /></Surface></View>
             </Pressable>
           ) : null}
         </View>

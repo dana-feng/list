@@ -9,10 +9,10 @@ export function Switch({ on, onPress, label, text, stacked }: { on: boolean; onP
       <View
         style={{
           width: 46, height: 26, borderRadius: 13, borderTopLeftRadius: 13, borderTopRightRadius: 14, borderBottomRightRadius: 13, borderBottomLeftRadius: 12,
-          backgroundColor: on ? colors.olive : colors.straw, borderWidth: 1.3, borderColor: colors.ink, justifyContent: 'center',
+          backgroundColor: on ? colors.olive : colors.cream, borderWidth: 1.6, borderColor: colors.ink, justifyContent: 'center',
         }}
       >
-        <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: colors.paper, borderWidth: 1.5, borderColor: colors.ink, marginLeft: on ? 22 : 3 }} />
+        <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: on ? colors.sun : colors.paper, borderWidth: 1.6, borderColor: colors.ink, marginLeft: on ? 22 : 3 }} />
       </View>
       {text ? <Mono size={stacked ? 10.5 : 11.5} style={{ flexShrink: 1 }}>{text}</Mono> : null}
     </Pressable>

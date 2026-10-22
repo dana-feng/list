@@ -1,19 +1,31 @@
 import { ReactNode, useState } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleProp, View, ViewStyle } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import type { ItemPhoto } from '@/api/db';
 import { photoUri } from '@/api/items';
-import { colors, corners, swatchFor } from '@/theme';
+import { BRAND, BRAND_CACHE } from '@/brand';
+import { colors, corners, Swatch, swatchPair } from '@/theme';
 import { Icon } from './Icon';
 import { PhotoViewer } from './PhotoViewer';
+import { useScheme } from './Surface';
 import { Mono } from './Text';
 
 type PhotoLike = Pick<ItemPhoto, 'id' | 'path'>;
 
-/** A photo, or a flat paper block with a picture icon while there's no file yet. */
-export function Photo({ photo, style, shape = 1 }: { photo: PhotoLike | { id: string; path: null }; style?: StyleProp<ViewStyle>; shape?: number }) {
+/** A photo, or a placeholder while there's no file yet: one of the design's scribble images for light or dark mode. */
+export function Photo({ photo, style, shape = 1, on, placeholder }: {
+  photo: PhotoLike | { id: string; path: null };
+  style?: StyleProp<ViewStyle>;
+  shape?: number;
+  /** The color it sits on, so the placeholder goes with it. */
+  on?: string;
+  /** Which placeholder to show, when it's been picked already (FolderGrid keeps neighbours different). */
+  placeholder?: Swatch;
+}) {
   const uri = photo.path ? photoUri(photo.path) : undefined;
-  const box = [corners(shape), { overflow: 'hidden' as const, backgroundColor: swatchFor(photo.id) }, style];
+  const scheme = useScheme();
+  const swatch = placeholder ?? swatchPair(photo.id, scheme, on);
+  const box = [corners(shape), { overflow: 'hidden' as const, backgroundColor: swatch.fill }, style];
   if (uri) {
     return (
       <View style={box}>
@@ -22,11 +34,16 @@ export function Photo({ photo, style, shape = 1 }: { photo: PhotoLike | { id: st
     );
   }
   return (
-    <View style={[...box, { alignItems: 'center', justifyContent: 'center' }]}>
-      <Icon name="image" size={22} />
+    <View style={box}>
+      <Image source={PLACEHOLDERS[swatch.id]} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy={BRAND_CACHE} accessible={false} />
     </View>
   );
 }
+
+// the placeholder images, by SWATCHES id (theme.ts)
+const PLACEHOLDERS: Record<Swatch['id'], number> = {
+  sage: BRAND.coverSage, olive: BRAND.coverOlive, bark: BRAND.coverBark, inkSoft: BRAND.coverInkSoft,
+};
 
 /** Space above the photos for the × that sits across their top corner. */
 const REMOVE_ROOM = 14;
@@ -75,7 +92,7 @@ export function PhotoCarousel({ photos, height, peek = 44, gap = 6, dots = true,
             </Pressable>
             {onRemove ? (
               <Pressable onPress={() => onRemove(p.id)} style={{ position: 'absolute', top: -22, right: -22, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel={`Remove photo ${i + 1}`}>
-                <Icon name="x" size={24} color={colors.olive} strokeWidth={3.2} />
+                <Icon name="x" size={24} strokeWidth={2.2} />
               </Pressable>
             ) : null}
           </View>

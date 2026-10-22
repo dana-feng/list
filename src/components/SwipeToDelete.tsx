@@ -3,6 +3,7 @@ import { Animated, GestureResponderEvent, Pressable, StyleSheet, View } from 're
 import { tap } from '@/haptics';
 import { colors } from '@/theme';
 import { MonoMedium } from './Text';
+import { Surface } from './Surface';
 
 const REVEAL = 92;
 
@@ -52,7 +53,7 @@ export function SwipeToDelete({ children, onDelete, label }: { children: ReactNo
       onAccessibilityAction={(e) => e.nativeEvent.actionName === 'delete' && onDelete()}
     >
       <Pressable onPress={onDelete} style={styles.delete} accessibilityRole="button" accessibilityLabel={`Delete ${label}`} accessibilityElementsHidden={!open} importantForAccessibility={open ? 'yes' : 'no-hide-descendants'}>
-        <MonoMedium size={13} color={colors.paper}>delete</MonoMedium>
+        <Surface tone="dark"><MonoMedium size={13} color={colors.paper}>delete</MonoMedium></Surface>
       </Pressable>
       <Animated.View style={{ transform: [{ translateX: x }] }} {...gesture}>
         {children}

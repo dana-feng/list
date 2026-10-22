@@ -6,6 +6,7 @@ import { LinkText, Pill } from './Button';
 import { Icon } from './Icon';
 import { Paper } from './Paper';
 import { Hand, Mono, MonoMedium } from './Text';
+import { Surface } from './Surface';
 
 const WEEKDAYS = ['s', 'm', 't', 'w', 't', 'f', 's'];
 const monthOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
@@ -77,7 +78,7 @@ export function DateField({ value, onChange, beside }: { value: string | null; o
                 return (
                   <Pressable key={day} style={styles.cell} onPress={() => onChange(day)} disabled={past} accessibilityRole="button" accessibilityLabel={longDay(day)} accessibilityState={{ selected: on, disabled: past }}>
                     <View style={[styles.day, on && { backgroundColor: colors.bark }, day === today && !on && styles.today]}>
-                      <Mono size={11} color={on ? colors.paper : colors.ink} style={{ opacity: past ? 0.35 : 1 }}>{parseDay(day).getDate()}</Mono>
+                      <Surface tone={on ? 'dark' : 'light'}><Mono size={11} color={on ? colors.paper : colors.ink} style={{ opacity: past ? 0.35 : 1 }}>{parseDay(day).getDate()}</Mono></Surface>
                     </View>
                   </Pressable>
                 );

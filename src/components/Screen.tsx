@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleProp, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { refresh } from '@/api/sync';
 import { colors, space, TAB_BAR_HEIGHT } from '@/theme';
+import { Surface, useScheme, useTint } from './Surface';
 
 type Common = {
   children: ReactNode;
@@ -26,12 +27,13 @@ function useBottomPad(insideTabs?: boolean, footer?: ReactNode) {
 
 function useRefresher(on?: boolean) {
   const [refreshing, setRefreshing] = useState(false);
+  const spinner = useTint(colors.ink);
   if (!on) return undefined;
   const onRefresh = () => {
     setRefreshing(true);
     refresh().finally(() => setRefreshing(false));
   };
-  return <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.paper} colors={[colors.ink]} />;
+  return <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={spinner} colors={[colors.ink]} />;
 }
 
 /** Scrolls the screen so all of `target` sits above the keyboard (when it doesn't already). */
@@ -67,7 +69,7 @@ function useRevealer() {
 function Shell({ header, footer, overlay, children }: Pick<Common, 'header' | 'footer' | 'overlay' | 'children'>) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={styles.night}>
+    <View style={[styles.fill, { backgroundColor: useScheme().ground }]}>
       <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={{ paddingTop: insets.top + 6 }}>{header}</View>
         {children}
@@ -78,7 +80,7 @@ function Shell({ header, footer, overlay, children }: Pick<Common, 'header' | 'f
   );
 }
 
-/** A screen straight on the dark background: profiles, sign-up, "done". */
+/** A screen straight on the background: profiles, sign-up, "done". */
 export function Screen({ children, header, footer, refreshable, scroll = true, scrollEnabled, overlay, insideTabs, contentStyle }: Common & { contentStyle?: StyleProp<ViewStyle> }) {
   const bottom = useBottomPad(insideTabs, footer);
   const refresher = useRefresher(refreshable);
@@ -107,8 +109,8 @@ export function Screen({ children, header, footer, refreshable, scroll = true, s
 }
 
 /**
- * The folder screen most of the app uses: a header on the dark background, folder tabs,
- * and one big paper folder holding the content.
+ * The folder screen most of the app uses: a header on the background, folder tabs,
+ * and one big folder holding the content.
  */
 export function FolderScreen({ children, header, footer, refreshable, scroll = true, scrollEnabled, overlay, insideTabs, folderTabs, roundCorner }: Common & {
   /** The tab(s) sticking up from the folder. */
@@ -119,10 +121,12 @@ export function FolderScreen({ children, header, footer, refreshable, scroll = t
   const bottom = useBottomPad(insideTabs, footer);
   const refresher = useRefresher(refreshable);
   const { reveal, props } = useRevealer();
+  const { folder } = useScheme();
   return (
     <Shell header={header} footer={footer} overlay={overlay}>
       <View style={styles.folderTabs}>{folderTabs}</View>
-      <View style={[styles.folder, roundCorner && { borderTopLeftRadius: 15 }]}>
+      <View style={[styles.folder, { backgroundColor: folder }, roundCorner && { borderTopLeftRadius: 15 }]}>
+        <Surface fill={folder}>
         {scroll ? (
           <ScrollView
             {...props}
@@ -138,17 +142,17 @@ export function FolderScreen({ children, header, footer, refreshable, scroll = t
         ) : (
           <View style={[styles.fill, { padding: 12, paddingTop: 16, paddingBottom: bottom }]}>{children}</View>
         )}
+        </Surface>
       </View>
     </Shell>
   );
 }
 
 const styles = StyleSheet.create({
-  night: { flex: 1, backgroundColor: colors.night },
   fill: { flex: 1 },
   folderTabs: { flexDirection: 'row', gap: 6, paddingHorizontal: 12, marginTop: space.sm, zIndex: 2 },
   folder: {
-    flex: 1, marginLeft: 12, marginRight: 16, marginBottom: 12, backgroundColor: colors.paper, overflow: 'hidden',
+    flex: 1, marginLeft: 12, marginRight: 16, marginBottom: 12, overflow: 'hidden',
     borderTopLeftRadius: 0, borderTopRightRadius: 18, borderBottomRightRadius: 20, borderBottomLeftRadius: 15,
   },
 });
