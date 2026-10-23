@@ -9,9 +9,10 @@
 import { Alert, AppState } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import type { Session, User } from '@supabase/supabase-js';
-import { commit, db, emptyTables, GiftClaim, GiftStatus } from './db';
+import { commit, db, emptyTables, GiftClaim, GiftStatus, Profile } from './db';
 import { listenForNotifications, stopListening } from './live';
 import { forgetPushToken } from './push';
+import { forgetFound, foundProfiles } from './profiles';
 import { supabase } from './supabase';
 
 export const newId = () => randomUUID();
@@ -95,7 +96,10 @@ async function load() {
     return;
   }
 
-  db.profiles = profiles.data ?? [];
+  // the people you're connected to, plus anyone found by a search or a link since (not if blocked)
+  const connected = profiles.data ?? [];
+  const blockedIds = new Set(((blocked.data ?? []) as Profile[]).map((p) => p.id));
+  db.profiles = [...connected, ...foundProfiles().filter((p) => !blockedIds.has(p.id) && !connected.some((c) => c.id === p.id))];
   db.follows = follows.data ?? [];
   db.lists = lists.data ?? [];
   db.list_members = members.data ?? [];
@@ -258,10 +262,30 @@ export async function signOut() {
   // while still signed in, so this phone stops getting the account's pushes
   await forgetPushToken();
   await supabase.auth.signOut();
+  forgetFound();
   await startSession(null);
 }
 
+/**
+ * Deletes your account for good. Your files go first, while you can still remove them: your
+ * profile photos, and the photos on lists nobody else has joined (delete_account deletes those
+ * lists). Photos on lists you share stay with the list. A file that won't go doesn't stop it.
+ */
 export async function deleteAccount(): Promise<string | null> {
+  const me = db.me;
+  const avatars = await supabase.storage.from('avatars').list(me, { limit: 1000 });
+  const avatarPaths = (avatars.data ?? []).map((f) => `${me}/${f.name}`);
+  if (avatarPaths.length) await supabase.storage.from('avatars').remove(avatarPaths);
+  const soloLists = new Set(
+    db.list_members
+      .filter((m) => m.user_id === me && m.status === 'joined')
+      .map((m) => m.list_id)
+      .filter((listId) => !db.list_members.some((o) => o.list_id === listId && o.user_id !== me && o.status === 'joined')),
+  );
+  const soloItems = new Set(db.items.filter((i) => soloLists.has(i.list_id)).map((i) => i.id));
+  const photoPaths = db.item_photos.filter((p) => soloItems.has(p.item_id) && !isLocal(p.path)).map((p) => p.path);
+  for (let i = 0; i < photoPaths.length; i += 100) await supabase.storage.from('photos').remove(photoPaths.slice(i, i + 100));
+
   const { error } = await supabase.rpc('delete_account');
   if (error) return error.message;
   await signOut();

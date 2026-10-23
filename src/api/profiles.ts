@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import * as Contacts from 'expo-contacts';
 import { commit, db, now, Profile } from './db';
 import { supabase } from './supabase';
@@ -44,6 +45,67 @@ export const followingOf = (userId: string) =>
 export const myFollowers = () =>
   db.follows.filter((f) => f.followee_id === db.me).map((f) => getProfile(f.follower_id)!).filter(Boolean);
 
+// ---------------------------------------------------------------------------
+// People you aren't connected to yet
+// ---------------------------------------------------------------------------
+// The database only hands over the profiles of people you're connected to (see connected_ids in
+// the launch_privacy migration). Anyone else comes from search, a username or a list of ids, each
+// rate limited. Whoever turns up that way is kept here so a reload doesn't drop them.
+
+const found = new Map<string, Profile>();
+
+/** Adds profiles that came from a lookup to what's on the phone, and keeps them across reloads. */
+function remember(people: Profile[] | null | undefined) {
+  if (!people?.length) return;
+  let changed = false;
+  for (const p of people) {
+    found.set(p.id, p);
+    const i = db.profiles.findIndex((x) => x.id === p.id);
+    if (i < 0) db.profiles.push(p);
+    else db.profiles[i] = p;
+    changed = true;
+  }
+  if (changed) commit();
+}
+
+/** What a reload should keep besides what the database sent: people found by a lookup. */
+export const foundProfiles = (): Profile[] => [...found.values()];
+
+/** Forget lookups, at sign-out. */
+export const forgetFound = () => found.clear();
+
+/** Searches everyone by the start of their username or name (2 characters at least). Results land in db.profiles. */
+export async function findPeople(q: string) {
+  const s = q.trim().toLowerCase().replace(/^@/, '');
+  if (s.length < 2) return;
+  const { data, error } = await supabase.rpc('search_profiles', { p_query: s });
+  if (!error) remember(data as Profile[]);
+}
+
+/** While a search box has `q` in it, also searches everyone, a moment after typing stops. */
+export function useFindPeople(q: string) {
+  useEffect(() => {
+    const t = setTimeout(() => findPeople(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+}
+
+/** Looks up one username (a shared profile link). */
+export async function findByUsername(username: string) {
+  if (getProfileByUsername(username)) return;
+  const { data, error } = await supabase.rpc('profile_by_username', { p_username: username });
+  if (!error) remember(data as Profile[]);
+}
+
+/** Looks up people whose ids are already here without their profiles (a stranger's followers). */
+export async function findByIds(ids: string[]) {
+  const missing = [...new Set(ids)].filter((id) => !getProfile(id)).slice(0, 100);
+  if (!missing.length) return;
+  const { data, error } = await supabase.rpc('profiles_by_ids', { p_ids: missing });
+  if (!error) remember(data as Profile[]);
+}
+
+/** Who's on the phone matching the start of a name or username. findPeople() fills in the rest. */
 export function searchPeople(q: string): Profile[] {
   const s = q.trim().toLowerCase().replace(/^@/, '');
   if (!s) return [];
@@ -69,6 +131,7 @@ export async function matchContacts(): Promise<Profile[]> {
     console.warn('match_contacts failed', error.message);
     return [];
   }
+  remember(data as Profile[]);
   return (data ?? []) as Profile[];
 }
 

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Item, List, useDb } from '@/api/db';
 import { getList, listPeople, progressLabel } from '@/api/lists';
+import { useFindPeople } from '@/api/profiles';
 import { search, SearchResults } from '@/api/search';
 import { AvatarStack } from '@/components/Avatar';
 import { FolderTab } from '@/components/FolderTab';
@@ -29,6 +30,8 @@ export default function Search() {
   // kinds opened up with "show all"; back to the preview whenever the search changes
   const [open, setOpen] = useState<Kind[]>([]);
   const term = q.trim();
+  // people you aren't connected to come from the server; they show up here as they arrive
+  useFindPeople(q);
   const found = search(q);
   const count = found.people.length + found.lists.length + found.items.length;
   const shown = <K extends Kind>(kind: K): SearchResults[K] => (open.includes(kind) ? found[kind] : (found[kind].slice(0, PREVIEW) as SearchResults[K]));

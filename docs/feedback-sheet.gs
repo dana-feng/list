@@ -9,7 +9,7 @@
 
 const SHEET_NAME = 'feedback';
 // how each kind reads in the sheet, matching the app's labels
-const KINDS = { bug: 'bug', idea: 'feature request', other: 'something else' };
+const KINDS = { bug: 'bug', idea: 'feature request', other: 'something else', report: 'report' };
 const HEADERS = ['sent', 'kind', 'message', 'username', 'name', 'email', 'app version', 'platform', 'status', 'notes', 'id'];
 
 function doPost(e) {
